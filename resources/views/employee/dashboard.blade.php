@@ -80,7 +80,7 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <button class="bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] font-semibold text-[16px] px-8 py-3 rounded-2xl flex items-center gap-3 transition">
+                    <button onclick="openRequestModal()" class="bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] font-semibold text-[16px] px-8 py-3 rounded-2xl flex items-center gap-3 transition">
                         <i class="fa-solid fa-plus text-[18px]"></i>
                         <span>New Request</span>
                     </button>
@@ -164,5 +164,150 @@
         ?
     </button>
 
+    <!-- New Request Modal -->
+    <div id="requestModal" class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6">
+        <div class="w-full max-w-[385px] sm:max-w-[420px] bg-white rounded-[10px] shadow-2xl overflow-hidden">
+            
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between px-5 pt-4 pb-2">
+                <h2 class="text-[14px] sm:text-[15px] font-semibold text-[#003b95]">New Gate Pass Request</h2>
+                <button onclick="closeRequestModal()" class="text-gray-500 hover:text-black text-[18px] leading-none">
+                    ×
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="px-5 pb-4 max-h-[85vh] overflow-y-auto">
+                
+                <!-- Top Grid -->
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
+                            Gate Pass No. <span class="text-[#9aa8bd]">(Auto-generated)</span>
+                        </label>
+                        <input type="text" value="GP-2026-XXX" disabled
+                            class="w-full h-[34px] rounded-md border border-gray-200 bg-gray-100 px-3 text-[12px] text-gray-400">
+                    </div>
+
+                    <div>
+                        <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
+                            Request Date <span class="text-[#9aa8bd]">(Auto-filled)</span>
+                        </label>
+                        <input type="text" value="03/12/2026"
+                            class="w-full h-[34px] rounded-md border border-gray-300 bg-white px-3 text-[12px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-600">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
+                            Estimated Return Date <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date"
+                            class="w-full h-[34px] rounded-md border border-gray-200 bg-gray-100 px-3 text-[12px] text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-600">
+                    </div>
+
+                    <div>
+                        <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
+                            Center/Office <span class="text-[#9aa8bd]">(Auto-filled)</span>
+                        </label>
+                        <input type="text" value="Finance Department" disabled
+                            class="w-full h-[34px] rounded-md border border-gray-200 bg-gray-100 px-3 text-[12px] text-gray-400">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
+                        Name <span class="text-[#9aa8bd]">(Current User)</span>
+                    </label>
+                    <input type="text" value="John Doe" disabled
+                        class="w-full h-[34px] rounded-md border border-gray-200 bg-gray-100 px-3 text-[12px] text-gray-400">
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
+                        Purpose <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" placeholder="Enter purpose..."
+                        class="w-full h-[34px] rounded-md border border-gray-200 bg-gray-100 px-3 text-[12px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600">
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
+                        The items will be brought to <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" placeholder="Enter destination..."
+                        class="w-full h-[34px] rounded-md border border-gray-200 bg-gray-100 px-3 text-[12px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600">
+                </div>
+
+                <div class="mb-2">
+                    <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
+                        Selected Equipment (0 items)
+                    </label>
+
+                    <div class="flex gap-2">
+                        <select class="flex-1 h-[34px] rounded-md border border-gray-300 bg-white px-3 text-[12px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-600">
+                            <option>Select Equipment</option>
+                            <option>Laptop - Dell</option>
+                            <option>Projector - Epson</option>
+                            <option>Printer - HP</option>
+                        </select>
+
+                        <button type="button" class="h-[34px] px-4 rounded-md bg-[#003b95] text-white text-[12px] font-semibold hover:bg-[#002d73] flex items-center gap-2">
+                            <i class="fa-solid fa-plus text-[11px]"></i>
+                            Add
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-3 border border-gray-200 rounded-md h-[64px] flex items-center justify-center text-[12px] text-gray-400 bg-white">
+                    No equipment selected
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
+                        Remarks
+                    </label>
+                    <textarea rows="3" placeholder="Enter any additional notes or remarks..."
+                        class="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-[12px] text-gray-700 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-1 focus:ring-blue-600"></textarea>
+                </div>
+
+                <!-- Footer Buttons -->
+                <div class="border-t border-gray-200 pt-3 flex gap-2">
+                    <button type="button" onclick="closeRequestModal()" class="flex-1 h-[36px] rounded-md border border-gray-300 bg-white text-[12px] font-semibold text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+
+                    <button type="button" class="flex-1 h-[36px] rounded-md bg-[#7f99c7] text-white text-[12px] font-semibold hover:bg-[#6f8bbc]">
+                        Submit Request
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
+
+<script>
+    function openRequestModal() {
+        const modal = document.getElementById('requestModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeRequestModal() {
+        const modal = document.getElementById('requestModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    window.addEventListener('click', function(e) {
+        const modal = document.getElementById('requestModal');
+        if (e.target === modal) {
+            closeRequestModal();
+        }
+    });
+</script>
 </html>
