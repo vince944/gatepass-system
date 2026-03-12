@@ -45,15 +45,21 @@
 
                 <!-- Navigation -->
                 <nav class="px-4 py-6 space-y-4">
-                    <a href="#" class="flex items-center gap-4 bg-[#47698f] rounded-2xl px-5 py-5 text-[18px] font-semibold">
+                    <button
+                        type="button"
+                        id="navDashboard"
+                        class="w-full flex items-center gap-4 bg-[#47698f] rounded-2xl px-5 py-5 text-[18px] font-semibold text-left text-white">
                         <i class="fa-regular fa-file-lines text-[22px]"></i>
                         <span>Gate Pass Request</span>
-                    </a>
+                    </button>
 
-                    <a href="#" class="flex items-center gap-4 px-5 py-4 text-[18px] font-semibold text-white/90 hover:bg-white/10 rounded-2xl transition">
+                    <button
+                        type="button"
+                        id="navHistory"
+                        class="w-full flex items-center gap-4 px-5 py-4 text-[18px] font-semibold text-left text-white/90 hover:bg-white/10 rounded-2xl transition">
                         <i class="fa-solid fa-clock-rotate-left text-[22px]"></i>
                         <span>Request History</span>
-                    </a>
+                    </button>
                 </nav>
             </div>
 
@@ -75,12 +81,16 @@
             <!-- Top Header -->
             <header class="bg-[#f3f3f3] border-b border-black/10 px-10 py-7 flex items-start justify-between">
                 <div>
-                    <h2 class="text-[40px] font-bold text-black leading-none">Dashboard</h2>
+                    <h2 id="pageTitle" class="text-[40px] font-bold text-black leading-none">Dashboard</h2>
                     <p class="text-[20px] text-[#3e5573] mt-2">Welcome back, John Doe</p>
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <button onclick="openRequestModal()" class="bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] font-semibold text-[16px] px-8 py-3 rounded-2xl flex items-center gap-3 transition">
+                    <button
+                        id="newRequestBtn"
+                        type="button"
+                        onclick="openRequestModal()"
+                        class="bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] font-semibold text-[16px] px-8 py-3 rounded-2xl flex items-center gap-3 transition">
                         <i class="fa-solid fa-plus text-[18px]"></i>
                         <span>New Request</span>
                     </button>
@@ -93,8 +103,6 @@
 
             <!-- Content Area -->
             <section class="px-10 py-10">
-
-                <!-- Stats -->
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-7">
                     <div class="bg-white rounded-[22px] border border-black/10 p-8 relative overflow-hidden">
                         <div class="absolute top-0 left-0 w-[5px] h-full bg-[#003b95]"></div>
@@ -153,6 +161,31 @@
                     <!-- Dynamic content will go here later -->
                     <div class="h-[180px] flex items-center justify-center border border-dashed border-gray-300 rounded-2xl">
                         <p class="text-gray-400 text-[18px]">Dynamic request list will be placed here</p>
+                    </div>
+                </div>
+
+                <!-- HISTORY SECTION -->
+                <div id="historySection" class="hidden">
+                    <div class="bg-white rounded-[20px] border border-gray-200 overflow-hidden">
+
+                        <div class="px-8 py-6 border-b border-gray-200">
+                            <h3 class="text-[22px] font-semibold text-[#003b95]">Request History</h3>
+                        </div>
+
+                        <div class="grid grid-cols-12 px-8 py-5 border-b border-gray-200 text-[15px] font-semibold text-[#425b78] uppercase tracking-wide">
+                            <div class="col-span-2">Gate Pass No.</div>
+                            <div class="col-span-6">Equipment</div>
+                            <div class="col-span-2">Date</div>
+                            <div class="col-span-2">Status</div>
+                        </div>
+
+                        <!-- Dynamic rows will go here later -->
+                        <div id="historyList"></div>
+
+                        <!-- Empty state for now -->
+                        <div id="emptyHistory" class="py-16 text-center text-gray-400 text-[18px]">
+                            No request history yet.
+                        </div>
                     </div>
                 </div>
             </section>
@@ -286,28 +319,94 @@
         </div>
     </div>
 
+    <script>
+
+        const navDashboard = document.getElementById('navDashboard');
+        const navHistory = document.getElementById('navHistory');
+
+        const dashboardSection = document.getElementById('dashboardSection');
+        const historySection = document.getElementById('historySection');
+
+        const pageTitle = document.getElementById('pageTitle');
+        const newRequestBtn = document.getElementById('newRequestBtn');
+
+        function activateDashboardButton() {
+            navDashboard.classList.add('bg-[#47698f]', 'text-white');
+            navDashboard.classList.remove('text-white/90', 'hover:bg-white/10');
+
+            navHistory.classList.remove('bg-[#47698f]', 'text-white');
+            navHistory.classList.add('text-white/90', 'hover:bg-white/10');
+        }
+
+        function activateHistoryButton() {
+            navHistory.classList.add('bg-[#47698f]', 'text-white');
+            navHistory.classList.remove('text-white/90', 'hover:bg-white/10');
+
+            navDashboard.classList.remove('bg-[#47698f]', 'text-white');
+            navDashboard.classList.add('text-white/90', 'hover:bg-white/10');
+        }
+
+        function showDashboardSection() {
+
+            dashboardSection.classList.remove('hidden');
+            historySection.classList.add('hidden');
+
+            pageTitle.textContent = "Dashboard";
+            newRequestBtn.classList.remove('hidden');
+
+            activateDashboardButton();
+        }
+
+        function showHistorySection() {
+
+            dashboardSection.classList.add('hidden');
+            historySection.classList.remove('hidden');
+
+            pageTitle.textContent = "Request History";
+            newRequestBtn.classList.add('hidden');
+
+            activateHistoryButton();
+        }
+
+        navDashboard.addEventListener('click', showDashboardSection);
+        navHistory.addEventListener('click', showHistorySection);
+
+
+        function openRequestModal() {
+            const modal = document.getElementById('requestModal');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeRequestModal() {
+
+            const modal = document.getElementById('requestModal');
+
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        window.addEventListener('click', function(e) {
+
+            const modal = document.getElementById('requestModal');
+
+            if (e.target === modal) {
+                closeRequestModal();
+            }
+
+        });
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            showDashboardSection();
+        });
+    </script>
+
 </body>
 
-<script>
-    function openRequestModal() {
-        const modal = document.getElementById('requestModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        document.body.classList.add('overflow-hidden');
-    }
-
-    function closeRequestModal() {
-        const modal = document.getElementById('request  Modal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        document.body.classList.remove('overflow-hidden');
-    }
-
-    window.addEventListener('click', function(e) {
-        const modal = document.getElementById('requestModal');
-        if (e.target === modal) {
-            closeRequestModal();
-        }
-    });
-</script>
 </html>
