@@ -297,7 +297,7 @@
     }
 
     function closeRequestModal() {
-        const modal = document.getElementById('requestModal');
+        const modal = document.getElementById('request  Modal');
         modal.classList.add('hidden');
         modal.classList.remove('flex');
         document.body.classList.remove('overflow-hidden');
