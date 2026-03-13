@@ -35,6 +35,10 @@ class LoginController extends Controller
                 return redirect('/guard/dashboard');
             }
 
+            if ($user->role == 'coordinator') {
+                return redirect('/coordinator/dashboard');
+            }
+
             return redirect('/dashboard');
         }
 

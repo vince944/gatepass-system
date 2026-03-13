@@ -96,7 +96,7 @@
                 <p><span class="font-bold">Employee:</span> employee@dap.com / employee123</p>
                 <p><span class="font-bold">Admin:</span> admin@dap.com / admin123</p>
                 <p><span class="font-bold">Guard:</span> guard@dap.com / guard123</p>
-                <p><span class="font-bold">Admin Coordinator:</span> admincoordinator@dap.com / equipment123</p>
+                <p><span class="font-bold">Admin Coordinator:</span> coordinator@dap.com / coordinator123</p>
             </div>
 
             <p class="mt-5 sm:mt-6 text-center text-xs sm:text-sm md:text-base text-gray-500">

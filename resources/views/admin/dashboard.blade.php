@@ -45,6 +45,16 @@
             </div>
 
             <div class="px-6 py-8"></div>
+            <!-- Logout -->
+            <div class="px-8 py-10 border-t border-white/10">
+                <form method="POST" action="/logout">
+                    @csrf
+                    <button type="submit" class="flex items-center gap-4 text-[18px] font-semibold text-white/90 hover:text-white transition">
+                        <i class="fa-solid fa-right-from-bracket text-[22px]"></i>
+                        <span>Logout</span>
+                    </button>
+                </form>
+            </div>
         </aside>
 
         <!-- Main Content -->
@@ -259,56 +269,146 @@
 
     <!-- Admin Profile Modal -->
     <div id="adminProfileModal" class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6">
-        <div class="w-full max-w-[460px] bg-white rounded-[10px] shadow-2xl overflow-hidden">
-            <div class="bg-[#003b95] px-5 py-4 flex items-center justify-between">
-                <h2 class="text-white text-[16px] font-semibold">Admin Profile</h2>
-                <button type="button" onclick="closeAdminProfileModal()" class="text-white text-[20px] leading-none hover:opacity-80">
+        <div class="w-full max-w-[1150px] bg-white rounded-[18px] shadow-2xl overflow-hidden">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between px-7 py-6 border-b border-gray-200">
+                <h2 class="text-[26px] font-bold text-[#003b95]">Admin Profile</h2>
+                <button type="button" onclick="closeAdminProfileModal()" class="text-[#98a2b3] hover:text-black text-[28px] leading-none">
                     ×
                 </button>
             </div>
 
-            <div class="px-5 py-6 max-h-[85vh] overflow-y-auto">
-                <div class="mb-6">
-                    <h3 class="text-[#003b95] text-[14px] font-semibold mb-3">Profile Information</h3>
+            <!-- Body -->
+            <div class="px-7 py-6 max-h-[78vh] overflow-y-auto">
+                <form class="space-y-8">
 
-                    <div class="mb-4">
-                        <label class="block text-[13px] text-[#1f3552] mb-2">Full Name</label>
-                        <input type="text" value="Admin User" class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] focus:outline-none">
+                    <!-- Profile Information -->
+                    <div>
+                        <h3 class="text-[18px] font-semibold text-[#003b95] mb-5">Profile Information</h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <div>
+                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Full Name
+                                </label>
+                                <input
+                                    type="text"
+                                    value="Admin User"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Center/Office
+                                </label>
+                                <input
+                                    type="text"
+                                    value="Logistics Division"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Email Address
+                                </label>
+                                <input
+                                    type="email"
+                                    value="admin@dap.com"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-[13px] text-[#1f3552] mb-2">Center/Office</label>
-                        <input type="text" value="Logistics Division" class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] focus:outline-none">
+                    <!-- Upload Signature -->
+                    <div>
+                        <h3 class="text-[18px] font-semibold text-[#003b95] mb-5">Upload Signature</h3>
+
+                        <div class="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-6 items-start">
+                            <div>
+                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Signature File
+                                </label>
+
+                                <label class="w-full min-h-[170px] rounded-2xl border-2 border-dashed border-gray-300 bg-[#fbfcfe] flex flex-col items-center justify-center text-center px-6 cursor-pointer hover:border-[#003b95] transition">
+                                    <i class="fa-solid fa-signature text-[32px] text-[#98a2b3] mb-4"></i>
+                                    <span class="text-[16px] font-semibold text-[#003b95]">Upload Signature</span>
+                                    <span class="text-[13px] text-[#667085] mt-2">PNG, JPG, JPEG</span>
+                                    <input type="file" class="hidden" accept=".png,.jpg,.jpeg">
+                                </label>
+                            </div>
+
+                            <div>
+                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Signature Preview
+                                </label>
+
+                                <div class="w-full min-h-[170px] rounded-2xl border border-gray-200 bg-white flex items-center justify-center text-[#98a2b3] text-[15px]">
+                                    No signature uploaded yet.
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-[13px] text-[#1f3552] mb-2">Email Address</label>
-                        <input type="email" value="admin@dap.com" class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] focus:outline-none">
+                    <!-- Change Password -->
+                    <div>
+                        <h3 class="text-[18px] font-semibold text-[#003b95] mb-5">Change Password</h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <div>
+                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Current Password
+                                </label>
+                                <input
+                                    type="password"
+                                    placeholder="Enter current password"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    New Password
+                                </label>
+                                <input
+                                    type="password"
+                                    placeholder="Enter new password"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Confirm New Password
+                                </label>
+                                <input
+                                    type="password"
+                                    placeholder="Confirm new password"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="mb-2">
-                    <h3 class="text-[#003b95] text-[14px] font-semibold mb-3">Change Password</h3>
+                    <!-- Footer -->
+                    <div class="border-t border-gray-200 pt-7 flex justify-end gap-4">
+                        <button
+                            type="button"
+                            onclick="closeAdminProfileModal()"
+                            class="px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[16px] font-semibold text-black hover:bg-gray-50 transition">
+                            Cancel
+                        </button>
 
-                    <div class="mb-4">
-                        <label class="block text-[13px] text-[#1f3552] mb-2">Current Password</label>
-                        <input type="password" placeholder="Enter current password" class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] focus:outline-none">
+                        <button
+                            type="submit"
+                            class="px-10 h-[46px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition">
+                            Update Profile
+                        </button>
                     </div>
-
-                    <div class="mb-4">
-                        <label class="block text-[13px] text-[#1f3552] mb-2">New Password</label>
-                        <input type="password" placeholder="Enter new password" class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] focus:outline-none">
-                    </div>
-
-                    <div class="mb-5">
-                        <label class="block text-[13px] text-[#1f3552] mb-2">Confirm New Password</label>
-                        <input type="password" placeholder="Confirm new password" class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] focus:outline-none">
-                    </div>
-                </div>
-
-                <button type="button" class="bg-[#003b95] hover:bg-[#002d73] text-white text-[13px] font-semibold px-5 py-2.5 rounded-lg transition">
-                    Update Password
-                </button>
+                </form>
             </div>
         </div>
     </div>

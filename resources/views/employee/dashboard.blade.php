@@ -198,208 +198,266 @@
 
     <!-- New Request Modal -->
     <div id="requestModal" class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6">
-        <div class="w-full max-w-[385px] sm:max-w-[420px] bg-white rounded-[10px] shadow-2xl overflow-hidden">
+        <div class="w-full max-w-[1280px] bg-white rounded-[18px] shadow-2xl overflow-hidden">
             
-            <!-- Modal Header -->
-            <div class="flex items-center justify-between px-5 pt-4 pb-2">
-                <h2 class="text-[14px] sm:text-[15px] font-semibold text-[#003b95]">New Gate Pass Request</h2>
-                <button onclick="closeRequestModal()" class="text-gray-500 hover:text-black text-[18px] leading-none">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-7 py-6 border-b border-gray-200">
+                <h2 class="text-[26px] font-bold text-[#003b95]">New Gate Pass Request</h2>
+                <button type="button" onclick="closeRequestModal()" class="text-[#98a2b3] hover:text-black text-[28px] leading-none">
                     ×
                 </button>
             </div>
 
-            <!-- Modal Body -->
-            <div class="px-5 pb-4 max-h-[85vh] overflow-y-auto">
-                
-                <!-- Top Grid -->
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                        <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
-                            Gate Pass No. <span class="text-[#9aa8bd]">(Auto-generated)</span>
-                        </label>
-                        <input type="text" value="GP-2026-XXX" disabled
-                            class="w-full h-[34px] rounded-md border border-gray-200 bg-gray-100 px-3 text-[12px] text-gray-400">
+            <!-- Body -->
+            <div class="px-7 py-6 max-h-[78vh] overflow-y-auto">
+                <form class="space-y-6">
+
+                    <!-- Top Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-[14px] font-semibold text-[#243b5a] mb-1">
+                                Gate Pass No.
+                            </label>
+                            <p class="text-[13px] text-[#667085] mb-2">(Auto-generated)</p>
+                            <input
+                                type="text"
+                                value="GP-2026-XXX"
+                                disabled
+                                class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-gray-400 focus:outline-none"
+                            >
+                        </div>
+
+                        <div>
+                            <label class="block text-[14px] font-semibold text-[#243b5a] mb-1">
+                                Name
+                            </label>
+                            <p class="text-[13px] text-[#667085] mb-2">(Current User)</p>
+                            <input
+                                type="text"
+                                value="John Doe"
+                                disabled
+                                class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-gray-400 focus:outline-none"
+                            >
+                        </div>
+
+                        <div>
+                            <label class="block text-[14px] font-semibold text-[#243b5a] mb-1">
+                                Request Date
+                            </label>
+                            <p class="text-[13px] text-[#667085] mb-2">(Auto-filled)</p>
+                            <input
+                                type="date"
+                                value="2026-03-13"
+                                class="w-full h-[46px] rounded-xl border border-blue-200 bg-[#f8fbff] px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                        </div>
+
+                        <div>
+                            <label class="block text-[14px] font-semibold text-[#243b5a] mb-1">
+                                Center/Office
+                            </label>
+                            <p class="text-[13px] text-[#667085] mb-2">(Auto-filled)</p>
+                            <input
+                                type="text"
+                                value="Finance Department"
+                                disabled
+                                class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-gray-400 focus:outline-none"
+                            >
+                        </div>
+
+                        <div>
+                            <label class="block text-[14px] font-semibold text-[#243b5a] mb-1">
+                                Estimated Return Date <span class="text-red-500">*</span>
+                            </label>
+                            <p class="text-[13px] text-transparent mb-2">.</p>
+                            <input
+                                type="date"
+                                class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                        </div>
+
+                        <div>
+                            <label class="block text-[14px] font-semibold text-[#243b5a] mb-1">
+                                Purpose <span class="text-red-500">*</span>
+                            </label>
+                            <p class="text-[13px] text-transparent mb-2">.</p>
+                            <input
+                                type="text"
+                                placeholder="Enter purpose..."
+                                class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                        </div>
                     </div>
 
-                    <div>
-                        <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
-                            Request Date <span class="text-[#9aa8bd]">(Auto-filled)</span>
-                        </label>
-                        <input type="text" value="03/12/2026"
-                            class="w-full h-[34px] rounded-md border border-gray-300 bg-white px-3 text-[12px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-600">
+                    <!-- Destination + Equipment Row -->
+                    <div class="grid grid-cols-1 xl:grid-cols-[1fr_1fr_auto] gap-6 items-end">
+                        <div>
+                            <label class="block text-[16px] font-semibold text-[#243b5a] mb-3">
+                                The items will be brought to <span class="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="Enter destination..."
+                                class="w-full h-[48px] rounded-xl border border-gray-300 bg-white px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                        </div>
+
+                        <div>
+                            <label class="block text-[16px] font-semibold text-[#243b5a] mb-3">
+                                Selected Equipment (0 items)
+                            </label>
+                            <select class="w-full h-[48px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-[#667085] focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                <option>Select Equipment</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <button
+                                type="button"
+                                class="h-[48px] px-7 rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold flex items-center gap-3 transition">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Add</span>
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                        <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
-                            Estimated Return Date <span class="text-red-500">*</span>
-                        </label>
-                        <input type="date"
-                            class="w-full h-[34px] rounded-md border border-gray-200 bg-gray-100 px-3 text-[12px] text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-600">
+                    <!-- Empty Equipment Box -->
+                    <div class="border border-gray-200 rounded-2xl bg-[#fbfcfe] h-[155px] flex items-center justify-center text-[18px] text-[#98a2b3]">
+                        No equipment selected
                     </div>
 
-                    <div>
-                        <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
-                            Center/Office <span class="text-[#9aa8bd]">(Auto-filled)</span>
-                        </label>
-                        <input type="text" value="Finance Department" disabled
-                            class="w-full h-[34px] rounded-md border border-gray-200 bg-gray-100 px-3 text-[12px] text-gray-400">
-                    </div>
-                </div>
+                    <!-- Footer -->
+                    <div class="border-t border-gray-200 pt-7 flex justify-end gap-4">
+                        <button
+                            type="button"
+                            onclick="closeRequestModal()"
+                            class="px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[16px] font-semibold text-black hover:bg-gray-50 transition">
+                            Cancel
+                        </button>
 
-                <div class="mb-3">
-                    <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
-                        Name <span class="text-[#9aa8bd]">(Current User)</span>
-                    </label>
-                    <input type="text" value="John Doe" disabled
-                        class="w-full h-[34px] rounded-md border border-gray-200 bg-gray-100 px-3 text-[12px] text-gray-400">
-                </div>
-
-                <div class="mb-3">
-                    <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
-                        Purpose <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" placeholder="Enter purpose..."
-                        class="w-full h-[34px] rounded-md border border-gray-200 bg-gray-100 px-3 text-[12px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600">
-                </div>
-
-                <div class="mb-3">
-                    <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
-                        The items will be brought to <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" placeholder="Enter destination..."
-                        class="w-full h-[34px] rounded-md border border-gray-200 bg-gray-100 px-3 text-[12px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600">
-                </div>
-
-                <div class="mb-2">
-                    <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
-                        Selected Equipment (0 items)
-                    </label>
-
-                    <div class="flex gap-2">
-                        <select class="flex-1 h-[34px] rounded-md border border-gray-300 bg-white px-3 text-[12px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-600">
-                            <option>Select Equipment</option>
-                            <option>Laptop - Dell</option>
-                            <option>Projector - Epson</option>
-                            <option>Printer - HP</option>
-                        </select>
-
-                        <button type="button" class="h-[34px] px-4 rounded-md bg-[#003b95] text-white text-[12px] font-semibold hover:bg-[#002d73] flex items-center gap-2">
-                            <i class="fa-solid fa-plus text-[11px]"></i>
-                            Add
+                        <button
+                            type="submit"
+                            class="px-10 h-[46px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition">
+                            Submit Request
                         </button>
                     </div>
-                </div>
-
-                <div class="mb-3 border border-gray-200 rounded-md h-[64px] flex items-center justify-center text-[12px] text-gray-400 bg-white">
-                    No equipment selected
-                </div>
-
-                <div class="mb-3">
-                    <label class="block text-[12px] font-medium text-[#2b3d57] mb-1">
-                        Remarks
-                    </label>
-                    <textarea rows="3" placeholder="Enter any additional notes or remarks..."
-                        class="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-[12px] text-gray-700 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-1 focus:ring-blue-600"></textarea>
-                </div>
-
-                <!-- Footer Buttons -->
-                <div class="border-t border-gray-200 pt-3 flex gap-2">
-                    <button type="button" onclick="closeRequestModal()" class="flex-1 h-[36px] rounded-md border border-gray-300 bg-white text-[12px] font-semibold text-gray-700 hover:bg-gray-50">
-                        Cancel
-                    </button>
-
-                    <button type="button" class="flex-1 h-[36px] rounded-md bg-[#7f99c7] text-white text-[12px] font-semibold hover:bg-[#6f8bbc]">
-                        Submit Request
-                    </button>
-                </div>
+                </form>
             </div>
         </div>
     </div>
 
     <!-- Profile Modal -->
     <div id="profileModal" class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6">
-        <div class="w-full max-w-[460px] bg-white rounded-[10px] shadow-2xl overflow-hidden">
+        <div class="w-full max-w-[1100px] bg-white rounded-[18px] shadow-2xl overflow-hidden">
             
             <!-- Header -->
-            <div class="bg-[#003b95] px-5 py-4 flex items-center justify-between">
-                <h2 class="text-white text-[15px] sm:text-[16px] font-semibold">User Profile</h2>
-                <button type="button" onclick="closeProfileModal()" class="text-white text-[20px] leading-none hover:opacity-80">
+            <div class="flex items-center justify-between px-7 py-6 border-b border-gray-200">
+                <h2 class="text-[26px] font-bold text-[#003b95]">User Profile</h2>
+                <button type="button" onclick="closeProfileModal()" class="text-[#98a2b3] hover:text-black text-[28px] leading-none">
                     ×
                 </button>
             </div>
 
             <!-- Body -->
-            <div class="px-5 py-6 max-h-[85vh] overflow-y-auto">
+            <div class="px-7 py-6 max-h-[78vh] overflow-y-auto">
+                <form class="space-y-8">
 
-                <div class="mb-6">
-                    <h3 class="text-[#003b95] text-[14px] font-semibold mb-3">Profile Information</h3>
+                    <!-- Profile Information -->
+                    <div>
+                        <h3 class="text-[18px] font-semibold text-[#003b95] mb-5">Profile Information</h3>
 
-                    <div class="mb-4">
-                        <label class="block text-[13px] text-[#1f3552] mb-2">Full Name</label>
-                        <input
-                            type="text"
-                            value="Admin User"
-                            class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                        >
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <div>
+                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Full Name
+                                </label>
+                                <input
+                                    type="text"
+                                    value="John Doe"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Center/Office
+                                </label>
+                                <input
+                                    type="text"
+                                    value="Finance Department"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Email Address
+                                </label>
+                                <input
+                                    type="email"
+                                    value="employee@dap.com"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-[13px] text-[#1f3552] mb-2">Center/Office</label>
-                        <input
-                            type="text"
-                            value="Logistic Division"
-                            class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                        >
+                    <!-- Change Password -->
+                    <div>
+                        <h3 class="text-[18px] font-semibold text-[#003b95] mb-5">Change Password</h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <div>
+                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Current Password
+                                </label>
+                                <input
+                                    type="password"
+                                    placeholder="Enter current password"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    New Password
+                                </label>
+                                <input
+                                    type="password"
+                                    placeholder="Enter new password"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Confirm New Password
+                                </label>
+                                <input
+                                    type="password"
+                                    placeholder="Confirm new password"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-[13px] text-[#1f3552] mb-2">Email Address</label>
-                        <input
-                            type="email"
-                            value="admin@dap.com"
-                            class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                        >
+                    <!-- Footer -->
+                    <div class="border-t border-gray-200 pt-7 flex justify-end gap-4">
+                        <button
+                            type="button"
+                            onclick="closeProfileModal()"
+                            class="px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[16px] font-semibold text-black hover:bg-gray-50 transition">
+                            Cancel
+                        </button>
+
+                        <button
+                            type="submit"
+                            class="px-10 h-[46px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition">
+                            Update Profile
+                        </button>
                     </div>
-                </div>
-
-                <div class="mb-2">
-                    <h3 class="text-[#003b95] text-[14px] font-semibold mb-3">Change Password</h3>
-
-                    <div class="mb-4">
-                        <label class="block text-[13px] text-[#1f3552] mb-2">Current Password</label>
-                        <input
-                            type="password"
-                            placeholder="Enter current password"
-                            class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                        >
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-[13px] text-[#1f3552] mb-2">New Password</label>
-                        <input
-                            type="password"
-                            placeholder="Enter new password"
-                            class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                        >
-                    </div>
-
-                    <div class="mb-5">
-                        <label class="block text-[13px] text-[#1f3552] mb-2">Confirm New Password</label>
-                        <input
-                            type="password"
-                            placeholder="Confirm new password"
-                            class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                        >
-                    </div>
-                </div>
-
-                <button
-                    type="button"
-                    class="bg-[#003b95] hover:bg-[#002d73] text-white text-[13px] font-semibold px-5 py-2.5 rounded-lg transition">
-                    Update Password
-                </button>
+                </form>
             </div>
         </div>
     </div>
