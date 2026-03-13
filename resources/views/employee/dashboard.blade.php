@@ -103,6 +103,8 @@
 
             <!-- Content Area -->
             <section class="px-10 py-10">
+            <!-- DASHBOARD SECTION -->
+            <div id="dashboardSection">
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-7">
                     <div class="bg-white rounded-[22px] border border-black/10 p-8 relative overflow-hidden">
                         <div class="absolute top-0 left-0 w-[5px] h-full bg-[#003b95]"></div>
@@ -129,7 +131,6 @@
                     </div>
                 </div>
 
-                <!-- Filter -->
                 <div class="flex flex-wrap items-center gap-4 mb-7">
                     <div class="flex items-center gap-3 text-[#003b95] font-semibold text-[18px]">
                         <i class="fa-solid fa-filter text-[22px]"></i>
@@ -153,42 +154,40 @@
                     </button>
                 </div>
 
-                <!-- My Requests Card Placeholder -->
                 <div class="bg-white rounded-[22px] border border-black/10 min-h-[330px] px-8 py-8">
                     <h3 class="text-[22px] font-semibold text-[#003b95] mb-2">My Requests</h3>
                     <p class="text-[18px] text-[#6b7280] mb-10">2 requests found</p>
 
-                    <!-- Dynamic content will go here later -->
                     <div class="h-[180px] flex items-center justify-center border border-dashed border-gray-300 rounded-2xl">
                         <p class="text-gray-400 text-[18px]">Dynamic request list will be placed here</p>
                     </div>
                 </div>
+            </div>
 
-                <!-- HISTORY SECTION -->
-                <div id="historySection" class="hidden">
-                    <div class="bg-white rounded-[20px] border border-gray-200 overflow-hidden">
+            <!-- HISTORY SECTION -->
+            <div id="historySection" class="hidden">
+                <div class="bg-white rounded-[20px] border border-gray-200 overflow-hidden">
 
-                        <div class="px-8 py-6 border-b border-gray-200">
-                            <h3 class="text-[22px] font-semibold text-[#003b95]">Request History</h3>
-                        </div>
+                    <div class="px-8 py-6 border-b border-gray-200">
+                        <h3 class="text-[22px] font-semibold text-[#003b95]">Request History</h3>
+                    </div>
 
-                        <div class="grid grid-cols-12 px-8 py-5 border-b border-gray-200 text-[15px] font-semibold text-[#425b78] uppercase tracking-wide">
-                            <div class="col-span-2">Gate Pass No.</div>
-                            <div class="col-span-6">Equipment</div>
-                            <div class="col-span-2">Date</div>
-                            <div class="col-span-2">Status</div>
-                        </div>
+                    <div class="grid grid-cols-12 px-8 py-5 border-b border-gray-200 text-[15px] font-semibold text-[#425b78] uppercase tracking-wide">
+                        <div class="col-span-2">Gate Pass No.</div>
+                        <div class="col-span-6">Equipment</div>
+                        <div class="col-span-2">Date</div>
+                        <div class="col-span-2">Status</div>
+                    </div>
 
-                        <!-- Dynamic rows will go here later -->
-                        <div id="historyList"></div>
+                    <div id="historyList"></div>
 
-                        <!-- Empty state for now -->
-                        <div id="emptyHistory" class="py-16 text-center text-gray-400 text-[18px]">
-                            No request history yet.
-                        </div>
+                    <div id="emptyHistory" class="py-16 text-center text-gray-400 text-[18px]">
+                        No request history yet.
                     </div>
                 </div>
-            </section>
+            </div>
+
+        </section>
         </main>
     </div>
 
