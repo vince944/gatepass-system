@@ -95,7 +95,7 @@
                         <span>New Request</span>
                     </button>
 
-                    <button class="w-[50px] h-[50px] rounded-full bg-[#003b95] text-white flex items-center justify-center text-[24px]">
+                    <button onclick="openProfileModal()" class="w-[50px] h-[50px] rounded-full bg-[#003b95] text-white flex items-center justify-center text-[24px]">
                         <i class="fa-regular fa-user"></i>
                     </button>
                 </div>
@@ -318,6 +318,92 @@
         </div>
     </div>
 
+    <!-- Profile Modal -->
+    <div id="profileModal" class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6">
+        <div class="w-full max-w-[460px] bg-white rounded-[10px] shadow-2xl overflow-hidden">
+            
+            <!-- Header -->
+            <div class="bg-[#003b95] px-5 py-4 flex items-center justify-between">
+                <h2 class="text-white text-[15px] sm:text-[16px] font-semibold">User Profile</h2>
+                <button type="button" onclick="closeProfileModal()" class="text-white text-[20px] leading-none hover:opacity-80">
+                    ×
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="px-5 py-6 max-h-[85vh] overflow-y-auto">
+
+                <div class="mb-6">
+                    <h3 class="text-[#003b95] text-[14px] font-semibold mb-3">Profile Information</h3>
+
+                    <div class="mb-4">
+                        <label class="block text-[13px] text-[#1f3552] mb-2">Full Name</label>
+                        <input
+                            type="text"
+                            value="Admin User"
+                            class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                        >
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-[13px] text-[#1f3552] mb-2">Center/Office</label>
+                        <input
+                            type="text"
+                            value="Logistic Division"
+                            class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                        >
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-[13px] text-[#1f3552] mb-2">Email Address</label>
+                        <input
+                            type="email"
+                            value="admin@dap.com"
+                            class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                        >
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <h3 class="text-[#003b95] text-[14px] font-semibold mb-3">Change Password</h3>
+
+                    <div class="mb-4">
+                        <label class="block text-[13px] text-[#1f3552] mb-2">Current Password</label>
+                        <input
+                            type="password"
+                            placeholder="Enter current password"
+                            class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                        >
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-[13px] text-[#1f3552] mb-2">New Password</label>
+                        <input
+                            type="password"
+                            placeholder="Enter new password"
+                            class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                        >
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="block text-[13px] text-[#1f3552] mb-2">Confirm New Password</label>
+                        <input
+                            type="password"
+                            placeholder="Confirm new password"
+                            class="w-full h-[40px] rounded-lg border border-gray-300 bg-gray-50 px-4 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                        >
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    class="bg-[#003b95] hover:bg-[#002d73] text-white text-[13px] font-semibold px-5 py-2.5 rounded-lg transition">
+                    Update Password
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
 
         const navDashboard = document.getElementById('navDashboard');
@@ -391,19 +477,41 @@
         }
 
         window.addEventListener('click', function(e) {
+            const requestModal = document.getElementById('requestModal');
+            const profileModal = document.getElementById('profileModal');
 
-            const modal = document.getElementById('requestModal');
-
-            if (e.target === modal) {
+            if (requestModal && e.target === requestModal) {
                 closeRequestModal();
             }
 
+            if (profileModal && e.target === profileModal) {
+                closeProfileModal();
+            }
         });
-
 
         document.addEventListener('DOMContentLoaded', function () {
             showDashboardSection();
         });
+
+        function openProfileModal() {
+            const modal = document.getElementById('profileModal');
+            if (!modal) return;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeProfileModal() {
+            const modal = document.getElementById('profileModal');
+            if (!modal) return;
+
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            document.body.classList.remove('overflow-hidden');
+        }
     </script>
 
 </body>
