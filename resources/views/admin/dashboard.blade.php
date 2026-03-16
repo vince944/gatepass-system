@@ -146,7 +146,7 @@
                                     <tr class="border-b border-gray-200">
                                         <th class="text-left px-8 py-6 text-[16px] font-semibold text-[#4b6790] uppercase">Gate Pass No</th>
                                         <th class="text-left px-8 py-6 text-[16px] font-semibold text-[#4b6790] uppercase">Employee</th>
-                                        <th class="text-left px-8 py-6 text-[16px] font-semibold text-[#4b6790] uppercase">Office</th>
+                                        <th class="text-left px-8 py-6 text-[16px] font-semibold text-[#4b6790] uppercase">Center</th>
                                         <th class="text-left px-8 py-6 text-[16px] font-semibold text-[#4b6790] uppercase">Items</th>
                                         <th class="text-left px-8 py-6 text-[16px] font-semibold text-[#4b6790] uppercase">Request Date</th>
                                         <th class="text-left px-8 py-6 text-[16px] font-semibold text-[#4b6790] uppercase">Status</th>

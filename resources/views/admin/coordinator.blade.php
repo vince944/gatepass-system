@@ -206,7 +206,7 @@
 
                                 <div>
                                     <label class="block text-[14px] font-semibold text-black mb-2">Actions</label>
-                                    <button class="w-full h-[42px] rounded-xl bg-[#f6b400] hover:bg-[#e5a900] text-[#003b95] font-semibold text-[16px] flex items-center justify-center gap-3 transition">
+                                    <button id="openAddItemModal" type="button" class="w-full h-[42px] rounded-xl bg-[#f6b400] hover:bg-[#e5a900] text-[#003b95] font-semibold text-[16px] flex items-center justify-center gap-3 transition">
                                         <i class="fa-solid fa-plus"></i>
                                         <span>Add Item</span>
                                     </button>
@@ -243,136 +243,345 @@
                     </div>
                 </div>
 
+                <!-- Add Item Modal -->
+                <div id="addItemModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6">
+                    <div class="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden">
+                        
+                        <!-- Modal Header -->
+                        <div class="bg-[#003b95] px-6 py-4 flex items-start justify-between">
+                            <div>
+                                <h3 class="text-white text-[22px] font-bold leading-tight">Add New Equipment</h3>
+                                <p class="text-white/80 text-[14px] mt-1">Add equipment item details</p>
+                            </div>
+                            <button id="closeAddItemModal" type="button" class="text-white text-[22px] hover:text-white/80 transition">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <!-- Modal Body -->
+                        <form class="max-h-[75vh] overflow-y-auto px-6 py-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+
+                                <!-- Property Number -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Property Number <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" name="property_number" placeholder="Enter property number"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                                <!-- Account Code -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Account Code <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" name="account_code" placeholder="Enter account code"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                                <!-- PN old -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        PN (old)
+                                    </label>
+                                    <input type="text" name="pn_old" placeholder="Enter old PN"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                                <!-- PN Code old -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        PN Code (old)
+                                    </label>
+                                    <input type="text" name="pn_code_old" placeholder="Enter old PN code"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                                <!-- MRR -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        MRR
+                                    </label>
+                                    <input type="text" name="mrr" placeholder="Enter MRR"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                                <!-- Unit Cost -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Unit Cost
+                                    </label>
+                                    <input type="number" step="0.01" name="unit_cost" placeholder="Enter unit cost"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                                <!-- Center -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Center
+                                    </label>
+                                    <select name="center"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                        <option value="">Select center</option>
+                                        <option value="ICTD">ICTD</option>
+                                        <option value="HR">HR</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="Admin">Admin</option>
+                                    </select>
+                                </div>
+
+                                <!-- Status -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Status
+                                    </label>
+                                    <select name="status"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                        <option value="">Select status</option>
+                                        <option value="Available">Available</option>
+                                        <option value="In Use">In Use</option>
+                                        <option value="Defective">Defective</option>
+                                        <option value="Disposed">Disposed</option>
+                                    </select>
+                                </div>
+
+                                <!-- End User -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        End User
+                                    </label>
+                                    <input type="text" name="end_user" placeholder="Enter end user name"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                                <!-- Accountability -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Accountability
+                                    </label>
+                                    <select name="accountability"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                        <option value="">Select accountability</option>
+                                        <option value="Accountable">Accountable</option>
+                                        <option value="Unaccountable">Unaccountable</option>
+                                    </select>
+                                </div>
+
+                                <!-- Remarks -->
+                                <div class="md:col-span-2">
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Remarks
+                                    </label>
+                                    <input type="text" name="remarks" placeholder="Enter remarks"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200">
+                                <button id="cancelAddItemModal" type="button"
+                                    class="px-5 h-[42px] rounded-xl border border-gray-300 text-[14px] font-medium text-black hover:bg-gray-50 transition">
+                                    Cancel
+                                </button>
+                                <button type="submit"
+                                    class="px-5 h-[42px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[14px] font-semibold flex items-center gap-2 transition">
+                                    <i class="fa-solid fa-plus"></i>
+                                    <span>Add Equipment</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
             </section>
         </main>
     </div>
 
     <script>
-        const navDashboard = document.getElementById('navDashboard');
-        const navInventoryPortal = document.getElementById('navInventoryPortal');
+    const navDashboard = document.getElementById('navDashboard');
+    const navInventoryPortal = document.getElementById('navInventoryPortal');
 
-        const dashboardSection = document.getElementById('dashboardSection');
-        const inventoryPortalSection = document.getElementById('inventoryPortalSection');
+    const dashboardSection = document.getElementById('dashboardSection');
+    const inventoryPortalSection = document.getElementById('inventoryPortalSection');
 
-        const pageTitle = document.getElementById('pageTitle');
-        const pageSubtitle = document.getElementById('pageSubtitle');
+    const pageTitle = document.getElementById('pageTitle');
+    const pageSubtitle = document.getElementById('pageSubtitle');
 
-        const cardAccountable = document.getElementById('cardAccountable');
-        const cardUnaccountable = document.getElementById('cardUnaccountable');
-        const cardTotal = document.getElementById('cardTotal');
+    const cardAccountable = document.getElementById('cardAccountable');
+    const cardUnaccountable = document.getElementById('cardUnaccountable');
+    const cardTotal = document.getElementById('cardTotal');
 
-        const tableTitle = document.getElementById('tableTitle');
-        const tableDescription = document.getElementById('tableDescription');
-        const tableFooterText = document.getElementById('tableFooterText');
-        const emptyState = document.getElementById('emptyState');
+    const tableTitle = document.getElementById('tableTitle');
+    const tableDescription = document.getElementById('tableDescription');
+    const tableFooterText = document.getElementById('tableFooterText');
+    const emptyState = document.getElementById('emptyState');
 
-        const tbodyAccountable = document.getElementById('tbodyAccountable');
-        const tbodyUnaccountable = document.getElementById('tbodyUnaccountable');
-        const tbodyTotal = document.getElementById('tbodyTotal');
+    const tbodyAccountable = document.getElementById('tbodyAccountable');
+    const tbodyUnaccountable = document.getElementById('tbodyUnaccountable');
+    const tbodyTotal = document.getElementById('tbodyTotal');
 
-        function activateSidebar(activeBtn, inactiveBtn) {
-            activeBtn.classList.add('bg-[#47698f]', 'text-white');
-            activeBtn.classList.remove('text-white/90', 'hover:bg-white/10');
+    // Add Item Modal
+    const openAddItemModal = document.getElementById('openAddItemModal');
+    const addItemModal = document.getElementById('addItemModal');
+    const closeAddItemModal = document.getElementById('closeAddItemModal');
+    const cancelAddItemModal = document.getElementById('cancelAddItemModal');
+    const currentDateField = document.getElementById('currentDateField');
 
-            inactiveBtn.classList.remove('bg-[#47698f]', 'text-white');
-            inactiveBtn.classList.add('text-white/90', 'hover:bg-white/10');
-        }
+    function activateSidebar(activeBtn, inactiveBtn) {
+        activeBtn.classList.add('bg-[#47698f]', 'text-white');
+        activeBtn.classList.remove('text-white/90', 'hover:bg-white/10');
 
-        function resetCards() {
-            [cardAccountable, cardUnaccountable, cardTotal].forEach(card => {
-                card.classList.remove('border-2', 'border-[#2f73ff]');
-                card.classList.add('border', 'border-gray-200');
-            });
-        }
+        inactiveBtn.classList.remove('bg-[#47698f]', 'text-white');
+        inactiveBtn.classList.add('text-white/90', 'hover:bg-white/10');
+    }
 
-        function hideAllTables() {
-            tbodyAccountable.classList.add('hidden');
-            tbodyUnaccountable.classList.add('hidden');
-            tbodyTotal.classList.add('hidden');
-        }
-
-        function showEmptyState(message = 'No inventory data available yet.') {
-            emptyState.textContent = message;
-            emptyState.classList.remove('hidden');
-        }
-
-        function showDashboardSection() {
-            dashboardSection.classList.remove('hidden');
-            inventoryPortalSection.classList.add('hidden');
-
-            pageTitle.textContent = 'Dashboard';
-            pageSubtitle.textContent = 'List of Inventory';
-
-            activateSidebar(navDashboard, navInventoryPortal);
-            showAccountable();
-        }
-
-        function showInventoryPortalSection() {
-            dashboardSection.classList.add('hidden');
-            inventoryPortalSection.classList.remove('hidden');
-
-            pageTitle.textContent = 'Inventory Portal';
-            pageSubtitle.textContent = 'Manage all equipment inventory';
-
-            activateSidebar(navInventoryPortal, navDashboard);
-        }
-
-        function showAccountable() {
-            resetCards();
-            hideAllTables();
-
-            cardAccountable.classList.remove('border', 'border-gray-200');
-            cardAccountable.classList.add('border-2', 'border-[#2f73ff]');
-            tbodyAccountable.classList.remove('hidden');
-
-            tableTitle.textContent = 'Accountable Equipment';
-            tableDescription.textContent = 'Showing 0 accountable items';
-            tableFooterText.textContent = 'Showing 0 to 0 of 0 items';
-
-            showEmptyState('No accountable equipment available yet.');
-        }
-
-        function showUnaccountable() {
-            resetCards();
-            hideAllTables();
-
-            cardUnaccountable.classList.remove('border', 'border-gray-200');
-            cardUnaccountable.classList.add('border-2', 'border-[#2f73ff]');
-            tbodyUnaccountable.classList.remove('hidden');
-
-            tableTitle.textContent = 'Unaccountable Equipment';
-            tableDescription.textContent = 'Showing 0 unaccountable items';
-            tableFooterText.textContent = 'Showing 0 to 0 of 0 items';
-
-            showEmptyState('No unaccountable equipment available yet.');
-        }
-
-        function showTotal() {
-            resetCards();
-            hideAllTables();
-
-            cardTotal.classList.remove('border', 'border-gray-200');
-            cardTotal.classList.add('border-2', 'border-[#2f73ff]');
-            tbodyTotal.classList.remove('hidden');
-
-            tableTitle.textContent = 'Total Inventory Items';
-            tableDescription.textContent = 'Showing 0 total items';
-            tableFooterText.textContent = 'Showing 0 to 0 of 0 items';
-
-            showEmptyState('No inventory items available yet.');
-        }
-
-        navDashboard.addEventListener('click', showDashboardSection);
-        navInventoryPortal.addEventListener('click', showInventoryPortalSection);
-
-        cardAccountable.addEventListener('click', showAccountable);
-        cardUnaccountable.addEventListener('click', showUnaccountable);
-        cardTotal.addEventListener('click', showTotal);
-
-        document.addEventListener('DOMContentLoaded', function () {
-            showDashboardSection();
+    function resetCards() {
+        [cardAccountable, cardUnaccountable, cardTotal].forEach(card => {
+            card.classList.remove('border-2', 'border-[#2f73ff]');
+            card.classList.add('border', 'border-gray-200');
         });
-    </script>
+    }
+
+    function hideAllTables() {
+        tbodyAccountable.classList.add('hidden');
+        tbodyUnaccountable.classList.add('hidden');
+        tbodyTotal.classList.add('hidden');
+    }
+
+    function showEmptyState(message = 'No inventory data available yet.') {
+        emptyState.textContent = message;
+        emptyState.classList.remove('hidden');
+    }
+
+    function setFooterText(message) {
+        if (tableFooterText) {
+            tableFooterText.textContent = message;
+        }
+    }
+
+    function showDashboardSection() {
+        dashboardSection.classList.remove('hidden');
+        inventoryPortalSection.classList.add('hidden');
+
+        pageTitle.textContent = 'Dashboard';
+        pageSubtitle.textContent = 'List of Inventory';
+
+        activateSidebar(navDashboard, navInventoryPortal);
+        showAccountable();
+    }
+
+    function showInventoryPortalSection() {
+        dashboardSection.classList.add('hidden');
+        inventoryPortalSection.classList.remove('hidden');
+
+        pageTitle.textContent = 'Inventory Portal';
+        pageSubtitle.textContent = 'Manage all equipment inventory';
+
+        activateSidebar(navInventoryPortal, navDashboard);
+    }
+
+    function showAccountable() {
+        resetCards();
+        hideAllTables();
+
+        cardAccountable.classList.remove('border', 'border-gray-200');
+        cardAccountable.classList.add('border-2', 'border-[#2f73ff]');
+        tbodyAccountable.classList.remove('hidden');
+
+        tableTitle.textContent = 'Accountable Equipment';
+        tableDescription.textContent = 'Showing 0 accountable items';
+        setFooterText('Showing 0 to 0 of 0 items');
+
+        showEmptyState('No accountable equipment available yet.');
+    }
+
+    function showUnaccountable() {
+        resetCards();
+        hideAllTables();
+
+        cardUnaccountable.classList.remove('border', 'border-gray-200');
+        cardUnaccountable.classList.add('border-2', 'border-[#2f73ff]');
+        tbodyUnaccountable.classList.remove('hidden');
+
+        tableTitle.textContent = 'Unaccountable Equipment';
+        tableDescription.textContent = 'Showing 0 unaccountable items';
+        setFooterText('Showing 0 to 0 of 0 items');
+
+        showEmptyState('No unaccountable equipment available yet.');
+    }
+
+    function showTotal() {
+        resetCards();
+        hideAllTables();
+
+        cardTotal.classList.remove('border', 'border-gray-200');
+        cardTotal.classList.add('border-2', 'border-[#2f73ff]');
+        tbodyTotal.classList.remove('hidden');
+
+        tableTitle.textContent = 'Total Inventory Items';
+        tableDescription.textContent = 'Showing 0 total items';
+        setFooterText('Showing 0 to 0 of 0 items');
+
+        showEmptyState('No inventory items available yet.');
+    }
+
+    function setTodayDate() {
+        if (!currentDateField) return;
+
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        currentDateField.value = `${year}-${month}-${day}`;
+    }
+
+    function openModal() {
+        if (!addItemModal) return;
+        addItemModal.classList.remove('hidden');
+        addItemModal.classList.add('flex');
+        setTodayDate();
+    }
+
+    function closeModal() {
+        if (!addItemModal) return;
+        addItemModal.classList.add('hidden');
+        addItemModal.classList.remove('flex');
+    }
+
+    navDashboard.addEventListener('click', showDashboardSection);
+    navInventoryPortal.addEventListener('click', showInventoryPortalSection);
+
+    cardAccountable.addEventListener('click', showAccountable);
+    cardUnaccountable.addEventListener('click', showUnaccountable);
+    cardTotal.addEventListener('click', showTotal);
+
+    if (openAddItemModal) {
+        openAddItemModal.addEventListener('click', openModal);
+    }
+
+    if (closeAddItemModal) {
+        closeAddItemModal.addEventListener('click', closeModal);
+    }
+
+    if (cancelAddItemModal) {
+        cancelAddItemModal.addEventListener('click', closeModal);
+    }
+
+    if (addItemModal) {
+        addItemModal.addEventListener('click', function (e) {
+            if (e.target === addItemModal) {
+                closeModal();
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        showDashboardSection();
+        setTodayDate();
+    });
+</script>
 
 </body>
 </html>
