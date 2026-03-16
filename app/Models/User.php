@@ -10,6 +10,11 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
+
+    public function profile()
+    {
+        return $this->hasOne(EmployeeProfile::class);
+    }
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 

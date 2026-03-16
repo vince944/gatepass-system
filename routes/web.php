@@ -1,7 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\CoordinatorController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -33,6 +34,14 @@ Route::get('/admin/dashboard', function () {
     return view('admin.dashboard');
 })->middleware('auth');
 
-Route::get('/coordinator/dashboard', function () {
-    return view('admin.coordinator');
-})->middleware('auth');
+Route::get('/coordinator/dashboard', [CoordinatorController::class, 'index'])
+    ->middleware('auth')
+    ->name('admin.coordinator.index');
+
+Route::post('/coordinator/items', [CoordinatorController::class, 'storeItem'])
+    ->middleware('auth')
+    ->name('admin.coordinator.items.store');
+
+Route::delete('/coordinator/items/{propno}', [CoordinatorController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('admin.coordinator.items.destroy');
