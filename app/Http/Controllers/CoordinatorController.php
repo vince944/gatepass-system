@@ -3,42 +3,51 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
-use App\Models\MasterProperty;
+use App\Models\Inventory;
+use App\Models\InventoryEndUserHistory;
+use App\Models\InventoryPropNoHistory;
+use App\Models\InventoryRemarksHistory;
+use App\Models\InventoryUnitCostHistory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CoordinatorController extends Controller
 {
     public function index(Request $request): View|JsonResponse
     {
-        $accountableCount = MasterProperty::query()
-            ->whereNotNull('accountable_employee_id')
+        $accountableCount = Inventory::query()
+            ->whereNotNull('employee_id')
             ->count();
 
-        $unaccountableCount = MasterProperty::query()
-            ->whereNull('accountable_employee_id')
+        $unaccountableCount = Inventory::query()
+            ->whereNull('employee_id')
             ->count();
 
-        $totalCount = MasterProperty::query()->count();
+        $totalCount = Inventory::query()->count();
 
-        $dashboardAccountableItems = MasterProperty::query()
-            ->with('accountableEmployee')
-            ->whereNotNull('accountable_employee_id')
-            ->orderBy('propno')
+        $baseDashboardQuery = Inventory::query()
+            ->with(['employee', 'currentPropNo', 'currentUnitCost', 'currentEndUser', 'currentRemarks'])
+            ->orderBy(
+                InventoryPropNoHistory::query()
+                    ->select('prop_no')
+                    ->whereColumn('inventory_id', 'inventory.id')
+                    ->latest()
+                    ->limit(1)
+            );
+
+        $dashboardAccountableItems = (clone $baseDashboardQuery)
+            ->whereNotNull('employee_id')
             ->get();
 
-        $dashboardUnaccountableItems = MasterProperty::query()
-            ->with('accountableEmployee')
-            ->whereNull('accountable_employee_id')
-            ->orderBy('propno')
+        $dashboardUnaccountableItems = (clone $baseDashboardQuery)
+            ->whereNull('employee_id')
             ->get();
 
-        $dashboardTotalItems = MasterProperty::query()
-            ->with('accountableEmployee')
-            ->orderBy('propno')
-            ->get();
+        $dashboardTotalItems = (clone $baseDashboardQuery)->get();
 
         $employees = Employee::with('user')
             ->orderBy('employee_id')
@@ -57,18 +66,21 @@ class CoordinatorController extends Controller
         $items = collect();
 
         if ($selectedEmployeeId !== null) {
-            $items = MasterProperty::query()
-                ->with('accountableEmployee')
-                ->where('accountable_employee_id', $selectedEmployeeId)
+            $items = Inventory::query()
+                ->with(['employee', 'currentPropNo', 'currentUnitCost', 'currentEndUser', 'currentRemarks'])
+                ->where('employee_id', $selectedEmployeeId)
                 ->when($search, function ($query, $search) {
-                    $query->where(function ($innerQuery) use ($search) {
-                        $innerQuery
-                            ->where('propno', 'like', '%'.$search.'%')
-                            ->orWhere('description', 'like', '%'.$search.'%')
-                            ->orWhere('serialno', 'like', '%'.$search.'%');
+                    $query->whereHas('currentPropNo', function ($propQuery) use ($search) {
+                        $propQuery->where('prop_no', 'like', '%'.$search.'%');
                     });
                 })
-                ->orderBy('propno')
+                ->orderBy(
+                    InventoryPropNoHistory::query()
+                        ->select('prop_no')
+                        ->whereColumn('inventory_id', 'inventory.id')
+                        ->latest()
+                        ->limit(1)
+                )
                 ->get();
         }
 
@@ -95,51 +107,228 @@ class CoordinatorController extends Controller
         ]);
     }
 
-    public function storeItem(Request $request): RedirectResponse
+    public function storeItem(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'employee_id' => ['required', 'string'],
-            'property_number' => ['required', 'string', 'unique:master_property,propno'],
-            'rca_acctcode' => ['required', 'string'],
-            'description' => ['required', 'string'],
-            'serialno' => ['nullable', 'string'],
+            'property_number' => ['required', 'string', 'max:8', 'unique:inventory_propno_history,prop_no'],
+            'rca_acctcode' => ['required', 'string', 'max:10'],
+            'description' => ['required', 'string', 'max:500'],
+            'serialno' => ['nullable', 'string', 'max:30'],
             'status' => ['required', 'string'],
             'unit_cost' => ['required', 'numeric'],
             'accountability' => ['required', 'string'],
+            'pn_old' => ['nullable', 'string', 'max:8'],
+            'pn_code_old' => ['nullable', 'string', 'max:6'],
+            'mrr' => ['nullable', 'string', 'max:9'],
+            'center' => ['nullable', 'string', 'max:20'],
+            'end_user' => ['nullable', 'string', 'max:20'],
+            'remarks' => ['nullable', 'string', 'max:500'],
         ]);
 
         $employeeId = $validated['employee_id'];
+        $employee = Employee::query()->find($employeeId);
 
-        $statusCode = null;
+        $isAccountable = strcasecmp(trim($validated['accountability']), 'Accountable') === 0;
 
-        if (! empty($validated['status'])) {
-            $statusCode = 'A';
-        }
+        $statusCode = match (strtolower(trim($validated['status']))) {
+            'in use' => 'I',
+            'defective', 'disposed' => 'D',
+            default => 'A',
+        };
 
-        MasterProperty::create([
-            'propno' => $validated['property_number'],
-            'rca_acctcode' => $validated['rca_acctcode'],
-            'description' => $validated['description'] ?? null,
-            'serialno' => $validated['serialno'] ?? null,
+        $item = Inventory::create([
+            'employee_id' => $isAccountable ? $employeeId : null,
+            'current_prop_no' => $validated['property_number'],
+            'acct_code' => $validated['rca_acctcode'],
+            'description' => $validated['description'],
+            'serial_no' => $validated['serialno'] ?? null,
             'status' => $statusCode,
-            'unitcost' => $validated['unit_cost'] ?? null,
-            'accountable_employee_id' => $employeeId,
+            'pn_old' => $validated['pn_old'] ?? null,
+            'pn_code_old' => $validated['pn_code_old'] ?? null,
+            'mrr_no' => $validated['mrr'] ?? null,
+            'center' => $validated['center'] ?? null,
+            'accountability' => $validated['accountability'] ?? null,
         ]);
+
+        InventoryPropNoHistory::create([
+            'inventory_id' => $item->id,
+            'prop_no' => $validated['property_number'],
+            'is_current' => true,
+            'changed_at' => now(),
+        ]);
+
+        InventoryUnitCostHistory::create([
+            'inventory_id' => $item->id,
+            'unit_cost' => $validated['unit_cost'],
+        ]);
+
+        $initialEndUser = $validated['end_user'] ?? $employee?->employee_name ?? '';
+
+        InventoryEndUserHistory::create([
+            'inventory_id' => $item->id,
+            'end_user' => $initialEndUser,
+        ]);
+
+        InventoryRemarksHistory::create([
+            'inventory_id' => $item->id,
+            'remark_text' => $validated['remarks'] ?? null,
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Item added successfully.',
+                'inventory_id' => $item->id,
+                'prop_no' => $validated['property_number'],
+            ]);
+        }
 
         return redirect()
             ->route('admin.coordinator.index', ['employee_id' => $employeeId])
             ->with('status', 'Item added successfully.');
     }
 
-    public function destroy(Request $request, string $propno): RedirectResponse
+    public function destroy(Request $request, int $inventory): RedirectResponse|JsonResponse
     {
-        $item = MasterProperty::query()->findOrFail($propno);
+        $item = Inventory::query()->findOrFail($inventory);
         $item->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Item deleted successfully.']);
+        }
 
         $employeeId = $request->input('employee_id');
 
         return redirect()
             ->route('admin.coordinator.index', $employeeId ? ['employee_id' => $employeeId] : [])
             ->with('status', 'Item deleted successfully.');
+    }
+
+    public function updateItem(Request $request, int $inventory): RedirectResponse|JsonResponse
+    {
+        $item = Inventory::query()
+            ->with(['currentPropNo', 'currentUnitCost', 'currentEndUser', 'currentRemarks'])
+            ->findOrFail($inventory);
+
+        $currentPropNo = (string) ($item->prop_no ?? '');
+        $incomingPropNo = (string) trim($request->input('property_number', ''));
+
+        $propNoRules = ['required', 'string', 'max:8'];
+        if ($incomingPropNo !== '' && $incomingPropNo !== $currentPropNo) {
+            $propNoRules[] = Rule::unique('inventory_propno_history', 'prop_no');
+        }
+
+        $validated = $request->validate([
+            'property_number' => $propNoRules,
+            'rca_acctcode' => ['required', 'string', 'max:10'],
+            'description' => ['required', 'string', 'max:500'],
+            'serialno' => ['nullable', 'string', 'max:30'],
+            'status' => ['required', 'string'],
+            'unit_cost' => ['required', 'numeric'],
+            'accountability' => ['required', 'string'],
+            'pn_old' => ['nullable', 'string', 'max:8'],
+            'pn_code_old' => ['nullable', 'string', 'max:6'],
+            'mrr' => ['nullable', 'string', 'max:9'],
+            'center' => ['nullable', 'string', 'max:20'],
+            'end_user' => ['nullable', 'string', 'max:20'],
+            'remarks' => ['nullable', 'string', 'max:500'],
+        ], [
+            'property_number.unique' => 'The property number already exists. Please use a different number.',
+        ]);
+
+        $statusCode = match (strtolower(trim($validated['status']))) {
+            'in use' => 'I',
+            'defective', 'disposed' => 'D',
+            default => 'A',
+        };
+
+        $isAccountable = strcasecmp(trim($validated['accountability']), 'Accountable') === 0;
+        $employeeIdForUpdate = $isAccountable
+            ? ($request->input('employee_id') ?: $item->employee_id)
+            : null;
+
+        $updatePayload = [
+            'employee_id' => $employeeIdForUpdate,
+            'acct_code' => $validated['rca_acctcode'],
+            'description' => $validated['description'],
+            'serial_no' => $validated['serialno'] ?? null,
+            'status' => $statusCode,
+            'pn_old' => $validated['pn_old'] ?? null,
+            'pn_code_old' => $validated['pn_code_old'] ?? null,
+            'mrr_no' => $validated['mrr'] ?? null,
+            'center' => $validated['center'] ?? null,
+            'accountability' => $validated['accountability'] ?? null,
+        ];
+
+        try {
+            DB::transaction(function () use ($item, $validated, $updatePayload, $currentPropNo) {
+                $item->update($updatePayload);
+
+                $incomingPropNo = (string) trim($validated['property_number'] ?? '');
+                if ($incomingPropNo !== $currentPropNo && $incomingPropNo !== '') {
+                    $item->propNoHistory()->where('is_current', true)->update(['is_current' => false]);
+
+                    InventoryPropNoHistory::create([
+                        'inventory_id' => $item->id,
+                        'prop_no' => $incomingPropNo,
+                        'is_current' => true,
+                        'changed_at' => now(),
+                    ]);
+
+                    $item->update(['current_prop_no' => $incomingPropNo]);
+                }
+
+                $currentUnitCost = $item->currentUnitCost?->unit_cost;
+                if ((string) ($validated['unit_cost'] ?? '') !== (string) ($currentUnitCost ?? '')) {
+                    InventoryUnitCostHistory::create([
+                        'inventory_id' => $item->id,
+                        'unit_cost' => $validated['unit_cost'],
+                    ]);
+                }
+
+                $currentEndUser = (string) ($item->currentEndUser?->end_user ?? ($item->employee?->employee_name ?? ''));
+                $incomingEndUser = (string) ($validated['end_user'] ?? $item->employee?->employee_name ?? '');
+                if ($incomingEndUser !== $currentEndUser) {
+                    InventoryEndUserHistory::create([
+                        'inventory_id' => $item->id,
+                        'end_user' => $incomingEndUser,
+                    ]);
+                }
+
+                $currentRemarks = (string) ($item->currentRemarks?->remark_text ?? '');
+                $incomingRemarks = (string) ($validated['remarks'] ?? '');
+                if ($incomingRemarks !== $currentRemarks) {
+                    InventoryRemarksHistory::create([
+                        'inventory_id' => $item->id,
+                        'remark_text' => $validated['remarks'] ?? null,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'message' => 'Update failed. Please try again.',
+                    'error' => config('app.debug') ? $e->getMessage() : null,
+                ], 500);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['update' => 'Update failed. Please try again.']);
+        }
+
+        $updatedItem = $item->fresh(['employee', 'currentPropNo', 'currentUnitCost', 'currentEndUser', 'currentRemarks']);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Equipment updated successfully.',
+                'item' => $updatedItem,
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.coordinator.index', ['employee_id' => $item->employee_id])
+            ->with('status', 'Equipment updated successfully.');
     }
 }

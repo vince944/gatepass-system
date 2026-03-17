@@ -59,6 +59,32 @@
         #formErrorToast.show-form-error-toast {
             animation: formErrorToastAnim 2.6s ease-out forwards;
         }
+
+        @keyframes itemSuccessToastAnim {
+            0% {
+                opacity: 0;
+                transform: translateX(-24px);
+            }
+
+            15% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+
+            70% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateX(-24px);
+            }
+        }
+
+        #itemSuccessToast.show-item-success-toast {
+            animation: itemSuccessToastAnim 2.3s ease-out forwards;
+        }
     </style>
 </head>
 <body class="bg-[#f5f5f5] min-h-screen font-sans">
@@ -99,6 +125,32 @@
                     </div>
                 </div>
 
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteConfirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6">
+            <div id="deleteConfirmCard" class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 transform transition-all duration-150 opacity-0 scale-95">
+                <h3 class="text-[18px] font-semibold text-[#111827] mb-2">Delete equipment?</h3>
+                <p class="text-[14px] text-[#4b5563] mb-5">
+                    This will permanently remove the selected equipment from the inventory for this employee.
+                </p>
+                <div class="flex justify-end gap-3">
+                    <button
+                        type="button"
+                        id="cancelDeleteBtn"
+                        class="px-4 py-2 rounded-lg border border-gray-300 text-[14px] text-[#111827] hover:bg-gray-50 transition"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        id="confirmDeleteBtn"
+                        class="px-4 py-2 rounded-lg bg-red-600 text-white text-[14px] hover:bg-red-700 transition"
+                    >
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+
                 <nav class="px-4 py-4 space-y-3">
                     <button id="navDashboard" type="button"
                         class="w-full flex items-center gap-4 bg-[#47698f] rounded-2xl px-5 py-4 text-[16px] font-semibold text-left text-white">
@@ -133,8 +185,21 @@
 
             <!-- Header -->
             <header class="bg-[#f5f5f5] border-b border-black/10 px-8 py-6">
-                <h2 id="pageTitle" class="text-[22px] md:text-[24px] font-bold text-black leading-none">Dashboard</h2>
-                <p id="pageSubtitle" class="text-[14px] text-[#556b86] mt-2">List of Inventory</p>
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 id="pageTitle" class="text-[22px] md:text-[24px] font-bold text-black leading-none">Dashboard</h2>
+                        <p id="pageSubtitle" class="text-[14px] text-[#556b86] mt-2">List of Inventory</p>
+                    </div>
+
+                    <button
+                        id="openAddItemModal"
+                        type="button"
+                        class="hidden w-[170px] h-[42px] rounded-xl bg-[#f6b400] hover:bg-[#e5a900] text-[#003b95] font-semibold text-[14px] flex items-center justify-center gap-2 transition shrink-0"
+                    >
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add Item</span>
+                    </button>
+                </div>
             </header>
 
             <!-- Content -->
@@ -176,6 +241,11 @@
                                 <h3 id="tableTitle" class="text-[17px] font-semibold text-black">Accountable Equipment</h3>
                                 <p id="tableDescription" class="text-[14px] text-[#667085] mt-1">Showing 0 accountable items</p>
                             </div>
+                            <button id="addEquipmentFromDashboard" type="button"
+                                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#f6b400] hover:bg-[#e5a900] text-[#003b95] font-semibold text-[14px] transition">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Add Equipment</span>
+                            </button>
                         </div>
 
                         <div class="px-6">
@@ -195,9 +265,9 @@
                                         @foreach($dashboardAccountableItems as $index => $item)
                                             <tr class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} text-[14px] text-[#111827]">
                                                 <td class="px-4 py-3 align-top">{{ $index + 1 }}</td>
-                                                <td class="px-4 py-3 align-top">{{ $item->propno }}</td>
+                                                <td class="px-4 py-3 align-top">{{ $item->prop_no }}</td>
                                                 <td class="px-4 py-3 align-top">{{ $item->description }}</td>
-                                                <td class="px-4 py-3 align-top">{{ $item->accountableEmployee?->employee_name ?? '' }}</td>
+                                                <td class="px-4 py-3 align-top">{{ $item->employee?->employee_name ?? '' }}</td>
                                                 @php
                                                     $dashStatusLabel = match ($item->status) {
                                                         'A' => 'Active',
@@ -215,7 +285,7 @@
                                         @foreach($dashboardUnaccountableItems as $index => $item)
                                             <tr class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} text-[14px] text-[#111827]">
                                                 <td class="px-4 py-3 align-top">{{ $index + 1 }}</td>
-                                                <td class="px-4 py-3 align-top">{{ $item->propno }}</td>
+                                                <td class="px-4 py-3 align-top">{{ $item->prop_no }}</td>
                                                 <td class="px-4 py-3 align-top">{{ $item->description }}</td>
                                                 <td class="px-4 py-3 align-top"></td>
                                                 @php
@@ -235,9 +305,9 @@
                                         @foreach($dashboardTotalItems as $index => $item)
                                             <tr class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} text-[14px] text-[#111827]">
                                                 <td class="px-4 py-3 align-top">{{ $index + 1 }}</td>
-                                                <td class="px-4 py-3 align-top">{{ $item->propno }}</td>
+                                                <td class="px-4 py-3 align-top">{{ $item->prop_no }}</td>
                                                 <td class="px-4 py-3 align-top">{{ $item->description }}</td>
-                                                <td class="px-4 py-3 align-top">{{ $item->accountableEmployee?->employee_name ?? '' }}</td>
+                                                <td class="px-4 py-3 align-top">{{ $item->employee?->employee_name ?? '' }}</td>
                                                 @php
                                                     $dashStatusLabel = match ($item->status) {
                                                         'A' => 'Active',
@@ -309,16 +379,6 @@
                                     </div>
 
                                     <div>
-                                        <label class="block text-[14px] font-semibold text-black mb-2">Separation Date</label>
-                                        <input
-                                            type="text"
-                                            value="N/A"
-                                            class="w-full h-[42px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[14px] text-[#667085] focus:outline-none"
-                                            readonly
-                                        >
-                                    </div>
-
-                                    <div>
                                         <label class="block text-[14px] font-semibold text-black mb-2">Center</label>
                                         <input
                                             id="employeeCenterField"
@@ -329,18 +389,16 @@
                                         >
                                     </div>
 
-                                    <div>
-                                        <label class="block text-[14px] font-semibold text-black mb-2">Separation Mode</label>
-                                        <input
-                                            type="text"
-                                            value="N/A"
-                                            class="w-full h-[42px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[14px] text-[#667085] focus:outline-none"
-                                            readonly
-                                        >
-                                    </div>
                                 </div>
+                            </form>
+                        </div>
+                    </div>
 
-                                <div class="mb-5">
+                    <div class="bg-white border border-gray-200 rounded-[18px] overflow-hidden">
+                        <!-- TABLE CONTROLS (Search + Filter + Add) -->
+                        <div class="px-6 py-5 border-b border-gray-200">
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
+                                <div class="lg:col-span-2">
                                     <div class="relative">
                                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
                                             <i class="fa-solid fa-magnifying-glass"></i>
@@ -354,9 +412,7 @@
                                         >
                                     </div>
                                 </div>
-                            </form>
 
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-[14px] font-semibold text-black mb-2">Accountability Filter</label>
                                     <select
@@ -368,19 +424,9 @@
                                         <option value="unaccountable">Unaccountable</option>
                                     </select>
                                 </div>
-
-                                <div>
-                                    <label class="block text-[14px] font-semibold text-black mb-2">Actions</label>
-                                    <button id="openAddItemModal" type="button" class="w-full h-[42px] rounded-xl bg-[#f6b400] hover:bg-[#e5a900] text-[#003b95] font-semibold text-[16px] flex items-center justify-center gap-3 transition">
-                                        <i class="fa-solid fa-plus"></i>
-                                        <span>Add Item</span>
-                                    </button>
-                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="bg-white border border-gray-200 rounded-[18px] overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full min-w-[1300px]">
                                 <thead>
@@ -400,18 +446,19 @@
                                     @forelse($items as $index => $item)
                                         <tr
                                             class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} text-[14px] text-[#111827]"
-                                            data-accountability="accountable"
+                                            data-inventory-id="{{ $item->id }}"
+                                            data-accountability="{{ strtolower($item->accountability ?? 'Accountable') }}"
                                         >
                                             <td class="px-4 py-3 align-top">{{ $index + 1 }}</td>
-                                            <td class="px-4 py-3 align-top">{{ $item->propno }}</td>
-                                            <td class="px-4 py-3 align-top">{{ $item->rca_acctcode }}</td>
-                                            <td class="px-4 py-3 align-top">{{ $item->serialno }}</td>
+                                            <td class="px-4 py-3 align-top">{{ $item->prop_no }}</td>
+                                            <td class="px-4 py-3 align-top">{{ $item->acct_code }}</td>
+                                            <td class="px-4 py-3 align-top">{{ $item->serial_no }}</td>
                                             <td class="px-4 py-3 align-top">{{ $item->description }}</td>
                                             <td class="px-4 py-3 align-top">
                                                 {{ $selectedEmployee?->employee_name ?? $selectedEmployeeId }}
                                             </td>
                                             <td class="px-4 py-3 align-top">
-                                                {{ $item->unitcost !== null ? number_format($item->unitcost, 2) : '' }}
+                                                {{ $item->unit_cost !== null ? number_format($item->unit_cost, 2) : '' }}
                                             </td>
                                             @php
                                                 $portalStatusLabel = match ($item->status) {
@@ -427,24 +474,42 @@
                                                     <button
                                                         type="button"
                                                         class="inventory-see-more px-2.5 py-1 rounded-lg border border-gray-300 text-[13px] text-[#003b95] hover:bg-gray-50 transition"
-                                                        data-pn-old="{{ $item->propno_old }}"
-                                                        data-pn-code-old="{{ $item->old_code }}"
-                                                        data-mrr="{{ $item->mrrno }}"
-                                                        data-center="{{ $item->accountableEmployee?->center ?? $selectedEmployee?->center ?? '' }}"
-                                                        data-accountability="Accountable"
-                                                        data-end-user="N/A"
+                                                        data-mrr="{{ $item->mrr_no }}"
+                                                        data-center="{{ $item->center ?? $selectedEmployee?->center ?? '' }}"
+                                                        data-accountability="{{ $item->accountability ?? 'Accountable' }}"
+                                                        data-end-user="{{ $item->end_user ?? '' }}"
                                                         title="See more details"
                                                     >
                                                         <i class="fa-solid fa-eye"></i>
                                                     </button>
-                                                    <form method="POST" action="{{ route('admin.coordinator.items.destroy', $item->propno) }}">
+                                                    <button
+                                                        type="button"
+                                                        class="inventory-edit px-2.5 py-1 rounded-lg border border-gray-300 text-[13px] text-[#047857] hover:bg-gray-50 transition"
+                                                        data-update-url="{{ route('admin.coordinator.items.update', $item->id) }}"
+                                                        data-inventory-id="{{ $item->id }}"
+                                                        data-employee-id="{{ $selectedEmployeeId }}"
+                                                        data-prop-no="{{ $item->prop_no }}"
+                                                        data-acct-code="{{ $item->acct_code }}"
+                                                        data-serial-no="{{ $item->serial_no }}"
+                                                        data-description="{{ $item->description }}"
+                                                        data-unit-cost="{{ $item->unit_cost }}"
+                                                        data-center="{{ $item->center ?? $selectedEmployee?->center ?? '' }}"
+                                                        data-status="{{ $item->status }}"
+                                                        data-accountability="{{ $item->accountability ?? 'Accountable' }}"
+                                                        data-end-user="{{ $item->end_user ?? '' }}"
+                                                        data-remarks="{{ $item->remarks ?? '' }}"
+                                                        data-mrr="{{ $item->mrr_no }}"
+                                                        title="Edit equipment"
+                                                    >
+                                                        <i class="fa-solid fa-pen"></i>
+                                                    </button>
+                                                    <form method="POST" action="{{ route('admin.coordinator.items.destroy', $item->id) }}" class="inventory-delete-form">
                                                         @csrf
                                                         @method('DELETE')
                                                         <input type="hidden" name="employee_id" value="{{ $selectedEmployeeId }}">
                                                         <button
                                                             type="submit"
-                                                            class="px-2 py-1 rounded-lg border border-red-300 text-[13px] text-red-600 hover:bg-red-50 transition"
-                                                            onclick="return confirm('Are you sure you want to delete this equipment?');"
+                                                            class="inventory-delete px-2 py-1 rounded-lg border border-red-300 text-[13px] text-red-600 hover:bg-red-50 transition"
                                                             title="Delete"
                                                         >
                                                             <i class="fa-solid fa-trash"></i>
@@ -464,7 +529,7 @@
                             </table>
                         </div>
 
-                    </div>
+                </div>
                 </div>
 
                 <!-- Add Item Modal -->
@@ -484,6 +549,7 @@
                             <div>
                                 <h3 class="text-white text-[22px] font-bold leading-tight">Add New Equipment</h3>
                                 <p class="text-white/80 text-[14px] mt-1">Add equipment item details</p>
+                                <p class="text-white/70 text-[12px] mt-1">Fields marked with * are required.</p>
                             </div>
                             <button id="closeAddItemModal" type="button" class="text-white text-[22px] hover:text-white/80 transition">
                                 <i class="fa-solid fa-xmark"></i>
@@ -527,24 +593,6 @@
                                     @enderror
                                 </div>
 
-                                <!-- PN old -->
-                                <div>
-                                    <label class="block text-[14px] font-semibold text-black mb-2">
-                                        PN (old)
-                                    </label>
-                                    <input type="text" name="pn_old" placeholder="Enter old PN"
-                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
-                                </div>
-
-                                <!-- PN Code old -->
-                                <div>
-                                    <label class="block text-[14px] font-semibold text-black mb-2">
-                                        PN Code (old)
-                                    </label>
-                                    <input type="text" name="pn_code_old" placeholder="Enter old PN code"
-                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
-                                </div>
-
                                 <!-- MRR -->
                                 <div>
                                     <label class="block text-[14px] font-semibold text-black mb-2">
@@ -555,7 +603,7 @@
                                 </div>
 
                                 <!-- Description / Specification -->
-                                <div class="md:col-span-2">
+                                <div>
                                     <label class="block text-[14px] font-semibold text-black mb-2">
                                         Description / Specification <span class="text-red-500">*</span>
                                     </label>
@@ -643,7 +691,7 @@
                                 </div>
 
                                 <!-- Remarks -->
-                                <div class="md:col-span-2">
+                                <div>
                                     <label class="block text-[14px] font-semibold text-black mb-2">
                                         Remarks
                                     </label>
@@ -669,6 +717,170 @@
                     </div>
                 </div>
 
+                <!-- Edit Item Modal -->
+                <div id="editItemModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6">
+                    <div id="editItemModalCard" class="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden relative">
+                        <!-- Modal Header -->
+                        <div class="bg-[#003b95] px-6 py-4 flex items-start justify-between">
+                            <div>
+                                <h3 class="text-white text-[22px] font-bold leading-tight">Edit Equipment</h3>
+                                <p class="text-white/80 text-[14px] mt-1">Update equipment item details</p>
+                            </div>
+                            <button id="closeEditItemModal" type="button" class="text-white text-[22px] hover:text-white/80 transition">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <!-- Modal Body -->
+                        <form
+                            id="editItemForm"
+                            method="POST"
+                            action=""
+                            class="max-h-[75vh] overflow-y-auto px-6 py-6"
+                        >
+                            @csrf
+                            <input type="hidden" name="_method" value="PUT">
+                            <input type="hidden" name="employee_id" id="editEmployeeIdField" value="{{ $selectedEmployeeId }}">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+
+                                <!-- Property Number -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Property Number <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" name="property_number" id="editPropertyNumberField" placeholder="Enter property number"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                                <!-- Account Code -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Account Code <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" name="rca_acctcode" id="editAccountCodeField" placeholder="Enter account code"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                                <!-- Serial Number -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Serial Number
+                                    </label>
+                                    <input type="text" name="serialno" id="editSerialNumberField" placeholder="Enter serial number"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                                <!-- MRR -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        MRR
+                                    </label>
+                                    <input type="text" name="mrr" id="editMrrField" placeholder="Enter MRR"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                                <!-- Description / Specification -->
+                                <div class="md:col-span-2">
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Description / Specification <span class="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="description"
+                                        id="editDescriptionField"
+                                        placeholder="Enter description or specification"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20"
+                                    >
+                                </div>
+
+                                <!-- Unit Cost -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Unit Cost <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="number" step="0.01" name="unit_cost" id="editUnitCostField" placeholder="Enter unit cost"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                                <!-- Center -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Center
+                                    </label>
+                                    <select name="center" id="editCenterField"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                        <option value="">Select center</option>
+                                        <option value="ICTD">ICTD</option>
+                                        <option value="HR">HR</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="Admin">Admin</option>
+                                    </select>
+                                </div>
+
+                                <!-- Status -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Status <span class="text-red-500">*</span>
+                                    </label>
+                                    <select name="status" id="editStatusField"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                        <option value="">Select status</option>
+                                        <option value="Available">Available</option>
+                                        <option value="In Use">In Use</option>
+                                        <option value="Defective">Defective</option>
+                                        <option value="Disposed">Disposed</option>
+                                    </select>
+                                </div>
+
+                                <!-- End User -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        End User
+                                    </label>
+                                    <input type="text" name="end_user" id="editEndUserField" placeholder="Enter end user name"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                                <!-- Accountability -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Accountability <span class="text-red-500">*</span>
+                                    </label>
+                                    <select name="accountability" id="editAccountabilityField"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                        <option value="">Select accountability</option>
+                                        <option value="Accountable">Accountable</option>
+                                        <option value="Unaccountable">Unaccountable</option>
+                                    </select>
+                                </div>
+
+                                <!-- Remarks -->
+                                <div class="md:col-span-2">
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Remarks
+                                    </label>
+                                    <input type="text" name="remarks" id="editRemarksField" placeholder="Enter remarks"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                </div>
+
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200">
+                                <button id="cancelEditItemModal" type="button"
+                                    class="px-5 h-[42px] rounded-xl border border-gray-300 text-[14px] font-medium text-black hover:bg-gray-50 transition">
+                                    Cancel
+                                </button>
+                                <button type="submit"
+                                    class="px-5 h-[42px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[14px] font-semibold flex items-center gap-2 transition">
+                                    <i class="fa-solid fa-floppy-disk"></i>
+                                    <span>Update Equipment</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
             </section>
         </main>
     </div>
@@ -685,18 +897,6 @@
 
             <div class="px-6 py-5 text-[14px] text-[#111827]">
                 <div class="space-y-3">
-                    <div class="grid grid-cols-[140px,1fr] items-center gap-3">
-                        <span class="font-semibold text-[#4b5563]">PN (old):</span>
-                        <div class="min-h-[32px] rounded-lg bg-[#f3f4f6] px-3 py-1.5 flex items-center justify-between">
-                            <span id="seeMorePnOld" class="text-[13px] text-[#111827]">N/A</span>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-[140px,1fr] items-center gap-3">
-                        <span class="font-semibold text-[#4b5563]">PN Code (old):</span>
-                        <div class="min-h-[32px] rounded-lg bg-[#f3f4f6] px-3 py-1.5 flex items-center justify-between">
-                            <span id="seeMorePnCodeOld" class="text-[13px] text-[#111827]">N/A</span>
-                        </div>
-                    </div>
                     <div class="grid grid-cols-[140px,1fr] items-center gap-3">
                         <span class="font-semibold text-[#4b5563]">MRR:</span>
                         <div class="min-h-[32px] rounded-lg bg-[#f3f4f6] px-3 py-1.5 flex items-center justify-between">
@@ -774,6 +974,24 @@
     const formErrorToast = document.getElementById('formErrorToast');
     const formErrorToastMessage = document.getElementById('formErrorToastMessage');
 
+    // Edit Item Modal
+    const editItemModal = document.getElementById('editItemModal');
+    const editItemForm = document.getElementById('editItemForm');
+    const closeEditItemModalBtn = document.getElementById('closeEditItemModal');
+    const cancelEditItemModalBtn = document.getElementById('cancelEditItemModal');
+    const editEmployeeIdField = document.getElementById('editEmployeeIdField');
+    const editPropertyNumberField = document.getElementById('editPropertyNumberField');
+    const editAccountCodeField = document.getElementById('editAccountCodeField');
+    const editSerialNumberField = document.getElementById('editSerialNumberField');
+    const editMrrField = document.getElementById('editMrrField');
+    const editDescriptionField = document.getElementById('editDescriptionField');
+    const editUnitCostField = document.getElementById('editUnitCostField');
+    const editCenterField = document.getElementById('editCenterField');
+    const editStatusField = document.getElementById('editStatusField');
+    const editEndUserField = document.getElementById('editEndUserField');
+    const editAccountabilityField = document.getElementById('editAccountabilityField');
+    const editRemarksField = document.getElementById('editRemarksField');
+
     const csrfToken = '{{ csrf_token() }}';
 
     const dashboardCounts = {
@@ -821,6 +1039,10 @@
         pageTitle.textContent = 'Dashboard';
         pageSubtitle.textContent = 'List of Inventory';
 
+        if (openAddItemModal) {
+            openAddItemModal.classList.add('hidden');
+        }
+
         activateSidebar(navDashboard, navInventoryPortal);
         showAccountable();
     }
@@ -831,6 +1053,10 @@
 
         pageTitle.textContent = 'Inventory Portal';
         pageSubtitle.textContent = 'Manage all equipment inventory';
+
+        if (openAddItemModal) {
+            openAddItemModal.classList.remove('hidden');
+        }
 
         activateSidebar(navInventoryPortal, navDashboard);
     }
@@ -980,10 +1206,12 @@
             inventoryPortalTableBody.innerHTML = '';
 
             if (!data.items || data.items.length === 0) {
+                const hasSearch = !!(searchInput && searchInput.value && searchInput.value.trim() !== '');
+
                 inventoryPortalTableBody.innerHTML = `
                     <tr>
                         <td colspan="9" class="px-4 py-6 text-center text-[14px] text-[#98a2b3]">
-                            No inventory items available for the selected employee.
+                            ${hasSearch ? 'No records found.' : 'No inventory items available for the selected employee.'}
                         </td>
                     </tr>
                 `;
@@ -993,18 +1221,22 @@
             data.items.forEach((item, index) => {
                 const row = document.createElement('tr');
                 row.className = `${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} text-[14px] text-[#111827]`;
-                row.setAttribute('data-accountability', 'accountable');
+                row.setAttribute('data-inventory-id', (item.id ?? '').toString());
+                row.setAttribute(
+                    'data-accountability',
+                    (item.accountability ?? 'Accountable').toString().toLowerCase()
+                );
                 row.innerHTML = `
                     <td class="px-4 py-3 align-top">${index + 1}</td>
-                    <td class="px-4 py-3 align-top">${item.propno ?? ''}</td>
-                    <td class="px-4 py-3 align-top">${item.rca_acctcode ?? ''}</td>
-                    <td class="px-4 py-3 align-top">${item.serialno ?? ''}</td>
+                    <td class="px-4 py-3 align-top">${item.prop_no ?? ''}</td>
+                    <td class="px-4 py-3 align-top">${item.acct_code ?? ''}</td>
+                    <td class="px-4 py-3 align-top">${item.serial_no ?? ''}</td>
                     <td class="px-4 py-3 align-top">${item.description ?? ''}</td>
                     <td class="px-4 py-3 align-top">
                         ${data.selectedEmployee?.employee_name ?? data.selectedEmployeeId ?? ''}
                     </td>
                     <td class="px-4 py-3 align-top">
-                        ${item.unitcost !== null && item.unitcost !== undefined ? Number(item.unitcost).toFixed(2) : ''}
+                        ${item.unit_cost !== null && item.unit_cost !== undefined ? Number(item.unit_cost).toFixed(2) : ''}
                     </td>
                     <td class="px-4 py-3 align-top">${statusLabelFromCode(item.status ?? '')}</td>
                     <td class="px-4 py-3 align-top">
@@ -1012,24 +1244,42 @@
                             <button
                                 type="button"
                                 class="inventory-see-more px-2.5 py-1 rounded-lg border border-gray-300 text-[13px] text-[#003b95] hover:bg-gray-50 transition"
-                                data-pn-old="${item.propno_old ?? ''}"
-                                data-pn-code-old="${item.old_code ?? ''}"
-                                data-mrr="${item.mrrno ?? ''}"
-                                data-center="${data.selectedEmployee?.center ?? ''}"
-                                data-accountability="Accountable"
-                                data-end-user="N/A"
+                                data-mrr="${item.mrr_no ?? ''}"
+                                data-center="${item.center ?? data.selectedEmployee?.center ?? ''}"
+                                data-accountability="${item.accountability ?? 'Accountable'}"
+                                data-end-user="${item.end_user ?? ''}"
                                 title="See more details"
                             >
                                 <i class="fa-solid fa-eye"></i>
                             </button>
-                            <form method="POST" action="/coordinator/items/${item.propno}">
+                            <button
+                                type="button"
+                                class="inventory-edit px-2.5 py-1 rounded-lg border border-gray-300 text-[13px] text-[#047857] hover:bg-gray-50 transition"
+                                data-update-url="/coordinator/items/${item.id}"
+                                data-inventory-id="${item.id ?? ''}"
+                                data-employee-id="${data.selectedEmployeeId ?? ''}"
+                                data-prop-no="${item.prop_no ?? ''}"
+                                data-acct-code="${item.acct_code ?? ''}"
+                                data-serial-no="${item.serial_no ?? ''}"
+                                data-description="${item.description ?? ''}"
+                                data-unit-cost="${item.unit_cost ?? ''}"
+                                data-center="${item.center ?? data.selectedEmployee?.center ?? ''}"
+                                data-status="${item.status ?? ''}"
+                                data-accountability="${item.accountability ?? 'Accountable'}"
+                                data-end-user="${item.end_user ?? ''}"
+                                data-remarks="${item.remarks ?? ''}"
+                                data-mrr="${item.mrr_no ?? ''}"
+                                title="Edit equipment"
+                            >
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <form method="POST" action="/coordinator/items/${item.id}" class="inventory-delete-form">
                                 <input type="hidden" name="_token" value="${csrfToken}">
                                 <input type="hidden" name="_method" value="DELETE">
                                 <input type="hidden" name="employee_id" value="${data.selectedEmployeeId ?? ''}">
                                 <button
                                     type="submit"
-                                    class="px-2 py-1 rounded-lg border border-red-300 text-[13px] text-red-600 hover:bg-red-50 transition"
-                                    onclick="return confirm('Are you sure you want to delete this equipment?');"
+                                    class="inventory-delete px-2 py-1 rounded-lg border border-red-300 text-[13px] text-red-600 hover:bg-red-50 transition"
                                     title="Delete"
                                 >
                                     <i class="fa-solid fa-trash"></i>
@@ -1062,28 +1312,222 @@
         }
     }
 
-    if (addItemForm) {
-        addItemForm.addEventListener('submit', function (e) {
-            const propertyNumber = addItemForm.querySelector('[name="property_number"]')?.value;
-            const accountCode = addItemForm.querySelector('[name="rca_acctcode"]')?.value;
-            const description = addItemForm.querySelector('[name="description"]')?.value;
-            const unitCost = addItemForm.querySelector('[name="unit_cost"]')?.value;
-            const status = addItemForm.querySelector('[name="status"]')?.value;
-            const accountability = addItemForm.querySelector('[name="accountability"]')?.value;
+    function showItemSuccessToast(message = 'Equipment updated successfully') {
+        const toast = document.getElementById('itemSuccessToast');
+        if (!toast) {
+            return;
+        }
 
-            if (
-                isBlank(propertyNumber) ||
-                isBlank(accountCode) ||
-                isBlank(description) ||
-                isBlank(unitCost) ||
-                isBlank(status) ||
-                isBlank(accountability)
-            ) {
-                e.preventDefault();
-                openModal();
-                showFormErrorToast('Please complete all required fields before adding equipment.');
+        const span = toast.querySelector('span:last-child');
+        if (span) {
+            span.textContent = message;
+        }
+
+        toast.classList.remove('show-item-success-toast');
+        void toast.offsetWidth;
+        toast.classList.add('show-item-success-toast');
+    }
+
+    function statusLabelFromHumanOrCode(codeOrLabel) {
+        const value = (codeOrLabel || '').toString().trim().toUpperCase();
+        if (value === 'A' || value === 'AVAILABLE') {
+            return 'Available';
+        }
+        if (value === 'I' || value === 'IN USE') {
+            return 'In Use';
+        }
+        if (value === 'D' || value === 'DEFECTIVE' || value === 'DISPOSED' || value === 'DEFECTIVE/DISPOSED') {
+            // Default to "Defective" for code D
+            return 'Defective';
+        }
+        return '';
+    }
+
+    function openEditModalFromButton(button) {
+        if (!editItemModal || !editItemForm) {
+            return;
+        }
+
+        const updateUrl = button.getAttribute('data-update-url') || '';
+        const inventoryId = button.getAttribute('data-inventory-id') || '';
+        const employeeId = button.getAttribute('data-employee-id') || employeeSelect?.value || '';
+
+        editItemForm.action = updateUrl || (inventoryId ? `/coordinator/items/${inventoryId}` : '');
+
+        if (editEmployeeIdField) {
+            editEmployeeIdField.value = employeeId || '';
+        }
+        if (editPropertyNumberField) {
+            editPropertyNumberField.value = button.getAttribute('data-prop-no') || '';
+        }
+        if (editAccountCodeField) {
+            editAccountCodeField.value = button.getAttribute('data-acct-code') || '';
+        }
+        if (editSerialNumberField) {
+            editSerialNumberField.value = button.getAttribute('data-serial-no') || '';
+        }
+        if (editMrrField) {
+            editMrrField.value = button.getAttribute('data-mrr') || '';
+        }
+        if (editDescriptionField) {
+            editDescriptionField.value = button.getAttribute('data-description') || '';
+        }
+        if (editUnitCostField) {
+            editUnitCostField.value = button.getAttribute('data-unit-cost') || '';
+        }
+        if (editCenterField) {
+            const center = button.getAttribute('data-center') || '';
+            editCenterField.value = center;
+        }
+        if (editStatusField) {
+            const statusCodeOrLabel = button.getAttribute('data-status') || '';
+            const label = statusLabelFromHumanOrCode(statusCodeOrLabel);
+            editStatusField.value = label;
+        }
+        if (editEndUserField) {
+            editEndUserField.value = button.getAttribute('data-end-user') || '';
+        }
+        if (editAccountabilityField) {
+            editAccountabilityField.value = button.getAttribute('data-accountability') || '';
+        }
+        if (editRemarksField) {
+            editRemarksField.value = button.getAttribute('data-remarks') || '';
+        }
+
+        editItemModal.classList.remove('hidden');
+        editItemModal.classList.add('flex');
+    }
+
+    function closeEditModal() {
+        if (!editItemModal) {
+            return;
+        }
+        editItemModal.classList.add('hidden');
+        editItemModal.classList.remove('flex');
+    }
+
+    async function submitAddItemForm(e) {
+        if (!addItemForm) {
+            return;
+        }
+
+        e.preventDefault();
+
+        const propertyNumber = addItemForm.querySelector('[name="property_number"]')?.value;
+        const accountCode = addItemForm.querySelector('[name="rca_acctcode"]')?.value;
+        const description = addItemForm.querySelector('[name="description"]')?.value;
+        const unitCost = addItemForm.querySelector('[name="unit_cost"]')?.value;
+        const status = addItemForm.querySelector('[name="status"]')?.value;
+        const accountability = addItemForm.querySelector('[name="accountability"]')?.value;
+
+        if (
+            isBlank(propertyNumber) ||
+            isBlank(accountCode) ||
+            isBlank(description) ||
+            isBlank(unitCost) ||
+            isBlank(status) ||
+            isBlank(accountability)
+        ) {
+            openModal();
+            showFormErrorToast('Please complete all required fields before adding equipment.');
+            return;
+        }
+
+        try {
+            const formData = new FormData(addItemForm);
+
+            if (employeeSelect?.value) {
+                formData.set('employee_id', employeeSelect.value);
             }
-        });
+
+            const response = await fetch(addItemForm.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                if (response.status === 422) {
+                    showFormErrorToast('Please fix the highlighted fields and try again.');
+                }
+                return;
+            }
+
+            addItemForm.reset();
+            closeModal();
+            await loadEmployeeInventory();
+            showItemSuccessToast('Equipment added successfully');
+        } catch (error) {
+            // silent fail for now
+        }
+    }
+
+    if (addItemForm) {
+        addItemForm.addEventListener('submit', submitAddItemForm);
+    }
+
+    async function submitEditItemForm(e) {
+        if (!editItemForm) {
+            return;
+        }
+
+        e.preventDefault();
+
+        const propertyNumber = editItemForm.querySelector('[name="property_number"]')?.value;
+        const accountCode = editItemForm.querySelector('[name="rca_acctcode"]')?.value;
+        const description = editItemForm.querySelector('[name="description"]')?.value;
+        const unitCost = editItemForm.querySelector('[name="unit_cost"]')?.value;
+        const status = editItemForm.querySelector('[name="status"]')?.value;
+        const accountability = editItemForm.querySelector('[name="accountability"]')?.value;
+
+        if (
+            isBlank(propertyNumber) ||
+            isBlank(accountCode) ||
+            isBlank(description) ||
+            isBlank(unitCost) ||
+            isBlank(status) ||
+            isBlank(accountability)
+        ) {
+            showFormErrorToast('Please complete all required fields before updating equipment.');
+            return;
+        }
+
+        const formData = new FormData(editItemForm);
+        formData.set('_method', 'PUT');
+
+        try {
+            const response = await fetch(editItemForm.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: formData,
+            });
+
+            const data = response.ok ? await response.json().catch(() => ({})) : await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                const message = data?.message || (response.status === 422 ? 'Please fix the highlighted fields and try again.' : 'Update failed. Please try again.');
+                showFormErrorToast(message);
+                return;
+            }
+
+            closeEditModal();
+            await loadEmployeeInventory();
+            showItemSuccessToast('Equipment updated successfully');
+        } catch (error) {
+            showFormErrorToast('Update failed. Please try again.');
+        }
+    }
+
+    if (editItemForm) {
+        editItemForm.addEventListener('submit', submitEditItemForm);
     }
 
     navDashboard.addEventListener('click', showDashboardSection);
@@ -1093,8 +1537,17 @@
     cardUnaccountable.addEventListener('click', showUnaccountable);
     cardTotal.addEventListener('click', showTotal);
 
+    const addEquipmentFromDashboard = document.getElementById('addEquipmentFromDashboard');
+
     if (openAddItemModal) {
         openAddItemModal.addEventListener('click', openModal);
+    }
+
+    if (addEquipmentFromDashboard) {
+        addEquipmentFromDashboard.addEventListener('click', function () {
+            showInventoryPortalSection();
+            openModal();
+        });
     }
 
     if (closeAddItemModal) {
@@ -1113,8 +1566,38 @@
         });
     }
 
+    if (editItemModal) {
+        editItemModal.addEventListener('click', function (e) {
+            if (e.target === editItemModal) {
+                closeEditModal();
+            }
+        });
+    }
+
+    if (closeEditItemModalBtn) {
+        closeEditItemModalBtn.addEventListener('click', closeEditModal);
+    }
+
+    if (cancelEditItemModalBtn) {
+        cancelEditItemModalBtn.addEventListener('click', closeEditModal);
+    }
+
     if (employeeSelect) {
         employeeSelect.addEventListener('change', loadEmployeeInventory);
+    }
+
+    if (searchInput) {
+        let searchDebounceTimer = null;
+
+        searchInput.addEventListener('input', function () {
+            if (searchDebounceTimer) {
+                clearTimeout(searchDebounceTimer);
+            }
+
+            searchDebounceTimer = setTimeout(function () {
+                loadEmployeeInventory();
+            }, 300);
+        });
     }
 
     function applyAccountabilityFilter() {
@@ -1153,8 +1636,6 @@
     const seeMoreModal = document.getElementById('seeMoreModal');
     const closeSeeMoreModalBtn = document.getElementById('closeSeeMoreModal');
     const dismissSeeMoreModalBtn = document.getElementById('dismissSeeMoreModal');
-    const seeMorePnOld = document.getElementById('seeMorePnOld');
-    const seeMorePnCodeOld = document.getElementById('seeMorePnCodeOld');
     const seeMoreMrr = document.getElementById('seeMoreMrr');
     const seeMoreCenter = document.getElementById('seeMoreCenter');
     const seeMoreAccountability = document.getElementById('seeMoreAccountability');
@@ -1167,12 +1648,6 @@
                 return;
             }
 
-            if (seeMorePnOld) {
-                seeMorePnOld.textContent = formatDetail(target.getAttribute('data-pn-old'));
-            }
-            if (seeMorePnCodeOld) {
-                seeMorePnCodeOld.textContent = formatDetail(target.getAttribute('data-pn-code-old'));
-            }
             if (seeMoreMrr) {
                 seeMoreMrr.textContent = formatDetail(target.getAttribute('data-mrr'));
             }
@@ -1211,6 +1686,111 @@
         seeMoreModal.addEventListener('click', function (event) {
             if (event.target === seeMoreModal) {
                 closeSeeMoreModal();
+            }
+        });
+    }
+
+    const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+    const deleteConfirmCard = document.getElementById('deleteConfirmCard');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+    let pendingDeleteForm = null;
+
+    function openDeleteModal(form) {
+        pendingDeleteForm = form;
+        if (!deleteConfirmModal || !deleteConfirmCard) {
+            return;
+        }
+
+        deleteConfirmModal.classList.remove('hidden');
+        deleteConfirmModal.classList.add('flex');
+        deleteConfirmCard.classList.remove('opacity-0', 'scale-95');
+        deleteConfirmCard.classList.add('opacity-100', 'scale-100');
+    }
+
+    function closeDeleteModal() {
+        if (!deleteConfirmModal || !deleteConfirmCard) {
+            return;
+        }
+
+        deleteConfirmCard.classList.add('opacity-0', 'scale-95');
+        deleteConfirmCard.classList.remove('opacity-100', 'scale-100');
+
+        setTimeout(() => {
+            deleteConfirmModal.classList.add('hidden');
+            deleteConfirmModal.classList.remove('flex');
+        }, 150);
+    }
+
+    async function performDelete() {
+        if (!pendingDeleteForm) {
+            return;
+        }
+
+        try {
+            const form = pendingDeleteForm;
+            const formData = new FormData(form);
+
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                return;
+            }
+
+            closeDeleteModal();
+            pendingDeleteForm = null;
+            await loadEmployeeInventory();
+            showItemSuccessToast('Equipment deleted successfully');
+        } catch (error) {
+            // silent fail
+        }
+    }
+
+    if (inventoryPortalTableBody) {
+        inventoryPortalTableBody.addEventListener('click', function (event) {
+            const deleteButton = event.target.closest('.inventory-delete');
+            if (deleteButton) {
+                event.preventDefault();
+                const form = deleteButton.closest('.inventory-delete-form');
+                if (!form) {
+                    return;
+                }
+                openDeleteModal(form);
+                return;
+            }
+
+            const editButton = event.target.closest('.inventory-edit');
+            if (editButton) {
+                event.preventDefault();
+                openEditModalFromButton(editButton);
+            }
+        });
+    }
+
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', function () {
+            performDelete();
+        });
+    }
+
+    if (cancelDeleteBtn) {
+        cancelDeleteBtn.addEventListener('click', function () {
+            closeDeleteModal();
+        });
+    }
+
+    if (deleteConfirmModal) {
+        deleteConfirmModal.addEventListener('click', function (event) {
+            if (event.target === deleteConfirmModal) {
+                closeDeleteModal();
             }
         });
     }

@@ -38,10 +38,20 @@ Route::get('/coordinator/dashboard', [CoordinatorController::class, 'index'])
     ->middleware('auth')
     ->name('admin.coordinator.index');
 
+Route::get('/coordinator/items', function () {
+    return redirect()->route('admin.coordinator.index');
+})
+    ->middleware('auth')
+    ->name('admin.coordinator.items.index');
+
 Route::post('/coordinator/items', [CoordinatorController::class, 'storeItem'])
     ->middleware('auth')
     ->name('admin.coordinator.items.store');
 
-Route::delete('/coordinator/items/{propno}', [CoordinatorController::class, 'destroy'])
+Route::put('/coordinator/items/{inventory}', [CoordinatorController::class, 'updateItem'])
+    ->middleware('auth')
+    ->name('admin.coordinator.items.update');
+
+Route::delete('/coordinator/items/{inventory}', [CoordinatorController::class, 'destroy'])
     ->middleware('auth')
     ->name('admin.coordinator.items.destroy');
