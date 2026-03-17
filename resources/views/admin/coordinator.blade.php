@@ -108,10 +108,10 @@
     </div>
 
 
-    <div class="flex min-h-screen">
+    <div class="flex flex-col md:flex-row min-h-screen overflow-hidden">
 
         <!-- Sidebar -->
-        <aside class="w-[248px] bg-[#173a6b] text-white flex flex-col">
+        <aside class="w-full md:w-72 lg:w-80 bg-[#173a6b] text-white flex flex-col shrink-0 md:min-h-screen">
 
             <!-- Top Section -->
             <div>
@@ -181,20 +181,20 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 flex flex-col">
+        <main class="flex-1 min-w-0 flex flex-col">
 
             <!-- Header -->
-            <header class="bg-[#f5f5f5] border-b border-black/10 px-8 py-6">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 id="pageTitle" class="text-[22px] md:text-[24px] font-bold text-black leading-none">Dashboard</h2>
-                        <p id="pageSubtitle" class="text-[14px] text-[#556b86] mt-2">List of Inventory</p>
+            <header class="bg-[#f5f5f5] border-b border-black/10 px-4 sm:px-6 lg:px-8 py-6">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                    <div class="min-w-0">
+                        <h2 id="pageTitle" class="text-[22px] md:text-[24px] font-bold text-black leading-none break-words">Dashboard</h2>
+                        <p id="pageSubtitle" class="text-[14px] text-[#556b86] mt-2 break-words">List of Inventory</p>
                     </div>
 
                     <button
                         id="openAddItemModal"
                         type="button"
-                        class="hidden w-[170px] h-[42px] rounded-xl bg-[#f6b400] hover:bg-[#e5a900] text-[#003b95] font-semibold text-[14px] flex items-center justify-center gap-2 transition shrink-0"
+                        class="hidden h-[42px] w-full sm:w-auto px-4 rounded-xl bg-[#f6b400] hover:bg-[#e5a900] text-[#003b95] font-semibold text-[14px] flex items-center justify-center gap-2 transition shrink-0 whitespace-nowrap"
                     >
                         <i class="fa-solid fa-plus"></i>
                         <span>Add Item</span>
@@ -203,12 +203,12 @@
             </header>
 
             <!-- Content -->
-            <section class="px-8 py-7">
+            <section class="w-full max-w-full min-w-0 px-4 sm:px-6 lg:px-8 py-7">
 
                 <!-- DASHBOARD SECTION -->
                 <div id="dashboardSection">
                     <!-- Stat Cards -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                         <button id="cardAccountable" type="button"
                             class="stat-card text-left bg-white border-2 border-[#2f73ff] rounded-[18px] px-6 py-6 min-h-[200px] transition">
                             <p class="text-[16px] text-[#556b86] mb-3">Accountable</p>
@@ -236,20 +236,20 @@
 
                     <!-- Table Card -->
                     <div class="bg-white border border-gray-200 rounded-[18px] overflow-hidden">
-                        <div class="flex items-start justify-between px-6 py-6">
-                            <div>
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between px-6 py-6">
+                            <div class="min-w-0">
                                 <h3 id="tableTitle" class="text-[17px] font-semibold text-black">Accountable Equipment</h3>
                                 <p id="tableDescription" class="text-[14px] text-[#667085] mt-1">Showing 0 accountable items</p>
                             </div>
                             <button id="addEquipmentFromDashboard" type="button"
-                                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#f6b400] hover:bg-[#e5a900] text-[#003b95] font-semibold text-[14px] transition">
+                                class="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2 rounded-xl bg-[#f6b400] hover:bg-[#e5a900] text-[#003b95] font-semibold text-[14px] transition whitespace-nowrap">
                                 <i class="fa-solid fa-plus"></i>
                                 <span>Add Equipment</span>
                             </button>
                         </div>
 
                         <div class="px-6">
-                            <div class="overflow-x-auto">
+                            <div class="overflow-x-auto rounded-2xl">
                                 <table class="w-full min-w-[900px]">
                                     <thead>
                                         <tr class="bg-[#003b95] text-white text-left">
@@ -340,7 +340,7 @@
                             <h3 class="text-[18px] font-bold text-black uppercase mb-7">Asset Inventory Management</h3>
 
                             <form method="GET" action="{{ route('admin.coordinator.index') }}">
-                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-5 mb-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5 mb-6">
                                     <div>
                                         <label class="block text-[14px] font-semibold text-black mb-2">Employee Name</label>
                                         <select
@@ -397,8 +397,8 @@
                     <div class="bg-white border border-gray-200 rounded-[18px] overflow-hidden">
                         <!-- TABLE CONTROLS (Search + Filter + Add) -->
                         <div class="px-6 py-5 border-b border-gray-200">
-                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
-                                <div class="lg:col-span-2">
+                            <div class="flex flex-col md:flex-row md:items-end gap-4">
+                                <div class="flex-1 min-w-0">
                                     <div class="relative">
                                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
                                             <i class="fa-solid fa-magnifying-glass"></i>
@@ -413,7 +413,7 @@
                                     </div>
                                 </div>
 
-                                <div>
+                                <div class="w-full md:w-64">
                                     <label class="block text-[14px] font-semibold text-black mb-2">Accountability Filter</label>
                                     <select
                                         id="accountabilityFilter"
@@ -427,37 +427,37 @@
                             </div>
                         </div>
 
-                        <div class="overflow-x-auto">
-                            <table class="w-full min-w-[1300px]">
+                        <div class="overflow-x-auto rounded-2xl">
+                            <table class="w-full min-w-max table-auto text-sm">
                                 <thead>
                                     <tr class="bg-[#003b95] text-white text-left">
-                                        <th class="px-4 py-4 text-[14px] font-semibold">#</th>
-                                        <th class="px-4 py-4 text-[14px] font-semibold">Property Number</th>
-                                        <th class="px-4 py-4 text-[14px] font-semibold">Account Code</th>
-                                        <th class="px-4 py-4 text-[14px] font-semibold">Serial Number</th>
-                                        <th class="px-4 py-4 text-[14px] font-semibold">Description / Specification</th>
-                                        <th class="px-4 py-4 text-[14px] font-semibold">Assigned Employee</th>
-                                        <th class="px-4 py-4 text-[14px] font-semibold">Unit Price</th>
-                                        <th class="px-4 py-4 text-[14px] font-semibold">Status</th>
-                                        <th class="px-4 py-4 text-[14px] font-semibold">Action</th>
+                                        <th class="w-12 px-3 py-2 text-xs font-semibold whitespace-nowrap">#</th>
+                                        <th class="w-28 px-3 py-2 text-xs font-semibold whitespace-nowrap">Property Number</th>
+                                        <th class="w-24 px-3 py-2 text-xs font-semibold whitespace-nowrap">Account Code</th>
+                                        <th class="w-28 px-3 py-2 text-xs font-semibold whitespace-nowrap">Serial Number</th>
+                                        <th class="w-40 px-3 py-2 text-xs font-semibold whitespace-nowrap">Description / Specification</th>
+                                        <th class="w-36 px-3 py-2 text-xs font-semibold whitespace-nowrap">Assigned Employee</th>
+                                        <th class="w-24 px-3 py-2 text-xs font-semibold whitespace-nowrap">Unit Price</th>
+                                        <th class="w-20 px-3 py-2 text-xs font-semibold whitespace-nowrap">Status</th>
+                                        <th class="w-32 min-w-[120px] px-3 py-2 text-xs font-semibold whitespace-nowrap">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="inventoryPortalTableBody">
                                     @forelse($items as $index => $item)
                                         <tr
-                                            class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} text-[14px] text-[#111827]"
+                                            class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} text-[#111827]"
                                             data-inventory-id="{{ $item->id }}"
                                             data-accountability="{{ strtolower($item->accountability ?? 'Accountable') }}"
                                         >
-                                            <td class="px-4 py-3 align-top">{{ $index + 1 }}</td>
-                                            <td class="px-4 py-3 align-top">{{ $item->prop_no }}</td>
-                                            <td class="px-4 py-3 align-top">{{ $item->acct_code }}</td>
-                                            <td class="px-4 py-3 align-top">{{ $item->serial_no }}</td>
-                                            <td class="px-4 py-3 align-top">{{ $item->description }}</td>
-                                            <td class="px-4 py-3 align-top">
+                                            <td class="px-3 py-2 align-top whitespace-nowrap">{{ $index + 1 }}</td>
+                                            <td class="px-3 py-2 align-top whitespace-nowrap truncate">{{ $item->prop_no }}</td>
+                                            <td class="px-3 py-2 align-top whitespace-nowrap truncate">{{ $item->acct_code }}</td>
+                                            <td class="px-3 py-2 align-top whitespace-nowrap truncate">{{ $item->serial_no }}</td>
+                                            <td class="px-3 py-2 align-top whitespace-nowrap truncate" title="{{ $item->description }}">{{ $item->description }}</td>
+                                            <td class="px-3 py-2 align-top whitespace-nowrap truncate" title="{{ $selectedEmployee?->employee_name ?? $selectedEmployeeId }}">
                                                 {{ $selectedEmployee?->employee_name ?? $selectedEmployeeId }}
                                             </td>
-                                            <td class="px-4 py-3 align-top">
+                                            <td class="px-3 py-2 align-top whitespace-nowrap truncate">
                                                 {{ $item->unit_cost !== null ? number_format($item->unit_cost, 2) : '' }}
                                             </td>
                                             @php
@@ -468,12 +468,12 @@
                                                     default => $item->status,
                                                 };
                                             @endphp
-                                            <td class="px-4 py-3 align-top">{{ $portalStatusLabel }}</td>
-                                            <td class="px-4 py-3 align-top">
-                                                <div class="flex items-center gap-2">
+                                            <td class="px-3 py-2 align-top whitespace-nowrap truncate">{{ $portalStatusLabel }}</td>
+                                            <td class="px-3 py-2 align-top">
+                                                <div class="flex items-center gap-2 whitespace-nowrap">
                                                     <button
                                                         type="button"
-                                                        class="inventory-see-more px-2.5 py-1 rounded-lg border border-gray-300 text-[13px] text-[#003b95] hover:bg-gray-50 transition"
+                                                        class="inventory-see-more p-1.5 rounded-lg border border-gray-300 text-xs text-[#003b95] hover:bg-gray-50 transition"
                                                         data-mrr="{{ $item->mrr_no }}"
                                                         data-center="{{ $item->center ?? $selectedEmployee?->center ?? '' }}"
                                                         data-accountability="{{ $item->accountability ?? 'Accountable' }}"
@@ -484,7 +484,7 @@
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        class="inventory-edit px-2.5 py-1 rounded-lg border border-gray-300 text-[13px] text-[#047857] hover:bg-gray-50 transition"
+                                                        class="inventory-edit p-1.5 rounded-lg border border-gray-300 text-xs text-[#047857] hover:bg-gray-50 transition"
                                                         data-update-url="{{ route('admin.coordinator.items.update', $item->id) }}"
                                                         data-inventory-id="{{ $item->id }}"
                                                         data-employee-id="{{ $selectedEmployeeId }}"
@@ -509,7 +509,7 @@
                                                         <input type="hidden" name="employee_id" value="{{ $selectedEmployeeId }}">
                                                         <button
                                                             type="submit"
-                                                            class="inventory-delete px-2 py-1 rounded-lg border border-red-300 text-[13px] text-red-600 hover:bg-red-50 transition"
+                                                            class="inventory-delete p-1.5 rounded-lg border border-red-300 text-xs text-red-600 hover:bg-red-50 transition"
                                                             title="Delete"
                                                         >
                                                             <i class="fa-solid fa-trash"></i>
@@ -897,28 +897,28 @@
 
             <div class="px-6 py-5 text-[14px] text-[#111827]">
                 <div class="space-y-3">
-                    <div class="grid grid-cols-[140px,1fr] items-center gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-2 sm:gap-3">
                         <span class="font-semibold text-[#4b5563]">MRR:</span>
-                        <div class="min-h-[32px] rounded-lg bg-[#f3f4f6] px-3 py-1.5 flex items-center justify-between">
-                            <span id="seeMoreMrr" class="text-[13px] text-[#111827]">N/A</span>
+                        <div class="min-h-[32px] rounded-lg bg-[#f3f4f6] px-3 py-1.5 flex items-center justify-between min-w-0">
+                            <span id="seeMoreMrr" class="text-[13px] text-[#111827] break-words min-w-0">N/A</span>
                         </div>
                     </div>
-                    <div class="grid grid-cols-[140px,1fr] items-center gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-2 sm:gap-3">
                         <span class="font-semibold text-[#4b5563]">Center:</span>
-                        <div class="min-h-[32px] rounded-lg bg-[#f3f4f6] px-3 py-1.5 flex items-center justify-between">
-                            <span id="seeMoreCenter" class="text-[13px] text-[#111827]">N/A</span>
+                        <div class="min-h-[32px] rounded-lg bg-[#f3f4f6] px-3 py-1.5 flex items-center justify-between min-w-0">
+                            <span id="seeMoreCenter" class="text-[13px] text-[#111827] break-words min-w-0">N/A</span>
                         </div>
                     </div>
-                    <div class="grid grid-cols-[140px,1fr] items-center gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-2 sm:gap-3">
                         <span class="font-semibold text-[#4b5563]">Accountability:</span>
-                        <div class="min-h-[32px] rounded-lg bg-[#f3f4f6] px-3 py-1.5 flex items-center justify-between">
-                            <span id="seeMoreAccountability" class="text-[13px] text-[#111827]">N/A</span>
+                        <div class="min-h-[32px] rounded-lg bg-[#f3f4f6] px-3 py-1.5 flex items-center justify-between min-w-0">
+                            <span id="seeMoreAccountability" class="text-[13px] text-[#111827] break-words min-w-0">N/A</span>
                         </div>
                     </div>
-                    <div class="grid grid-cols-[140px,1fr] items-center gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-2 sm:gap-3">
                         <span class="font-semibold text-[#4b5563]">End User:</span>
-                        <div class="min-h-[32px] rounded-lg bg-[#f3f4f6] px-3 py-1.5 flex items-center justify-between">
-                            <span id="seeMoreEndUser" class="text-[13px] text-[#111827]">N/A</span>
+                        <div class="min-h-[32px] rounded-lg bg-[#f3f4f6] px-3 py-1.5 flex items-center justify-between min-w-0">
+                            <span id="seeMoreEndUser" class="text-[13px] text-[#111827] break-words min-w-0">N/A</span>
                         </div>
                     </div>
                 </div>

@@ -9,10 +9,10 @@
 </head>
 <body class="bg-[#f3f3f3] min-h-screen font-sans">
 
-    <div class="flex min-h-screen">
+    <div class="flex flex-col md:flex-row min-h-screen overflow-hidden">
 
         <!-- Sidebar -->
-        <aside class="w-[295px] bg-[#173a6b] text-white flex flex-col justify-between">
+        <aside class="w-full md:w-72 lg:w-80 bg-[#173a6b] text-white flex flex-col justify-between shrink-0 md:min-h-screen">
             <div>
                 <!-- Logo / Title -->
                 <div class="px-4 py-8 border-b border-white/10">
@@ -58,35 +58,35 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 flex flex-col">
+        <main class="flex-1 min-w-0 flex flex-col">
 
             <!-- Header -->
-            <header class="bg-[#f3f3f3] border-b border-black/10 px-10 py-7 flex items-start justify-between">
-                <div>
-                    <h2 id="pageTitle" class="text-[42px] font-bold text-black leading-none">Dashboard</h2>
-                    <p id="pageSubtitle" class="text-[18px] text-[#3e5573] mt-2">Manage gate pass requests and approvals</p>
+            <header class="bg-[#f3f3f3] border-b border-black/10 px-4 sm:px-6 lg:px-8 py-6 sm:py-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0">
+                    <h2 id="pageTitle" class="text-[32px] sm:text-[42px] font-bold text-black leading-none break-words">Dashboard</h2>
+                    <p id="pageSubtitle" class="text-[16px] sm:text-[18px] text-[#3e5573] mt-2 break-words">Manage gate pass requests and approvals</p>
                 </div>
 
-                <button onclick="openAdminProfileModal()" class="w-[52px] h-[52px] rounded-full bg-[#003b95] text-white flex items-center justify-center text-[24px]">
+                <button onclick="openAdminProfileModal()" class="w-[52px] h-[52px] rounded-full bg-[#003b95] text-white flex items-center justify-center text-[24px] shrink-0 self-start sm:self-auto">
                     <i class="fa-regular fa-user"></i>
                 </button>
             </header>
 
             <!-- Content -->
-            <section class="px-10 py-10">
+            <section class="w-full max-w-full min-w-0 px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
 
                 <!-- DASHBOARD SECTION -->
                 <div id="dashboardSection">
                     <!-- Stat Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
 
                         <!-- Pending Approval -->
-                        <div class="relative bg-white rounded-[20px] shadow-md px-7 py-7 overflow-hidden min-h-[136px]">
+                        <div class="relative bg-white rounded-[20px] shadow-md px-6 sm:px-7 py-7 overflow-hidden min-h-[136px]">
                             <div class="absolute -top-8 -right-8 w-[102px] h-[102px] bg-[#efe7d4] rounded-full"></div>
-                            <div class="relative z-10 flex items-end justify-between">
-                                <div>
-                                    <p class="text-[18px] text-[#3e5573] mb-5">Pending Approval</p>
-                                    <h3 class="text-[46px] font-bold text-[#003b95] leading-none">5</h3>
+                            <div class="relative z-10 flex items-end justify-between gap-4 min-w-0">
+                                <div class="min-w-0">
+                                    <p class="text-[16px] sm:text-[18px] text-[#3e5573] mb-5 break-words">Pending Approval</p>
+                                    <h3 class="text-[40px] sm:text-[46px] font-bold text-[#003b95] leading-none">5</h3>
                                 </div>
                                 <div class="w-[48px] h-[48px] rounded-[14px] bg-[#f6b400] flex items-center justify-center text-white text-[22px]">
                                     <i class="fa-solid fa-clock"></i>
@@ -95,12 +95,12 @@
                         </div>
 
                         <!-- Approved -->
-                        <div class="relative bg-white rounded-[20px] shadow-md px-7 py-7 overflow-hidden min-h-[136px]">
+                        <div class="relative bg-white rounded-[20px] shadow-md px-6 sm:px-7 py-7 overflow-hidden min-h-[136px]">
                             <div class="absolute -top-8 -right-8 w-[102px] h-[102px] bg-[#dce3ef] rounded-full"></div>
-                            <div class="relative z-10 flex items-end justify-between">
-                                <div>
-                                    <p class="text-[18px] text-[#3e5573] mb-5">Approved</p>
-                                    <h3 class="text-[46px] font-bold text-[#003b95] leading-none">5</h3>
+                            <div class="relative z-10 flex items-end justify-between gap-4 min-w-0">
+                                <div class="min-w-0">
+                                    <p class="text-[16px] sm:text-[18px] text-[#3e5573] mb-5 break-words">Approved</p>
+                                    <h3 class="text-[40px] sm:text-[46px] font-bold text-[#003b95] leading-none">5</h3>
                                 </div>
                                 <div class="w-[48px] h-[48px] rounded-[14px] bg-[#003b95] flex items-center justify-center text-white text-[22px]">
                                     <i class="fa-solid fa-circle-check"></i>
@@ -109,12 +109,12 @@
                         </div>
 
                         <!-- Active Outside -->
-                        <div class="relative bg-white rounded-[20px] shadow-md px-7 py-7 overflow-hidden min-h-[136px]">
+                        <div class="relative bg-white rounded-[20px] shadow-md px-6 sm:px-7 py-7 overflow-hidden min-h-[136px]">
                             <div class="absolute -top-8 -right-8 w-[102px] h-[102px] bg-[#efe7d4] rounded-full"></div>
-                            <div class="relative z-10 flex items-end justify-between">
-                                <div>
-                                    <p class="text-[18px] text-[#3e5573] mb-5">Active Outside</p>
-                                    <h3 class="text-[46px] font-bold text-[#003b95] leading-none">5</h3>
+                            <div class="relative z-10 flex items-end justify-between gap-4 min-w-0">
+                                <div class="min-w-0">
+                                    <p class="text-[16px] sm:text-[18px] text-[#3e5573] mb-5 break-words">Active Outside</p>
+                                    <h3 class="text-[40px] sm:text-[46px] font-bold text-[#003b95] leading-none">5</h3>
                                 </div>
                                 <div class="w-[48px] h-[48px] rounded-[14px] bg-[#f6b400] flex items-center justify-center text-[#003b95] text-[22px]">
                                     <i class="fa-solid fa-arrow-right-from-bracket"></i>
@@ -123,12 +123,12 @@
                         </div>
 
                         <!-- Total Requests -->
-                        <div class="relative bg-white rounded-[20px] shadow-md px-7 py-7 overflow-hidden min-h-[136px]">
+                        <div class="relative bg-white rounded-[20px] shadow-md px-6 sm:px-7 py-7 overflow-hidden min-h-[136px]">
                             <div class="absolute -top-8 -right-8 w-[102px] h-[102px] bg-[#dce3ef] rounded-full"></div>
-                            <div class="relative z-10 flex items-end justify-between">
-                                <div>
-                                    <p class="text-[18px] text-[#3e5573] mb-5">Total Requests</p>
-                                    <h3 class="text-[46px] font-bold text-[#001d4f] leading-none">16</h3>
+                            <div class="relative z-10 flex items-end justify-between gap-4 min-w-0">
+                                <div class="min-w-0">
+                                    <p class="text-[16px] sm:text-[18px] text-[#3e5573] mb-5 break-words">Total Requests</p>
+                                    <h3 class="text-[40px] sm:text-[46px] font-bold text-[#001d4f] leading-none">16</h3>
                                 </div>
                                 <div class="w-[48px] h-[48px] rounded-[14px] bg-[#f6b400] flex items-center justify-center text-[#003b95] text-[24px]">
                                     <i class="fa-regular fa-file-lines"></i>
@@ -139,18 +139,18 @@
                     </div>
 
                     <!-- Dashboard Table -->
-                    <div class="bg-white border border-gray-200 overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="w-full border-collapse">
+                    <div class="bg-white border border-gray-200 overflow-hidden rounded-2xl">
+                        <div class="overflow-x-auto rounded-2xl">
+                            <table class="w-full border-collapse min-w-[900px]">
                                 <thead>
                                     <tr class="border-b border-gray-200">
-                                        <th class="text-left px-8 py-6 text-[16px] font-semibold text-[#4b6790] uppercase">Gate Pass No</th>
-                                        <th class="text-left px-8 py-6 text-[16px] font-semibold text-[#4b6790] uppercase">Employee</th>
-                                        <th class="text-left px-8 py-6 text-[16px] font-semibold text-[#4b6790] uppercase">Center</th>
-                                        <th class="text-left px-8 py-6 text-[16px] font-semibold text-[#4b6790] uppercase">Items</th>
-                                        <th class="text-left px-8 py-6 text-[16px] font-semibold text-[#4b6790] uppercase">Request Date</th>
-                                        <th class="text-left px-8 py-6 text-[16px] font-semibold text-[#4b6790] uppercase">Status</th>
-                                        <th class="text-left px-8 py-6 text-[16px] font-semibold text-[#4b6790] uppercase">Actions</th>
+                                        <th class="text-left px-4 sm:px-6 py-6 text-[14px] sm:text-[16px] font-semibold text-[#4b6790] uppercase whitespace-nowrap">Gate Pass No</th>
+                                        <th class="text-left px-4 sm:px-6 py-6 text-[14px] sm:text-[16px] font-semibold text-[#4b6790] uppercase whitespace-nowrap">Employee</th>
+                                        <th class="text-left px-4 sm:px-6 py-6 text-[14px] sm:text-[16px] font-semibold text-[#4b6790] uppercase whitespace-nowrap">Center</th>
+                                        <th class="text-left px-4 sm:px-6 py-6 text-[14px] sm:text-[16px] font-semibold text-[#4b6790] uppercase whitespace-nowrap">Items</th>
+                                        <th class="text-left px-4 sm:px-6 py-6 text-[14px] sm:text-[16px] font-semibold text-[#4b6790] uppercase whitespace-nowrap">Request Date</th>
+                                        <th class="text-left px-4 sm:px-6 py-6 text-[14px] sm:text-[16px] font-semibold text-[#4b6790] uppercase whitespace-nowrap">Status</th>
+                                        <th class="text-left px-4 sm:px-6 py-6 text-[14px] sm:text-[16px] font-semibold text-[#4b6790] uppercase whitespace-nowrap">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -159,17 +159,17 @@
 
                                     @foreach($data as $request)
                                     <tr class="border-b border-gray-200">
-                                        <td class="px-8 py-6">{{ $request->gate_pass_no }}</td>
-                                        <td class="px-8 py-6">{{ $request->employee }}</td>
-                                        <td class="px-8 py-6">{{ $request->office }}</td>
-                                        <td class="px-8 py-6">{{ $request->items }}</td>
-                                        <td class="px-8 py-6">{{ $request->request_date }}</td>
-                                        <td class="px-8 py-6">
+                                        <td class="px-4 sm:px-6 py-6">{{ $request->gate_pass_no }}</td>
+                                        <td class="px-4 sm:px-6 py-6">{{ $request->employee }}</td>
+                                        <td class="px-4 sm:px-6 py-6">{{ $request->office }}</td>
+                                        <td class="px-4 sm:px-6 py-6">{{ $request->items }}</td>
+                                        <td class="px-4 sm:px-6 py-6">{{ $request->request_date }}</td>
+                                        <td class="px-4 sm:px-6 py-6">
                                             <span class="px-4 py-2 rounded-full bg-gray-200 text-sm">
                                                 {{ $request->status }}
                                             </span>
                                         </td>
-                                        <td class="px-8 py-6 flex gap-2">
+                                        <td class="px-4 sm:px-6 py-6 flex gap-2">
                                             <button class="bg-green-500 text-white px-3 py-2 rounded">
                                                 <i class="fa-solid fa-check"></i>
                                             </button>
@@ -194,7 +194,7 @@
 
                         <!-- Search Bar -->
                         <div class="px-5 py-5 border-b border-gray-200">
-                            <div class="relative w-full max-w-[540px]">
+                            <div class="relative w-full max-w-full sm:max-w-[540px]">
                                 <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
                                     <i class="fa-solid fa-magnifying-glass"></i>
                                 </span>
@@ -207,7 +207,7 @@
                         </div>
 
                         <!-- Table -->
-                        <div class="overflow-x-auto">
+                        <div class="overflow-x-auto rounded-2xl">
                             <table class="w-full min-w-[1200px]">
                                 <thead>
                                     <tr class="border-b border-gray-200 text-left">
@@ -398,13 +398,13 @@
                         <button
                             type="button"
                             onclick="closeAdminProfileModal()"
-                            class="px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[16px] font-semibold text-black hover:bg-gray-50 transition">
+                            class="px-6 sm:px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[16px] font-semibold text-black hover:bg-gray-50 transition whitespace-nowrap">
                             Cancel
                         </button>
 
                         <button
                             type="submit"
-                            class="px-10 h-[46px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition">
+                            class="px-6 sm:px-10 h-[46px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition whitespace-nowrap">
                             Update Profile
                         </button>
                     </div>

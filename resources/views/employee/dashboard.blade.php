@@ -9,10 +9,10 @@
 </head>
 <body class="bg-[#f3f3f3] min-h-screen font-sans">
 
-    <div class="flex min-h-screen">
+    <div class="flex flex-col md:flex-row min-h-screen overflow-hidden">
 
         <!-- Sidebar -->
-        <aside class="w-[302px] bg-[#173a6b] text-white flex flex-col justify-between">
+        <aside class="w-full md:w-72 lg:w-80 bg-[#173a6b] text-white flex flex-col justify-between shrink-0 md:min-h-screen">
             <div>
                 <!-- Logo / System Name -->
                 <div class="px-6 py-10 border-b border-white/10">
@@ -68,21 +68,21 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 flex flex-col">
+        <main class="flex-1 min-w-0 flex flex-col">
 
             <!-- Top Header -->
-            <header class="bg-[#f3f3f3] border-b border-black/10 px-10 py-7 flex items-start justify-between">
-                <div>
-                    <h2 id="pageTitle" class="text-[40px] font-bold text-black leading-none">Dashboard</h2>
-                    <p class="text-[20px] text-[#3e5573] mt-2">Welcome back, {{ $employeeFullName ?? auth()->user()?->name }}</p>
+            <header class="bg-[#f3f3f3] border-b border-black/10 px-4 sm:px-6 lg:px-8 py-6 sm:py-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0">
+                    <h2 id="pageTitle" class="text-[30px] sm:text-[40px] font-bold text-black leading-none break-words">Dashboard</h2>
+                    <p class="text-[16px] sm:text-[20px] text-[#3e5573] mt-2 break-words">Welcome back, {{ $employeeFullName ?? auth()->user()?->name }}</p>
                 </div>
 
-                <div class="flex items-center gap-4">
+                <div class="flex flex-wrap items-center gap-4 sm:justify-end">
                     <button
                         id="newRequestBtn"
                         type="button"
                         onclick="openRequestModal()"
-                        class="bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] font-semibold text-[16px] px-8 py-3 rounded-2xl flex items-center gap-3 transition">
+                        class="bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] font-semibold text-[16px] px-6 sm:px-8 py-3 rounded-2xl flex items-center gap-3 transition whitespace-nowrap">
                         <i class="fa-solid fa-plus text-[18px]"></i>
                         <span>New Request</span>
                     </button>
@@ -94,10 +94,10 @@
             </header>
 
             <!-- Content Area -->
-            <section class="px-10 py-10">
+            <section class="w-full max-w-full min-w-0 px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
             <!-- DASHBOARD SECTION -->
             <div id="dashboardSection">
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-7">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-7">
                     <div class="bg-white rounded-[22px] border border-black/10 p-8 relative overflow-hidden">
                         <div class="absolute top-0 left-0 w-[5px] h-full bg-[#003b95]"></div>
                         <p class="text-[18px] text-[#556b86] mb-3">Total Requests</p>
@@ -129,24 +129,24 @@
                         <span>Filter by Status:</span>
                     </div>
 
-                    <button class="px-5 py-2.5 rounded-2xl bg-[#003b95] text-white text-[16px] font-semibold">
+                    <button class="px-5 py-2.5 rounded-2xl bg-[#003b95] text-white text-[16px] font-semibold whitespace-nowrap">
                         All
                     </button>
 
-                    <button class="px-5 py-2.5 rounded-2xl border border-[#f5b000] text-[#f5b000] bg-white text-[16px] font-semibold">
+                    <button class="px-5 py-2.5 rounded-2xl border border-[#f5b000] text-[#f5b000] bg-white text-[16px] font-semibold whitespace-nowrap">
                         Pending
                     </button>
 
-                    <button class="px-5 py-2.5 rounded-2xl border border-[#00b84f] text-[#00b84f] bg-white text-[16px] font-semibold">
+                    <button class="px-5 py-2.5 rounded-2xl border border-[#00b84f] text-[#00b84f] bg-white text-[16px] font-semibold whitespace-nowrap">
                         Approved
                     </button>
 
-                    <button class="px-5 py-2.5 rounded-2xl border border-[#2962ff] text-[#2962ff] bg-white text-[16px] font-semibold">
+                    <button class="px-5 py-2.5 rounded-2xl border border-[#2962ff] text-[#2962ff] bg-white text-[16px] font-semibold whitespace-nowrap">
                         Returned
                     </button>
                 </div>
 
-                <div class="bg-white rounded-[22px] border border-black/10 min-h-[330px] px-8 py-8">
+                <div class="bg-white rounded-[22px] border border-black/10 min-h-[330px] px-5 sm:px-8 py-8">
                     <h3 class="text-[22px] font-semibold text-[#003b95] mb-2">My Requests</h3>
                     <p class="text-[18px] text-[#6b7280] mb-10">2 requests found</p>
 
@@ -160,15 +160,17 @@
             <div id="historySection" class="hidden">
                 <div class="bg-white rounded-[20px] border border-gray-200 overflow-hidden">
 
-                    <div class="px-8 py-6 border-b border-gray-200">
+                    <div class="px-5 sm:px-8 py-6 border-b border-gray-200">
                         <h3 class="text-[22px] font-semibold text-[#003b95]">Request History</h3>
                     </div>
 
-                    <div class="grid grid-cols-12 px-8 py-5 border-b border-gray-200 text-[15px] font-semibold text-[#425b78] uppercase tracking-wide">
-                        <div class="col-span-2">Gate Pass No.</div>
-                        <div class="col-span-6">Equipment</div>
-                        <div class="col-span-2">Date</div>
-                        <div class="col-span-2">Status</div>
+                    <div class="overflow-x-auto">
+                        <div class="grid min-w-[720px] grid-cols-12 px-5 sm:px-8 py-5 border-b border-gray-200 text-[15px] font-semibold text-[#425b78] uppercase tracking-wide">
+                            <div class="col-span-2 whitespace-nowrap">Gate Pass No.</div>
+                            <div class="col-span-6">Equipment</div>
+                            <div class="col-span-2 whitespace-nowrap">Date</div>
+                            <div class="col-span-2 whitespace-nowrap">Status</div>
+                        </div>
                     </div>
 
                     <div id="historyList"></div>
@@ -282,7 +284,7 @@
                     </div>
 
                     <!-- Destination + Equipment Row -->
-                    <div class="grid grid-cols-1 xl:grid-cols-[1fr_1fr_auto] gap-6 items-end">
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1fr_1fr_auto] gap-6 items-end">
                         <div>
                             <label class="block text-[16px] font-semibold text-[#243b5a] mb-3">
                                 The items will be brought to <span class="text-red-500">*</span>
@@ -311,7 +313,7 @@
                         <div>
                             <button
                                 type="button"
-                                class="h-[48px] px-7 rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold flex items-center gap-3 transition">
+                                class="h-[48px] w-full md:w-auto px-7 rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold flex items-center justify-center gap-3 transition whitespace-nowrap">
                                 <i class="fa-solid fa-plus"></i>
                                 <span>Add</span>
                             </button>
@@ -328,13 +330,13 @@
                         <button
                             type="button"
                             onclick="closeRequestModal()"
-                            class="px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[16px] font-semibold text-black hover:bg-gray-50 transition">
+                            class="px-6 sm:px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[16px] font-semibold text-black hover:bg-gray-50 transition whitespace-nowrap">
                             Cancel
                         </button>
 
                         <button
                             type="submit"
-                            class="px-10 h-[46px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition">
+                            class="px-6 sm:px-10 h-[46px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition whitespace-nowrap">
                             Submit Request
                         </button>
                     </div>
@@ -444,13 +446,13 @@
                         <button
                             type="button"
                             onclick="closeProfileModal()"
-                            class="px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[16px] font-semibold text-black hover:bg-gray-50 transition">
+                            class="px-6 sm:px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[16px] font-semibold text-black hover:bg-gray-50 transition whitespace-nowrap">
                             Cancel
                         </button>
 
                         <button
                             type="submit"
-                            class="px-10 h-[46px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition">
+                            class="px-6 sm:px-10 h-[46px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition whitespace-nowrap">
                             Update Profile
                         </button>
                     </div>
