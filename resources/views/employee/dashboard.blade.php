@@ -35,14 +35,6 @@
                     </div>
                 </div>
 
-                <!-- Back to Main Menu -->
-                <div class="px-8 py-9 border-b border-white/10">
-                    <a href="#" class="flex items-center gap-4 text-[18px] font-semibold text-white/90 hover:text-white transition">
-                        <i class="fa-solid fa-arrow-left text-[22px]"></i>
-                        <span>Back to Main Menu</span>
-                    </a>
-                </div>
-
                 <!-- Navigation -->
                 <nav class="px-4 py-6 space-y-4">
                     <button
@@ -82,7 +74,7 @@
             <header class="bg-[#f3f3f3] border-b border-black/10 px-10 py-7 flex items-start justify-between">
                 <div>
                     <h2 id="pageTitle" class="text-[40px] font-bold text-black leading-none">Dashboard</h2>
-                    <p class="text-[20px] text-[#3e5573] mt-2">Welcome back, John Doe</p>
+                    <p class="text-[20px] text-[#3e5573] mt-2">Welcome back, {{ $employeeFullName ?? auth()->user()?->name }}</p>
                 </div>
 
                 <div class="flex items-center gap-4">
@@ -234,7 +226,7 @@
                             <p class="text-[13px] text-[#667085] mb-2">(Current User)</p>
                             <input
                                 type="text"
-                                value="John Doe"
+                                value="{{ $employeeFullName ?? auth()->user()?->name }}"
                                 disabled
                                 class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-gray-400 focus:outline-none"
                             >
@@ -259,7 +251,7 @@
                             <p class="text-[13px] text-[#667085] mb-2">(Auto-filled)</p>
                             <input
                                 type="text"
-                                value="Finance Department"
+                                value="{{ $employee?->center }}"
                                 disabled
                                 class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-gray-400 focus:outline-none"
                             >
@@ -304,10 +296,15 @@
 
                         <div>
                             <label class="block text-[16px] font-semibold text-[#243b5a] mb-3">
-                                Selected Equipment (0 items)
+                                Selected Equipment ({{ ($equipment ?? collect())->count() }} items)
                             </label>
-                            <select class="w-full h-[48px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-[#667085] focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                <option>Select Equipment</option>
+                            <select name="inventory_id" class="w-full h-[48px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-[#667085] focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                <option value="" selected>Select Equipment</option>
+                                @foreach (($equipment ?? collect()) as $item)
+                                    <option value="{{ $item->id }}">
+                                        {{ $item->current_prop_no ? $item->current_prop_no.' - ' : '' }}{{ $item->description }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
 
@@ -373,7 +370,7 @@
                                 </label>
                                 <input
                                     type="text"
-                                    value="John Doe"
+                                    value="{{ $employeeFullName ?? auth()->user()?->name }}"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
                             </div>
@@ -384,7 +381,7 @@
                                 </label>
                                 <input
                                     type="text"
-                                    value="Finance Department"
+                                    value="{{ $employee?->center }}"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
                             </div>
@@ -395,7 +392,7 @@
                                 </label>
                                 <input
                                     type="email"
-                                    value="employee@dap.com"
+                                    value="{{ auth()->user()?->email }}"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
                             </div>

@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CoordinatorController;
+use App\Models\Employee;
+use App\Models\Inventory;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -15,7 +17,24 @@ Route::get('/login', [LoginController::class, 'showLogin'])
 Route::post('/login', [LoginController::class, 'login']);
 
 Route::get('/dashboard', function () {
-    return view('employee.dashboard');
+    $user = auth()->user();
+
+    $employee = $user
+        ? Employee::query()->where('user_id', $user->id)->first()
+        : null;
+
+    $equipment = $employee
+        ? Inventory::query()
+            ->where('employee_id', $employee->employee_id)
+            ->orderBy('current_prop_no')
+            ->get()
+        : collect();
+
+    return view('employee.dashboard', [
+        'employee' => $employee,
+        'employeeFullName' => $employee?->employee_name ?? $user?->name,
+        'equipment' => $equipment,
+    ]);
 })->middleware('auth');
 
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth');
@@ -25,7 +44,24 @@ Route::get('/register', function () {
 });
 
 Route::get('/employee/dashboard', function () {
-    return view('employee.dashboard');
+    $user = auth()->user();
+
+    $employee = $user
+        ? Employee::query()->where('user_id', $user->id)->first()
+        : null;
+
+    $equipment = $employee
+        ? Inventory::query()
+            ->where('employee_id', $employee->employee_id)
+            ->orderBy('current_prop_no')
+            ->get()
+        : collect();
+
+    return view('employee.dashboard', [
+        'employee' => $employee,
+        'employeeFullName' => $employee?->employee_name ?? $user?->name,
+        'equipment' => $equipment,
+    ]);
 })->middleware('auth');
 
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth');
