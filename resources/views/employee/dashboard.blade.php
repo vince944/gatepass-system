@@ -581,6 +581,56 @@
         </div>
     </div>
 
+    <!-- Gate Pass QR Code Modal -->
+    <div id="gatepassQrModal" class="fixed inset-0 bg-black/55 z-50 hidden items-center justify-center px-4 py-6">
+        <div class="w-full max-w-[560px] bg-white rounded-[18px] shadow-2xl overflow-hidden border border-gray-200">
+            <div class="flex items-center justify-center px-7 py-6 border-b border-gray-200">
+                <h2 class="text-[26px] font-bold text-[#003b95]">Gate Pass QR Code</h2>
+            </div>
+
+            <div class="px-7 py-10">
+                <div class="flex flex-col items-center gap-8">
+                    <div
+                        id="gatepassQrCodeContainer"
+                        class="w-full min-h-[280px] flex items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-[#fbfcfe] px-4 py-6"
+                    >
+                        <!-- QR loaded/generate here -->
+                    </div>
+
+                    <div class="w-full rounded-2xl border border-gray-200 bg-white px-5 py-4 text-center">
+                        <div class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                            Gate Pass Number
+                        </div>
+                        <div id="gatepassQrGatepassNo" class="text-[18px] md:text-[20px] font-semibold text-[#003b95] break-words leading-snug">
+                            —
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 px-7 py-6">
+                <div class="flex flex-col sm:flex-row gap-4 sm:items-stretch sm:justify-between">
+                    <button
+                        type="button"
+                        id="gatepassQrDownloadBtn"
+                        disabled
+                        class="w-full sm:flex-1 flex items-center justify-center h-[52px] rounded-xl bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] text-[16px] font-semibold transition whitespace-nowrap px-6 leading-none disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                        Download QR Code
+                    </button>
+
+                    <button
+                        type="button"
+                        id="gatepassQrCloseBtnBottom"
+                        class="w-full sm:flex-1 flex items-center justify-center h-[52px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition whitespace-nowrap px-6 leading-none"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
 
         const navDashboard = document.getElementById('navDashboard');
@@ -711,6 +761,7 @@
             const requestModal = document.getElementById('requestModal');
             const profileModal = document.getElementById('profileModal');
             const requestDetailsModal = document.getElementById('requestDetailsModal');
+            const gatepassQrModal = document.getElementById('gatepassQrModal');
 
             if (requestModal && e.target === requestModal) {
                 closeRequestModal();
@@ -722,6 +773,10 @@
 
             if (requestDetailsModal && e.target === requestDetailsModal) {
                 closeRequestDetailsModal();
+            }
+
+            if (gatepassQrModal && e.target === gatepassQrModal) {
+                closeGatepassQrModal();
             }
         });
 
@@ -851,6 +906,18 @@
             if (requestDetailsCloseBtn) {
                 requestDetailsCloseBtn.addEventListener('click', closeRequestDetailsModal);
             }
+
+            const gatepassQrCloseBtnBottom = document.getElementById('gatepassQrCloseBtnBottom');
+            if (gatepassQrCloseBtnBottom) {
+                gatepassQrCloseBtnBottom.addEventListener('click', closeGatepassQrModal);
+            }
+
+            const gatepassQrDownloadBtn = document.getElementById('gatepassQrDownloadBtn');
+            if (gatepassQrDownloadBtn) {
+                gatepassQrDownloadBtn.addEventListener('click', async function () {
+                    await employeeDownloadGatepassQrCode();
+                });
+            }
         });
 
         function employeeWireDashboardFilters() {
@@ -964,6 +1031,7 @@
                         : 'No items';
 
                     const statusText = (row.status || '—').toString();
+                    const statusTextLower = String(statusText).toLowerCase();
                     const badgeClass = employeeStatusBadgeClass(statusText);
 
                     const card = document.createElement('div');
@@ -972,6 +1040,12 @@
                     card.setAttribute('tabindex', '0');
                     card.setAttribute('aria-label', 'View request details');
                     const gatepassNo = (row.gatepass_no || '').toString();
+                    const showQrButton = statusTextLower === 'approved' && gatepassNo;
+                    const qrButtonHtml = showQrButton
+                        ? '<button type="button" data-qr-gatepass-no="' + escapeHtml(gatepassNo) + '" aria-label="Show Gate Pass QR Code" class="w-[36px] h-[36px] rounded-full border border-[#00b84f]/30 bg-white text-[#00b84f] flex items-center justify-center text-[16px] hover:bg-[#e8fff0] transition">' +
+                            '<i class="fa-solid fa-qrcode"></i>' +
+                          '</button>'
+                        : '';
 
                     card.innerHTML = ''
                         + '<div class="flex items-start justify-between gap-4">'
@@ -981,7 +1055,10 @@
                         + '    <div class="text-[14px] text-gray-700 mt-2 break-words">' + escapeHtml(itemsText) + '</div>'
                         + '  </div>'
                         + '  <div class="shrink-0 flex flex-col items-end gap-2">'
-                        + '    <span class="inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold ' + badgeClass + '">' + escapeHtml(statusText) + '</span>'
+                        + '    <div class="flex items-center gap-2">'
+                        + '      <span class="inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold ' + badgeClass + '">' + escapeHtml(statusText) + '</span>'
+                        + qrButtonHtml
+                        + '    </div>'
                         + '    <span class="text-[13px] font-semibold text-[#003b95] underline underline-offset-4">View Details</span>'
                         + '  </div>'
                         + '</div>';
@@ -993,6 +1070,11 @@
                     });
 
                     card.addEventListener('keydown', function (ev) {
+                        const target = ev.target;
+                        if (target && target.closest && target.closest('button[data-qr-gatepass-no]')) {
+                            return;
+                        }
+
                         if (ev.key === 'Enter' || ev.key === ' ') {
                             ev.preventDefault();
                             if (gatepassNo) {
@@ -1000,6 +1082,16 @@
                             }
                         }
                     });
+
+                    if (showQrButton) {
+                        const qrBtn = card.querySelector('button[data-qr-gatepass-no]');
+                        if (qrBtn) {
+                            qrBtn.addEventListener('click', function (ev) {
+                                ev.stopPropagation();
+                                openGatepassQrModal(gatepassNo);
+                            });
+                        }
+                    }
 
                     listEl.appendChild(card);
                 }
@@ -1125,6 +1217,250 @@
             document.body.classList.remove('overflow-hidden');
         }
 
+        async function openGatepassQrModal(gatepassNo) {
+            const modal = document.getElementById('gatepassQrModal');
+            if (!modal) {
+                return;
+            }
+
+            const gatepassNoEl = document.getElementById('gatepassQrGatepassNo');
+            const qrContainerEl = document.getElementById('gatepassQrCodeContainer');
+            const qrDownloadBtn = document.getElementById('gatepassQrDownloadBtn');
+
+            if (!gatepassNoEl || !qrContainerEl) {
+                return;
+            }
+
+            gatepassNoEl.textContent = gatepassNo || '—';
+            window.__gatepassQrDownloadUrl = null;
+            window.__gatepassQrPath = null;
+            if (qrDownloadBtn) {
+                qrDownloadBtn.disabled = true;
+            }
+
+            qrContainerEl.innerHTML = '<div class="text-[#667085] text-[14px]">Loading QR...</div>';
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
+
+            await employeeLoadGatepassQr(gatepassNo);
+        }
+
+        function closeGatepassQrModal() {
+            const modal = document.getElementById('gatepassQrModal');
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.classList.remove('overflow-hidden');
+
+            window.__gatepassQrDownloadUrl = null;
+            window.__gatepassQrPath = null;
+        }
+
+        function renderGatepassQrError(message) {
+            const qrContainerEl = document.getElementById('gatepassQrCodeContainer');
+            const qrDownloadBtn = document.getElementById('gatepassQrDownloadBtn');
+
+            if (qrDownloadBtn) {
+                qrDownloadBtn.disabled = true;
+            }
+
+            if (!qrContainerEl) {
+                return;
+            }
+
+            qrContainerEl.innerHTML = ''
+                + '<div class="w-full flex flex-col items-center justify-center text-center gap-2 px-3">'
+                + '  <div class="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center">'
+                + '    <i class="fa-solid fa-triangle-exclamation text-[20px]"></i>'
+                + '  </div>'
+                + '  <div class="text-red-600 font-semibold text-[15px]">' + escapeHtml(message || 'Unable to show QR code.') + '</div>'
+                + '  <div class="text-[#667085] text-[13px]">Please try again later.</div>'
+                + '</div>';
+        }
+
+        async function employeeLoadGatepassQr(gatepassNo) {
+        const qrContainerEl = document.getElementById('gatepassQrCodeContainer');
+        const qrDownloadBtn = document.getElementById('gatepassQrDownloadBtn');
+
+        if (!qrContainerEl) {
+            return;
+        }
+
+        try {
+            const urlTemplate = "{{ route('employee.gatepass-requests.show', ['gatepass_no' => '__GP__']) }}";
+            const url = urlTemplate.replace('__GP__', encodeURIComponent(String(gatepassNo || '')));
+
+            const response = await fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load gate pass details for QR.');
+            }
+
+            const json = await response.json();
+            const data = json?.data || {};
+
+            let savedQrUrl = data?.qr_code_url || null;
+            const savedQrPath = data?.qr_code_path || null;
+
+            // Fallback: build URL from qr_code_path if qr_code_url is missing
+            if (!savedQrUrl && savedQrPath) {
+                savedQrUrl = "{{ asset('storage') }}/" + String(savedQrPath).replace(/^\/+/, '');
+            }
+
+            if (!savedQrUrl) {
+                throw new Error('QR not available for this gate pass.');
+            }
+
+            window.__gatepassQrDownloadUrl = savedQrUrl;
+            window.__gatepassQrPath = savedQrPath || savedQrUrl;
+
+            if (qrDownloadBtn) {
+                qrDownloadBtn.disabled = false;
+            }
+
+            const isSvg = String(savedQrUrl).toLowerCase().includes('.svg');
+
+            if (isSvg) {
+                qrContainerEl.innerHTML = ''
+                    + '<img '
+                    + '  src="' + escapeHtml(savedQrUrl) + '" '
+                    + '  alt="Gate Pass QR Code" '
+                    + '  class="max-w-[260px] w-full h-auto mx-auto" '
+                    + '  loading="eager"'
+                    + '/>';
+            } else {
+                qrContainerEl.innerHTML = ''
+                    + '<img '
+                    + '  src="' + escapeHtml(savedQrUrl) + '" '
+                    + '  alt="Gate Pass QR Code" '
+                    + '  class="max-w-[260px] w-full h-auto mx-auto" '
+                    + '  loading="eager"'
+                    + '/>';
+            }
+
+            const mediaEl = qrContainerEl.querySelector('img, object');
+            if (mediaEl) {
+                mediaEl.addEventListener('error', function () {
+                    window.__gatepassQrDownloadUrl = null;
+                    window.__gatepassQrPath = null;
+                    if (qrDownloadBtn) {
+                        qrDownloadBtn.disabled = true;
+                    }
+                    renderGatepassQrError('Unable to display QR code.');
+                }, { once: true });
+            }
+        } catch (e) {
+            window.__gatepassQrDownloadUrl = null;
+            window.__gatepassQrPath = null;
+            renderGatepassQrError('QR not available for this gate pass.');
+        }
+    }
+
+        
+        async function employeeDownloadGatepassQrCode() {
+            const downloadUrl = window.__gatepassQrDownloadUrl;
+            const storedPath = window.__gatepassQrPath || '';
+            const gatepassNoEl = document.getElementById('gatepassQrGatepassNo');
+            const gatepassNo = (gatepassNoEl?.textContent || 'gatepass').replace(/[^a-zA-Z0-9_-]+/g, '-');
+
+            if (!downloadUrl) {
+                renderGatepassQrError('QR is not ready to download.');
+                return;
+            }
+
+            try {
+                const lowerUrl = String(downloadUrl).toLowerCase();
+                const lowerPath = String(storedPath).toLowerCase();
+                const isSvg = lowerUrl.includes('.svg') || lowerPath.includes('.svg');
+
+                // If already PNG, download directly as PNG
+                if (!isSvg) {
+                    const response = await fetch(downloadUrl);
+                    if (!response.ok) {
+                        throw new Error('Failed to download QR.');
+                    }
+
+                    const blob = await response.blob();
+                    const objectUrl = URL.createObjectURL(blob);
+
+                    const a = document.createElement('a');
+                    a.href = objectUrl;
+                    a.download = gatepassNo + '-qr.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+
+                    URL.revokeObjectURL(objectUrl);
+                    return;
+                }
+
+                // If SVG, convert to PNG using canvas
+                const svgResponse = await fetch(downloadUrl);
+                if (!svgResponse.ok) {
+                    throw new Error('Failed to fetch SVG QR.');
+                }
+
+                const svgText = await svgResponse.text();
+                const svgBlob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+                const svgObjectUrl = URL.createObjectURL(svgBlob);
+
+                const img = new Image();
+                img.onload = function () {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        const size = 1000; // bigger size for cleaner PNG
+                        canvas.width = size;
+                        canvas.height = size;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, size, size);
+                        ctx.drawImage(img, 0, 0, size, size);
+
+                        URL.revokeObjectURL(svgObjectUrl);
+
+                        canvas.toBlob(function (pngBlob) {
+                            if (!pngBlob) {
+                                renderGatepassQrError('Failed to convert QR to PNG.');
+                                return;
+                            }
+
+                            const pngUrl = URL.createObjectURL(pngBlob);
+                            const a = document.createElement('a');
+                            a.href = pngUrl;
+                            a.download = gatepassNo + '-qr.png';
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+
+                            URL.revokeObjectURL(pngUrl);
+                        }, 'image/png');
+                    } catch (err) {
+                        renderGatepassQrError('Failed to convert QR to PNG.');
+                    }
+                };
+
+                img.onerror = function () {
+                    URL.revokeObjectURL(svgObjectUrl);
+                    renderGatepassQrError('Failed to load SVG QR.');
+                };
+
+                img.src = svgObjectUrl;
+            } catch (e) {
+                renderGatepassQrError('Failed to download QR code.');
+            }
+        }
+
         async function employeeLoadRequestDetails(gatepassNo) {
             const loadingEl = document.getElementById('requestDetailsLoading');
             const errorEl = document.getElementById('requestDetailsError');
@@ -1244,6 +1580,11 @@
             const profileModal = document.getElementById('profileModal');
             if (profileModal && !profileModal.classList.contains('hidden')) {
                 closeProfileModal();
+            }
+
+            const gatepassQrModal = document.getElementById('gatepassQrModal');
+            if (gatepassQrModal && !gatepassQrModal.classList.contains('hidden')) {
+                closeGatepassQrModal();
             }
         });
 

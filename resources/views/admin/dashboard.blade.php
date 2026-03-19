@@ -765,6 +765,9 @@
     <script>
         let nextGatePassNumber = 260000;
 
+        const adminGatepassShowUrlTemplate = "{{ route('admin.gatepass-requests.show', ['gatepassNo' => '__GP__']) }}";
+        const adminGatepassStoreQrUrlTemplate = "{{ route('admin.gatepass-requests.store-qr-code', ['gatepassNo' => '__GP__']) }}";
+
         const navDashboard = document.getElementById('navDashboard');
         const navItemTracking = document.getElementById('navItemTracking');
 
@@ -1134,6 +1137,67 @@
             if (isActiveOutsideStatus(newStatus)) updateCardCount('cardActiveOutsideCount', 1);
         }
 
+        async function generateAndSaveGatepassQrCode(gatepassNo) {
+            const showUrl = adminGatepassShowUrlTemplate.replace('__GP__', encodeURIComponent(gatepassNo));
+            const storeUrl = adminGatepassStoreQrUrlTemplate.replace('__GP__', encodeURIComponent(gatepassNo));
+
+            const res = await fetch(showUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+            });
+
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(payload?.message || 'Failed to load gate pass details.');
+            }
+
+            const data = payload?.data || {};
+            const items = Array.isArray(data.items) ? data.items : [];
+
+            // Encode the full gate pass data (including all items) into the QR content.
+            const qrPayload = {
+                gatepass_no: data.gatepass_no || gatepassNo,
+                request_date: data.request_date || null,
+                requester_name: data.requester_name || null,
+                center_office: data.center || null,
+                purpose: data.purpose || null,
+                destination: data.destination || null,
+                status: data.status || null,
+                remarks: data.remarks || null,
+                items: items.map(function (it) {
+                    return {
+                        order: it.order ?? null,
+                        property_number: it.prop_no ?? null,
+                        description: it.description ?? null,
+                        serial_number: it.serial_no ?? null,
+                        item_remarks: it.item_remarks ?? null,
+                        inventory_id: it.inventory_id ?? null,
+                        gatepass_item_id: it.gatepass_item_id ?? null,
+                    };
+                }),
+            };
+
+            const saveRes = await fetch(storeUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    qr_payload: qrPayload,
+                }),
+            });
+
+            const savePayload = await saveRes.json().catch(() => ({}));
+
+            if (!saveRes.ok) {
+                throw new Error(savePayload?.message || 'Failed to save QR code.');
+            }
+        }
+
         async function approveGatepass(button) {
             const url = button?.dataset?.url;
             const gatepassNo = button?.dataset?.gatepassNo;
@@ -1161,6 +1225,18 @@
                 updateRowStatus(gatepassNo, newStatus);
                 updateCardsForStatusChange(oldStatus, newStatus);
                 showToast(payload?.message || 'Approved successfully.', 'success');
+
+                // Best-effort QR generation + save. Employee UI also has fallback generation.
+                if (String(newStatus || '').toLowerCase() === 'approved') {
+                    try {
+                        await generateAndSaveGatepassQrCode(gatepassNo);
+                    } catch (qrErr) {
+                        showToast(
+                            qrErr?.message || 'Approved, but QR code generation/save failed.',
+                            'error'
+                        );
+                    }
+                }
             } catch (e) {
                 showToast('Failed to approve request.', 'error');
                 button.disabled = false;

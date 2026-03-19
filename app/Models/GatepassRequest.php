@@ -30,10 +30,12 @@ class GatepassRequest extends Model
         'status',
         'noted_by_employee_id',
         'authorized_by_employee_id',
+        'qr_code_path',
     ];
 
     protected $casts = [
         'request_date' => 'date',
+        'qr_code_generated_at' => 'datetime',
     ];
 
     public function items(): HasMany

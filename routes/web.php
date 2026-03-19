@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminGatepassRequestController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CoordinatorController;
 use App\Http\Controllers\EmployeeGatepassRequestController;
+use App\Http\Controllers\GuardGatepassLogController;
 use App\Models\Employee;
 use App\Models\Inventory;
 use Illuminate\Support\Facades\Route;
@@ -83,6 +84,11 @@ Route::get('/employee/gatepass-requests/{gatepass_no}', [EmployeeGatepassRequest
     ->middleware('auth')
     ->name('employee.gatepass-requests.show');
 
+Route::get('/employee/gatepass-requests/{gatepass_no}/qr-code', [EmployeeGatepassRequestController::class, 'qrCode'])
+    ->where('gatepass_no', '.*')
+    ->middleware('auth')
+    ->name('employee.gatepass-requests.qr-code');
+
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth');
 
 Route::get('/admin/dashboard', [AdminGatepassRequestController::class, 'index'])
@@ -98,6 +104,11 @@ Route::post('/admin/gatepass-requests/{gatepassNo}/approve', [AdminGatepassReque
     ->where('gatepassNo', '.*')
     ->middleware('auth')
     ->name('admin.gatepass-requests.approve');
+
+Route::post('/admin/gatepass-requests/{gatepassNo}/qr-code', [AdminGatepassRequestController::class, 'storeQrCode'])
+    ->where('gatepassNo', '.*')
+    ->middleware('auth')
+    ->name('admin.gatepass-requests.store-qr-code');
 
 Route::post('/admin/gatepass-requests/{gatepassNo}/reject', [AdminGatepassRequestController::class, 'reject'])
     ->where('gatepassNo', '.*')
@@ -125,3 +136,21 @@ Route::put('/coordinator/items/{inventory}', [CoordinatorController::class, 'upd
 Route::delete('/coordinator/items/{inventory}', [CoordinatorController::class, 'destroy'])
     ->middleware('auth')
     ->name('admin.coordinator.items.destroy');
+
+Route::get('/gdtest', function () {
+    return view('admin.gdtest');
+});
+
+Route::get('/guard', function () {
+    return view('guard.guard');
+})
+    ->middleware('auth')
+    ->name('guard');
+
+Route::get('/guard/gatepass-logs/next', [GuardGatepassLogController::class, 'next'])
+    ->middleware('auth')
+    ->name('guard.gatepass-logs.next');
+
+Route::post('/guard/gatepass-logs', [GuardGatepassLogController::class, 'store'])
+    ->middleware('auth')
+    ->name('guard.gatepass-logs.store');
