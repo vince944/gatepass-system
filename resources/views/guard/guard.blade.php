@@ -29,6 +29,13 @@
         .toast-exit {
             animation: toast-slide-out 0.3s ease-in forwards;
         }
+        @keyframes modal-scale-in {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal-animate-in {
+            animation: modal-scale-in 0.2s ease-out;
+        }
     </style>
 </head>
 <body class="bg-[#173a6b] min-h-screen">
@@ -192,6 +199,7 @@
                                     <th class="px-4 py-3 font-semibold">Description</th>
                                     <th class="px-4 py-3 font-semibold">Serial No</th>
                                     <th class="px-4 py-3 font-semibold">Remarks</th>
+                                    <th class="px-4 py-3 font-semibold">Item status</th>
                                 </tr>
                             </thead>
                             <tbody id="modalItemsTable" class="bg-white divide-y divide-gray-200">
@@ -200,26 +208,125 @@
                     </div>
                 </div>
 
-                <div class="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <label class="flex items-center gap-3 select-none">
+                <div class="mt-6 flex flex-col gap-4">
+                    <label class="flex items-start gap-3 select-none">
                         <input id="confirmGatepassCheckbox" type="checkbox"
-                               class="h-5 w-5 rounded border-gray-300 text-[#173a6b] focus:ring-[#173a6b]" />
-                        <span class="text-sm text-gray-700">
-                            I confirm that the gatepass and items are verified.
+                               class="h-5 w-5 mt-0.5 rounded border-gray-300 text-[#173a6b] focus:ring-[#173a6b]" />
+                        <span class="text-sm text-gray-700 text-left">
+                            I confirm that the gatepass and items match verification (complete return for incoming, or valid outgoing scan).
                         </span>
                     </label>
 
-                    <div class="flex justify-end gap-3">
-                        <button id="approveGatepassBtn" disabled
-                                class="bg-gray-300 text-gray-600 font-bold px-6 py-3 rounded-xl transition opacity-70 cursor-not-allowed">
+                    <div class="flex flex-col sm:flex-row flex-wrap gap-3 sm:justify-end">
+                        <button id="partialReturnBtn" type="button"
+                                class="hidden w-full sm:w-auto order-1 bg-amber-500 hover:bg-amber-600 text-[#0f3b78] font-bold px-6 py-3 rounded-xl transition">
+                            Partial return / missing item
+                        </button>
+                        <button id="approveGatepassBtn" type="button" disabled
+                                class="order-2 w-full sm:w-auto bg-gray-300 text-gray-600 font-bold px-6 py-3 rounded-xl transition opacity-70 cursor-not-allowed">
                             Approve
                         </button>
-
-                        <button id="closeScanModalFooter"
-                                class="bg-[#173a6b] hover:bg-[#123154] text-white font-semibold px-6 py-3 rounded-xl transition">
-                            Close
+                        <button id="rejectGatepassBtn" type="button"
+                                class="order-3 w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-xl transition">
+                            Reject
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Partial return / missing item -->
+    <div id="partialReturnModal" class="fixed inset-0 z-[65] hidden items-center justify-center bg-black/50 px-4 modal-animate-in">
+        <div class="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col modal-animate-in">
+            <div class="bg-[#173a6b] px-6 py-4 flex items-center justify-between shrink-0">
+                <div>
+                    <h3 class="text-white text-xl font-bold">Partial return / missing item</h3>
+                    <p class="text-white/70 text-sm">Mark which items were not returned. Other listed items are recorded as returned.</p>
+                </div>
+                <button type="button" id="closePartialReturnModal" class="text-white text-3xl leading-none hover:text-gray-200">
+                    &times;
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex-1">
+                <p id="partialReturnModalGatepassNo" class="text-sm text-gray-500 mb-4"></p>
+
+                <div id="partialReturnModalError" class="hidden mb-4 p-3 rounded-xl bg-red-100 border border-red-200 text-red-700 text-sm">
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border border-gray-200">
+                    <table class="min-w-full text-sm text-left">
+                        <thead class="bg-[#173a6b] text-white">
+                            <tr>
+                                <th class="px-4 py-3 font-semibold min-w-[7rem]">Not yet returned</th>
+                                <th class="px-4 py-3 font-semibold">Property Number</th>
+                                <th class="px-4 py-3 font-semibold">Description</th>
+                                <th class="px-4 py-3 font-semibold">Serial No</th>
+                                <th class="px-4 py-3 font-semibold">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partialReturnModalItemsTable" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+
+                <p id="partialReturnModalNoItems" class="hidden mt-4 text-gray-500 text-center">No items found for this gatepass.</p>
+
+                <div class="mt-6">
+                    <label for="partialReturnRemarks" class="block text-sm font-medium text-gray-700 mb-2">Guard remarks (optional)</label>
+                    <textarea id="partialReturnRemarks" rows="3"
+                              class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-800 focus:ring-2 focus:ring-[#173a6b] focus:border-[#173a6b]"
+                              placeholder="Notes about this inspection"></textarea>
+                </div>
+
+                <div class="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                    <button type="button" id="partialReturnModalCancelBtn"
+                            class="w-full sm:w-auto bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl transition">
+                        Cancel
+                    </button>
+                    <button type="button" id="partialReturnModalConfirmBtn"
+                            class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-[#0f3b78] font-bold px-6 py-3 rounded-xl transition">
+                        Confirm partial return
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div id="rejectModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/50 px-4 modal-animate-in">
+        <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden modal-animate-in">
+            <div class="bg-[#173a6b] px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h3 class="text-white text-xl font-bold">Reject gate pass</h3>
+                    <p class="text-white/70 text-sm">Use for invalid, suspicious, or failed verification cases only.</p>
+                </div>
+                <button type="button" id="closeRejectModal" class="text-white text-3xl leading-none hover:text-gray-200">
+                    &times;
+                </button>
+            </div>
+
+            <div class="p-6 max-h-[70vh] overflow-y-auto">
+                <p id="rejectModalGatepassNo" class="text-sm text-gray-500 mb-4"></p>
+
+                <div id="rejectModalError" class="hidden mb-4 p-3 rounded-xl bg-red-100 border border-red-200 text-red-700 text-sm">
+                </div>
+
+                <label for="rejectReasonInput" class="block text-sm font-medium text-gray-700 mb-2">Rejection reason <span class="text-red-600">*</span></label>
+                <textarea id="rejectReasonInput" rows="5"
+                          class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-800 focus:ring-2 focus:ring-[#173a6b] focus:border-[#173a6b]"
+                          placeholder="Describe why this gatepass is being rejected"></textarea>
+
+                <div class="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                    <button type="button" id="rejectModalCancelBtn"
+                            class="w-full sm:w-auto bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl transition">
+                        Cancel
+                    </button>
+                    <button type="button" id="rejectModalConfirmBtn"
+                            class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-xl transition">
+                        Confirm reject
+                    </button>
                 </div>
             </div>
         </div>
@@ -241,15 +348,35 @@
 
         const scanModal = document.getElementById('scanModal');
         const closeScanModal = document.getElementById('closeScanModal');
-        const closeScanModalFooter = document.getElementById('closeScanModalFooter');
         const successOverlay = document.getElementById('successOverlay');
 
         const confirmGatepassCheckbox = document.getElementById('confirmGatepassCheckbox');
         const approveGatepassBtn = document.getElementById('approveGatepassBtn');
+        const rejectGatepassBtn = document.getElementById('rejectGatepassBtn');
+        const partialReturnBtn = document.getElementById('partialReturnBtn');
+
+        const partialReturnModal = document.getElementById('partialReturnModal');
+        const closePartialReturnModal = document.getElementById('closePartialReturnModal');
+        const partialReturnModalCancelBtn = document.getElementById('partialReturnModalCancelBtn');
+        const partialReturnModalConfirmBtn = document.getElementById('partialReturnModalConfirmBtn');
+        const partialReturnModalItemsTable = document.getElementById('partialReturnModalItemsTable');
+        const partialReturnModalNoItems = document.getElementById('partialReturnModalNoItems');
+        const partialReturnModalError = document.getElementById('partialReturnModalError');
+        const partialReturnModalGatepassNo = document.getElementById('partialReturnModalGatepassNo');
+        const partialReturnRemarks = document.getElementById('partialReturnRemarks');
+
+        const rejectModal = document.getElementById('rejectModal');
+        const closeRejectModal = document.getElementById('closeRejectModal');
+        const rejectModalCancelBtn = document.getElementById('rejectModalCancelBtn');
+        const rejectModalConfirmBtn = document.getElementById('rejectModalConfirmBtn');
+        const rejectModalError = document.getElementById('rejectModalError');
+        const rejectModalGatepassNo = document.getElementById('rejectModalGatepassNo');
+        const rejectReasonInput = document.getElementById('rejectReasonInput');
 
         let currentGatepassNo = null;
         let nextLogType = null;
         let savedCameraId = null;
+        let lastQrPayload = null;
 
         function showError(message) {
             errorBox.classList.remove('hidden');
@@ -348,7 +475,7 @@
                             showSuccessAnimation();
                             setTimeout(() => {
                                 hideSuccessOverlay();
-                                fillModal(parsedData);
+                                void fillModal(parsedData);
                                 openModal();
                             }, 700);
                         } catch (e) {
@@ -430,11 +557,14 @@
                 labelEl.textContent = logTypeToLabel(nextLogType);
                 datetimeEl.textContent = data.log_datetime ?? '';
                 hintEl.textContent = String(nextLogType ?? '').toUpperCase();
+                updatePartialReturnButtonVisibility();
             } catch (e) {
                 console.error(e);
                 labelEl.textContent = 'Time In';
                 datetimeEl.textContent = new Date().toLocaleString();
                 hintEl.textContent = '';
+                nextLogType = null;
+                updatePartialReturnButtonVisibility();
             }
         }
 
@@ -452,49 +582,134 @@
                 statusEl.classList.add('text-yellow-600');
             } else if (lowerStatus === 'rejected') {
                 statusEl.classList.add('text-red-600');
+            } else if (lowerStatus === 'incoming partial') {
+                statusEl.classList.add('text-amber-600');
+            } else if (lowerStatus === 'returned') {
+                statusEl.classList.add('text-blue-600');
             } else {
                 statusEl.classList.add('text-[#173a6b]');
             }
         }
 
-        function fillModal(data) {
+        function updatePartialReturnButtonVisibility() {
+            const upper = String(nextLogType ?? '').toUpperCase();
+            if (!partialReturnBtn) {
+                return;
+            }
+            if (upper === 'INCOMING') {
+                partialReturnBtn.classList.remove('hidden');
+            } else {
+                partialReturnBtn.classList.add('hidden');
+            }
+        }
+
+        function itemStatusBadgeHtml(itemStatus) {
+            const s = String(itemStatus || 'pending_return').toLowerCase();
+            let label = 'Pending return';
+            let cls = 'bg-gray-100 text-gray-800';
+            if (s === 'returned') {
+                label = 'Returned';
+                cls = 'bg-green-100 text-green-800';
+            } else if (s === 'missing') {
+                label = 'Not yet returned';
+                cls = 'bg-amber-100 text-amber-900';
+            }
+            return `<span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold ${cls}">${label}</span>`;
+        }
+
+        function renderGatepassItemsRows(items) {
+            const itemsTable = document.getElementById('modalItemsTable');
+            itemsTable.innerHTML = '';
+
+            if (!Array.isArray(items) || items.length === 0) {
+                itemsTable.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-4 py-4 text-center text-gray-500">
+                            No items found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            items.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = 'align-top';
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(item.property_number ?? 'N/A'))}</td>
+                    <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(item.description ?? 'N/A'))}</td>
+                    <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(item.serial_no ?? 'N/A'))}</td>
+                    <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(item.remarks ?? 'N/A'))}</td>
+                    <td class="px-4 py-3">${itemStatusBadgeHtml(item.item_status)}</td>
+                `;
+                itemsTable.appendChild(row);
+            });
+        }
+
+        function renderQrFallbackItems(data) {
+            const items = Array.isArray(data.items) ? data.items : [];
+            const mapped = items.map(item => ({
+                property_number: item.property_number ?? 'N/A',
+                description: item.description ?? item.item_description ?? 'N/A',
+                serial_no: item.serial_no ?? item.serial_number ?? 'N/A',
+                remarks: item.item_remarks ?? 'N/A',
+                item_status: 'pending_return',
+            }));
+            renderGatepassItemsRows(mapped);
+        }
+
+        async function refreshGatepassItemsFromServer(gatepassNo) {
+            const itemsTable = document.getElementById('modalItemsTable');
+            itemsTable.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-4 py-4 text-center text-gray-500">Loading items…</td>
+                </tr>
+            `;
+
+            try {
+                const res = await fetch(`/guard/gatepass-items?gatepass_no=${encodeURIComponent(gatepassNo)}`, {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                });
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    throw new Error(data?.message || 'Failed to load items');
+                }
+
+                setStatusStyle(data.gatepass_status);
+                renderGatepassItemsRows(data.items || []);
+            } catch (e) {
+                console.error(e);
+                if (lastQrPayload) {
+                    renderQrFallbackItems(lastQrPayload);
+                } else {
+                    itemsTable.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="px-4 py-4 text-center text-red-500">Could not load items from the server.</td>
+                        </tr>
+                    `;
+                }
+            }
+        }
+
+        async function fillModal(data) {
+            lastQrPayload = data;
             currentGatepassNo = data.gatepass_no || null;
             document.getElementById('modalGatepassNo').textContent = data.gatepass_no || 'N/A';
             setStatusStyle(data.status);
             document.getElementById('modalRequestDate').textContent = data.request_date || 'N/A';
             document.getElementById('modalRequesterName').textContent = data.requester_name || 'N/A';
-            document.getElementById('modalCenter').textContent = data.center || 'N/A';
+            document.getElementById('modalCenter').textContent = data.center || data.center_office || 'N/A';
             document.getElementById('modalPurpose').textContent = data.purpose || 'N/A';
             document.getElementById('modalDestination').textContent = data.destination || 'N/A';
             document.getElementById('modalRemarks').textContent = data.remarks || 'N/A';
 
-            const itemsTable = document.getElementById('modalItemsTable');
-            itemsTable.innerHTML = '';
-
-            if (Array.isArray(data.items) && data.items.length > 0) {
-                data.items.forEach(item => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="px-4 py-3">${item.property_number || 'N/A'}</td>
-                        <td class="px-4 py-3">${item.description || 'N/A'}</td>
-                        <td class="px-4 py-3">${item.serial_no || 'N/A'}</td>
-                        <td class="px-4 py-3">${item.item_remarks || 'N/A'}</td>
-                    `;
-                    itemsTable.appendChild(row);
-                });
-            } else {
-                itemsTable.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="px-4 py-4 text-center text-gray-500">
-                            No items found
-                        </td>
-                    </tr>
-                `;
-            }
-
             resetApprovalControls();
+
             if (currentGatepassNo) {
-                refreshNextLogInfo(currentGatepassNo);
+                await refreshNextLogInfo(currentGatepassNo);
+                await refreshGatepassItemsFromServer(currentGatepassNo);
             }
         }
 
@@ -555,7 +770,6 @@
         startBtn.addEventListener('click', startScanner);
         stopBtn.addEventListener('click', stopScanner);
         closeScanModal.addEventListener('click', closeModal);
-        closeScanModalFooter.addEventListener('click', closeModal);
 
         confirmGatepassCheckbox.addEventListener('change', (e) => {
             setApprovalEnabled(Boolean(e.target.checked) && approveGatepassBtn.dataset.submitted !== '1');
@@ -602,6 +816,7 @@
                 showToast(data?.message || 'Recorded successfully', 'success');
 
                 await refreshNextLogInfo(currentGatepassNo);
+                await refreshGatepassItemsFromServer(currentGatepassNo);
                 closeModal();
             } catch (e) {
                 console.error(e);
@@ -614,6 +829,214 @@
         scanModal.addEventListener('click', function (e) {
             if (e.target === scanModal) {
                 closeModal();
+            }
+        });
+
+        function openRejectModal() {
+            if (!currentGatepassNo) {
+                showToast('No gatepass selected.', 'error');
+                return;
+            }
+            rejectModalGatepassNo.textContent = 'Gatepass No: ' + currentGatepassNo;
+            rejectModalError.classList.add('hidden');
+            if (rejectReasonInput) {
+                rejectReasonInput.value = '';
+            }
+            rejectModal.classList.remove('hidden');
+            rejectModal.classList.add('flex');
+        }
+
+        function closeRejectModalFn() {
+            rejectModal.classList.add('hidden');
+            rejectModal.classList.remove('flex');
+        }
+
+        async function fetchPartialReturnModalItems() {
+            partialReturnModalItemsTable.innerHTML = '';
+            partialReturnModalNoItems.classList.add('hidden');
+            partialReturnModalError.classList.add('hidden');
+
+            try {
+                const res = await fetch(`/guard/gatepass-items?gatepass_no=${encodeURIComponent(currentGatepassNo)}`, {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                });
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    partialReturnModalItemsTable.innerHTML = '<tr><td colspan="5" class="px-4 py-4 text-center text-red-500">Failed to load items.</td></tr>';
+                    partialReturnModalConfirmBtn.disabled = true;
+                    return;
+                }
+
+                const items = data.items || [];
+                if (items.length === 0) {
+                    partialReturnModalNoItems.classList.remove('hidden');
+                    partialReturnModalConfirmBtn.disabled = true;
+                    return;
+                }
+
+                partialReturnModalConfirmBtn.disabled = false;
+                partialReturnModalItemsTable.innerHTML = items.map(item => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <input type="checkbox" name="partial_missing_item" value="${item.gatepass_item_id}"
+                                   aria-label="Mark as not yet returned"
+                                   class="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"/>
+                        </td>
+                        <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(item.property_number || 'N/A')}</td>
+                        <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(item.description || 'N/A')}</td>
+                        <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(item.serial_no || 'N/A')}</td>
+                        <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(item.remarks || 'N/A')}</td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error(e);
+                partialReturnModalItemsTable.innerHTML = '<tr><td colspan="5" class="px-4 py-4 text-center text-red-500">Failed to load items.</td></tr>';
+                partialReturnModalConfirmBtn.disabled = true;
+            }
+        }
+
+        function openPartialReturnModal() {
+            if (!currentGatepassNo) {
+                showToast('No gatepass selected.', 'error');
+                return;
+            }
+            const upper = String(nextLogType ?? '').toUpperCase();
+            if (upper !== 'INCOMING') {
+                showToast('Partial return is only available for an incoming return scan.', 'error');
+                return;
+            }
+            partialReturnModalGatepassNo.textContent = 'Gatepass No: ' + currentGatepassNo;
+            partialReturnModalError.classList.add('hidden');
+            if (partialReturnRemarks) {
+                partialReturnRemarks.value = '';
+            }
+            partialReturnModal.classList.remove('hidden');
+            partialReturnModal.classList.add('flex');
+            void fetchPartialReturnModalItems();
+        }
+
+        function closePartialReturnModalFn() {
+            partialReturnModal.classList.add('hidden');
+            partialReturnModal.classList.remove('flex');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        partialReturnBtn.addEventListener('click', openPartialReturnModal);
+        closePartialReturnModal.addEventListener('click', closePartialReturnModalFn);
+        partialReturnModalCancelBtn.addEventListener('click', closePartialReturnModalFn);
+
+        partialReturnModal.addEventListener('click', function (e) {
+            if (e.target === partialReturnModal) {
+                closePartialReturnModalFn();
+            }
+        });
+
+        partialReturnModalConfirmBtn.addEventListener('click', async () => {
+            const checked = Array.from(document.querySelectorAll('#partialReturnModal input[name="partial_missing_item"]:checked'))
+                .map(el => parseInt(el.value, 10))
+                .filter(n => !isNaN(n));
+
+            if (checked.length === 0) {
+                partialReturnModalError.textContent = 'Please select the item(s) that were not returned.';
+                partialReturnModalError.classList.remove('hidden');
+                return;
+            }
+
+            partialReturnModalError.classList.add('hidden');
+            partialReturnModalConfirmBtn.disabled = true;
+
+            try {
+                const res = await fetch('/guard/gatepass-partial-return', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken(),
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        gatepass_no: currentGatepassNo,
+                        missing_item_ids: checked,
+                        remarks: partialReturnRemarks ? partialReturnRemarks.value : '',
+                    }),
+                });
+
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    throw new Error(data?.message || 'Failed to record partial return.');
+                }
+
+                showToast(data?.message || 'Partial return recorded.', 'success');
+                closePartialReturnModalFn();
+                if (data.gatepass_status) {
+                    setStatusStyle(data.gatepass_status);
+                }
+                await refreshGatepassItemsFromServer(currentGatepassNo);
+            } catch (e) {
+                showToast(e?.message || 'Something went wrong.', 'error');
+            } finally {
+                partialReturnModalConfirmBtn.disabled = false;
+            }
+        });
+
+        rejectGatepassBtn.addEventListener('click', openRejectModal);
+        closeRejectModal.addEventListener('click', closeRejectModalFn);
+        rejectModalCancelBtn.addEventListener('click', closeRejectModalFn);
+
+        rejectModal.addEventListener('click', function (e) {
+            if (e.target === rejectModal) {
+                closeRejectModalFn();
+            }
+        });
+
+        rejectModalConfirmBtn.addEventListener('click', async () => {
+            const reason = rejectReasonInput ? String(rejectReasonInput.value).trim() : '';
+
+            if (!reason) {
+                rejectModalError.textContent = 'Please enter a rejection reason.';
+                rejectModalError.classList.remove('hidden');
+                return;
+            }
+
+            rejectModalError.classList.add('hidden');
+            rejectModalConfirmBtn.disabled = true;
+
+            try {
+                const res = await fetch('/guard/gatepass-reject', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken(),
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        gatepass_no: currentGatepassNo,
+                        rejection_reason: reason,
+                    }),
+                });
+
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    throw new Error(data?.message || 'Failed to reject gatepass.');
+                }
+
+                showToast(data?.message || 'Gatepass rejected successfully.', 'success');
+                closeRejectModalFn();
+                closeModal();
+            } catch (e) {
+                showToast(e?.message || 'Something went wrong.', 'error');
+            } finally {
+                rejectModalConfirmBtn.disabled = false;
             }
         });
     </script>

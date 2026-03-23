@@ -154,3 +154,15 @@ Route::get('/guard/gatepass-logs/next', [GuardGatepassLogController::class, 'nex
 Route::post('/guard/gatepass-logs', [GuardGatepassLogController::class, 'store'])
     ->middleware('auth')
     ->name('guard.gatepass-logs.store');
+
+Route::get('/guard/gatepass-items', [GuardGatepassLogController::class, 'items'])
+    ->middleware('auth')
+    ->name('guard.gatepass-items');
+
+Route::post('/guard/gatepass-partial-return', [GuardGatepassLogController::class, 'partialReturn'])
+    ->middleware('auth')
+    ->name('guard.gatepass-partial-return');
+
+Route::post('/guard/gatepass-reject', [GuardGatepassLogController::class, 'reject'])
+    ->middleware('auth')
+    ->name('guard.gatepass-reject');

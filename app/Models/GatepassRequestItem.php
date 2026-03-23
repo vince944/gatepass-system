@@ -18,6 +18,14 @@ class GatepassRequestItem extends Model
         'gatepass_no',
         'inventory_id',
         'item_remarks',
+        'item_status',
+        'returned_at',
+        'last_inspected_by',
+        'inspection_remarks',
+    ];
+
+    protected $casts = [
+        'returned_at' => 'datetime',
     ];
 
     public function request(): BelongsTo

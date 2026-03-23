@@ -7,6 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @vite('resources/css/app.css')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body class="bg-[#f3f3f3] min-h-screen font-sans">
 
@@ -38,8 +39,8 @@
                         <span>Item Tracking</span>
                     </button>
 
-                    <button type="button" class="w-full flex items-center gap-4 px-6 py-4 text-[17px] font-semibold text-white/90 hover:bg-white/10 rounded-2xl transition text-left">
-                        <i class="fa-regular fa-file-lines text-[20px]"></i>
+                    <button id="navReports" type="button" class="w-full flex items-center gap-4 px-6 py-4 text-[17px] font-semibold text-white/90 hover:bg-white/10 rounded-2xl transition text-left">
+                        <i class="fa-solid fa-chart-pie text-[20px]" aria-hidden="true"></i>
                         <span>Reports</span>
                     </button>
                 </nav>
@@ -216,7 +217,7 @@
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     <button
                                                         type="button"
-                                                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-green-600 text-white shadow-sm ring-1 ring-inset ring-black/5 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-green-600 text-white shadow-sm ring-1 ring-inset ring-black/5 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600/30 disabled:opacity-50 disabled:cursor-not-allowed {{ strtolower(trim((string) $req->status)) === 'rejected' ? '!hidden' : '' }}"
                                                         onclick="approveGatepass(this)"
                                                         data-url="{{ route('admin.gatepass-requests.approve', $req->gatepass_no) }}"
                                                         data-gatepass-no="{{ $req->gatepass_no }}"
@@ -243,11 +244,37 @@
 
                                                     <button
                                                         type="button"
-                                                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-600 text-white shadow-sm ring-1 ring-inset ring-black/5 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#003b95] shadow-sm ring-1 ring-inset ring-black/5 hover:bg-[#003b95]/10 focus:outline-none focus:ring-2 focus:ring-[#003b95]/30"
+                                                        onclick="openAuditTrailsModal(this)"
+                                                        data-url="{{ route('admin.gatepass-requests.show', $req->gatepass_no) }}"
+                                                        data-gatepass-no="{{ $req->gatepass_no }}"
+                                                        aria-label="Audit Trails"
+                                                        title="Audit Trails"
+                                                    >
+                                                        <i class="fa-solid fa-clipboard-list text-[14px]" aria-hidden="true"></i>
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        data-action="take-actions"
+                                                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#f6b400] text-black shadow-sm ring-1 ring-inset ring-black/5 hover:bg-[#e5a900] focus:outline-none focus:ring-2 focus:ring-[#f6b400]/30 {{ strtolower(trim((string) $req->status)) === 'rejected' ? '' : '!hidden' }}"
+                                                        onclick="openTakeActionsModal(this)"
+                                                        data-url="{{ route('admin.gatepass-requests.show', $req->gatepass_no) }}"
+                                                        data-gatepass-no="{{ $req->gatepass_no }}"
+                                                        aria-label="Take actions"
+                                                        title="Take actions"
+                                                    >
+                                                        <i class="fa-solid fa-pen-to-square text-[14px]" aria-hidden="true"></i>
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        data-action="reject-action"
+                                                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-600 text-white shadow-sm ring-1 ring-inset ring-black/5 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600/30 disabled:opacity-50 disabled:cursor-not-allowed {{ strtolower(trim((string) $req->status)) === 'rejected' ? '!hidden' : '' }}"
                                                         onclick="rejectGatepass(this)"
                                                         data-url="{{ route('admin.gatepass-requests.reject', $req->gatepass_no) }}"
                                                         data-gatepass-no="{{ $req->gatepass_no }}"
-                                                        @disabled(strtolower($req->status) === 'rejected')
+                                                        @disabled(strtolower(trim((string) $req->status)) === 'rejected')
                                                         aria-label="Reject"
                                                         title="Reject"
                                                     >
@@ -344,7 +371,7 @@
                         </div>
 
                         <!-- Pagination Design -->
-                        <div class="flex items-center justify-between px-7 py-5 border-t border-gray-200">
+                        <div id="itemTrackingPagination" class="flex items-center justify-between px-7 py-5 border-t border-gray-200">
                             <p class="text-[16px] text-[#3e5573]">
                                 @php
                                     $p = $trackedItems ?? null;
@@ -386,6 +413,101 @@
                                         Next
                                     </span>
                                 @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- REPORTS SECTION -->
+                <div id="reportsSection" class="hidden">
+                    <div class="space-y-6">
+                        <!-- SYSTEM-WIDE MOVEMENT TRACKING -->
+                        <div class="bg-white border border-gray-200 overflow-hidden rounded-[22px] px-6 sm:px-8 py-6 sm:py-8">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-6">
+                                <div>
+                                    <h3 class="text-[20px] sm:text-[24px] font-bold text-black leading-tight">
+                                        System-Wide Movement Tracking
+                                    </h3>
+                                    <p class="text-[14px] sm:text-[16px] text-[#3e5573] mt-2">
+                                        Outgoing vs Incoming Statistics
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-center">
+                                <div class="lg:col-span-2">
+                                    <div class="relative h-[240px] sm:h-[280px]">
+                                        <canvas id="movementDoughnutChart"></canvas>
+                                    </div>
+
+                                    <div class="mt-4 space-y-2">
+                                        <p class="text-[14px] sm:text-[15px] text-gray-700">
+                                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-[#f6b400] mr-2 align-middle"></span>
+                                            Outgoing:
+                                            <span id="movementOutgoingPercent" class="font-semibold text-black">0%</span>
+                                            (<span id="movementOutgoingCount" class="font-semibold text-black">0</span>)
+                                        </p>
+                                        <p class="text-[14px] sm:text-[15px] text-gray-700">
+                                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-[#003b95] mr-2 align-middle"></span>
+                                            Incoming:
+                                            <span id="movementIncomingPercent" class="font-semibold text-black">0%</span>
+                                            (<span id="movementIncomingCount" class="font-semibold text-black">0</span>)
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="lg:col-span-3">
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div class="bg-[#f6f7fb] border border-gray-200 rounded-2xl px-5 py-4">
+                                            <p class="text-[14px] font-semibold text-[#3e5573]">Outgoing</p>
+                                            <h4 id="movementOutgoingCardCount" class="text-[30px] font-bold text-[#003b95] leading-none mt-3">0</h4>
+                                        </div>
+                                        <div class="bg-[#f6f7fb] border border-gray-200 rounded-2xl px-5 py-4">
+                                            <p class="text-[14px] font-semibold text-[#3e5573]">Incoming</p>
+                                            <h4 id="movementIncomingCardCount" class="text-[30px] font-bold text-[#003b95] leading-none mt-3">0</h4>
+                                        </div>
+                                        <div class="bg-[#f6f7fb] border border-gray-200 rounded-2xl px-5 py-4">
+                                            <p class="text-[14px] font-semibold text-[#3e5573]">Total Movements</p>
+                                            <h4 id="movementTotalCardCount" class="text-[30px] font-bold text-[#003b95] leading-none mt-3">0</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- GATE PASS TRENDS -->
+                        <div class="bg-white border border-gray-200 overflow-hidden rounded-[22px] px-6 sm:px-8 py-6 sm:py-8">
+                            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+                                <div>
+                                    <h3 class="text-[20px] sm:text-[24px] font-bold text-black leading-tight">
+                                        Gate Pass Trends
+                                    </h3>
+                                    <p id="gatepassTrendsSubtitle" class="text-[14px] sm:text-[16px] text-[#3e5573] mt-2">
+                                        Last 7 days
+                                    </p>
+                                </div>
+
+                                <div class="flex flex-wrap items-center justify-start sm:justify-end gap-2">
+                                    <button type="button" data-trends-filter="daily" class="trendsFilterBtn bg-[#003b95] text-white px-4 py-2 rounded-xl text-[14px] font-semibold">
+                                        Daily
+                                    </button>
+                                    <button type="button" data-trends-filter="weekly" class="trendsFilterBtn bg-white text-[#003b95] border border-[#003b95]/30 hover:bg-[#003b95]/10 px-4 py-2 rounded-xl text-[14px] font-semibold">
+                                        Weekly
+                                    </button>
+                                    <button type="button" data-trends-filter="monthly" class="trendsFilterBtn bg-white text-[#003b95] border border-[#003b95]/30 hover:bg-[#003b95]/10 px-4 py-2 rounded-xl text-[14px] font-semibold">
+                                        Monthly
+                                    </button>
+                                    <button type="button" data-trends-filter="quarterly" class="trendsFilterBtn bg-white text-[#003b95] border border-[#003b95]/30 hover:bg-[#003b95]/10 px-4 py-2 rounded-xl text-[14px] font-semibold">
+                                        Quarterly
+                                    </button>
+                                    <button type="button" data-trends-filter="yearly" class="trendsFilterBtn bg-white text-[#003b95] border border-[#003b95]/30 hover:bg-[#003b95]/10 px-4 py-2 rounded-xl text-[14px] font-semibold">
+                                        Yearly
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="relative h-[340px] sm:h-[380px]">
+                                <canvas id="gatepassTrendsBarChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -727,36 +849,195 @@
                                 <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Remarks</p>
                                 <p id="gpDetailRemarks" class="mt-2 text-[15px] font-semibold text-gray-900 whitespace-pre-line">—</p>
                             </div>
-                        </div>
-                    </div>
 
-                    <div class="md:col-span-2">
-                        <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
-                            <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Items</p>
-                            <div class="border border-gray-200 rounded-2xl overflow-hidden bg-white">
-                                <table class="w-full text-left">
-                                    <thead class="bg-gray-50 border-b border-gray-200">
-                                    <tr>
-                                        <th class="px-4 py-3 text-[12px] font-semibold text-gray-600 uppercase tracking-wide">#</th>
-                                        <th class="px-4 py-3 text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Item</th>
-                                        <th class="px-4 py-3 text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Property No.</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody id="gpDetailItemsBody" class="divide-y divide-gray-100">
-                                        <tr>
-                                            <td colspan="3" class="px-4 py-6 text-center text-[14px] text-gray-400">No items.</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <div class="md:col-span-2">
+                                <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Rejection Reason</p>
+                                <p id="gpDetailRejectionReason" class="mt-2 text-[15px] font-semibold text-gray-900 whitespace-pre-line">—</p>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Rejected By</p>
+                                <div class="mt-2">
+                                    <span
+                                        id="gpDetailRejectedByGuard"
+                                        class="inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold bg-gray-100 text-gray-800 border border-gray-200"
+                                    >—</span>
+                                </div>
                             </div>
                         </div>
                     </div>
+
+            <div class="md:col-span-2">
+                <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
+                    <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Items</p>
+                    <div class="border border-gray-200 rounded-2xl overflow-hidden bg-white">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-4 py-3 text-[12px] font-semibold text-gray-600 uppercase tracking-wide">#</th>
+                                <th class="px-4 py-3 text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Item</th>
+                                <th class="px-4 py-3 text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Property No.</th>
+                            </tr>
+                            </thead>
+                            <tbody id="gpDetailItemsBody" class="divide-y divide-gray-100">
+                                <tr>
+                                    <td colspan="3" class="px-4 py-6 text-center text-[14px] text-gray-400">No items.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
                 </div>
 
                 <div class="border-t border-gray-200 pt-6 mt-8 flex justify-end">
                     <button type="button" onclick="closeGatepassDetailsModal()" class="px-6 sm:px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[15px] font-semibold text-black hover:bg-gray-50 transition">
                         Close
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Take Actions Modal (Rejected only) -->
+    <div id="takeActionsModal" class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6">
+        <div class="w-full max-w-[680px] bg-white rounded-[18px] shadow-2xl overflow-hidden border border-gray-200">
+            <div class="flex items-center justify-between px-7 py-6 border-b border-gray-200">
+                <h2 class="text-[24px] font-bold text-[#003b95]">Take Actions</h2>
+                <button
+                    type="button"
+                    onclick="closeTakeActionsModal()"
+                    class="text-[#98a2b3] hover:text-black text-[28px] leading-none"
+                    aria-label="Close"
+                >
+                    ×
+                </button>
+            </div>
+
+            <div class="px-7 py-6 max-h-[78vh] overflow-y-auto">
+                <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
+                    <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Gate Pass No.</p>
+                    <p id="takeActionsGatepassNo" class="mt-2 text-[16px] font-semibold text-gray-900">—</p>
+                </div>
+
+                <div class="mt-5">
+                    <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Remarks</p>
+                    <textarea
+                        id="takeActionsRemarks"
+                        rows="5"
+                        placeholder="Enter remarks..."
+                        class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    ></textarea>
+                </div>
+
+                <div class="border-t border-gray-200 pt-6 mt-8 flex justify-end gap-4">
+                    <button
+                        type="button"
+                        onclick="closeTakeActionsModal()"
+                        class="px-6 sm:px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[15px] font-semibold text-black hover:bg-gray-50 transition"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="button"
+                        onclick="confirmTakeActions()"
+                        class="px-6 sm:px-10 h-[46px] rounded-xl bg-[#f6b400] hover:bg-[#e5a900] text-black text-[15px] font-semibold transition"
+                    >
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Trails Modal -->
+    <div id="auditTrailsModal" class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6">
+        <div class="w-full max-w-[980px] bg-white rounded-[18px] shadow-2xl overflow-hidden border border-gray-200">
+            <div class="flex items-center justify-between px-7 py-6 border-b border-gray-200">
+                <h2 class="text-[24px] font-bold text-[#003b95]">Audit Trails</h2>
+                <button
+                    type="button"
+                    onclick="closeAuditTrailsModal()"
+                    class="text-[#98a2b3] hover:text-black text-[28px] leading-none"
+                    aria-label="Close"
+                >
+                    ×
+                </button>
+            </div>
+
+            <div class="px-7 py-6 max-h-[78vh] overflow-hidden">
+                <div class="space-y-5">
+                    <div class="rounded-2xl border border-gray-200 bg-white p-5">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="min-w-0">
+                                <p id="auditItemTitle" class="text-[14px] font-semibold text-gray-900 truncate">—</p>
+                                <p id="auditItemSerial" class="mt-2 text-[13px] text-gray-600 whitespace-nowrap">—</p>
+                            </div>
+                            <span
+                                id="auditItemCurrentPropBadge"
+                                class="inline-flex items-center px-3 py-1 rounded-full border border-gray-200 bg-gray-50 text-[12px] font-semibold text-gray-800 whitespace-nowrap"
+                            >
+                                Current Prop No: —
+                            </span>
+                        </div>
+
+                        <div class="mt-4">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Select Item</p>
+                                <select
+                                    id="auditItemSelect"
+                                    onchange="handleAuditItemSelectChange()"
+                                    class="w-full sm:w-auto h-[42px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none focus:ring-1 focus:ring-blue-600"
+                                >
+                                    <option value="">—</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2 mb-4">
+                            <button type="button" data-audit-tab="property" onclick="setAuditTrailsTab('property')" class="auditTabBtn px-4 py-2 rounded-xl bg-[#003b95] text-white text-[14px] font-semibold">
+                                Property No History
+                            </button>
+                            <button type="button" data-audit-tab="remarks" onclick="setAuditTrailsTab('remarks')" class="auditTabBtn px-4 py-2 rounded-xl bg-white text-[#003b95] border border-[#003b95]/30 hover:bg-[#003b95]/10 text-[14px] font-semibold">
+                                Remarks History
+                            </button>
+                            <button type="button" data-audit-tab="end_user" onclick="setAuditTrailsTab('end_user')" class="auditTabBtn px-4 py-2 rounded-xl bg-white text-[#003b95] border border-[#003b95]/30 hover:bg-[#003b95]/10 text-[14px] font-semibold">
+                                End User History
+                            </button>
+                            <button type="button" data-audit-tab="unit_cost" onclick="setAuditTrailsTab('unit_cost')" class="auditTabBtn px-4 py-2 rounded-xl bg-white text-[#003b95] border border-[#003b95]/30 hover:bg-[#003b95]/10 text-[14px] font-semibold">
+                                Unit Cost History
+                            </button>
+                        </div>
+
+                        <div class="rounded-2xl border border-gray-200 bg-white p-4 overflow-y-auto max-h-[280px]" id="auditTabContent">
+                            <div class="text-[14px] text-gray-400">Select an item to view audit trails.</div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-gray-200 bg-white p-4">
+                        <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Incoming / Outgoing History</p>
+                        <div class="border border-gray-200 rounded-2xl overflow-hidden bg-white max-h-[200px] overflow-y-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th class="px-4 py-3 text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Type</th>
+                                    <th class="px-4 py-3 text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Date/Time</th>
+                                    <th class="px-4 py-3 text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Guard</th>
+                                    <th class="px-4 py-3 text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Requester</th>
+                                    <th class="px-4 py-3 text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Remarks</th>
+                                </tr>
+                                </thead>
+                                <tbody id="auditInOutBody" class="divide-y divide-gray-100">
+                                <tr>
+                                    <td colspan="5" class="px-4 py-6 text-center text-[14px] text-gray-400">No history.</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -770,43 +1051,125 @@
 
         const navDashboard = document.getElementById('navDashboard');
         const navItemTracking = document.getElementById('navItemTracking');
+        const navReports = document.getElementById('navReports');
 
         const dashboardSection = document.getElementById('dashboardSection');
         const itemTrackingSection = document.getElementById('itemTrackingSection');
+        const reportsSection = document.getElementById('reportsSection');
 
         const pageTitle = document.getElementById('pageTitle');
         const pageSubtitle = document.getElementById('pageSubtitle');
 
-        function activateAdminNav(activeButton, inactiveButton) {
-            activeButton.classList.add('bg-[#47698f]', 'text-white');
-            activeButton.classList.remove('text-white/90', 'hover:bg-white/10');
+        const adminNavButtons = [navDashboard, navItemTracking, navReports].filter(Boolean);
 
-            inactiveButton.classList.remove('bg-[#47698f]', 'text-white');
-            inactiveButton.classList.add('text-white/90', 'hover:bg-white/10');
+        function setActiveAdminNav(activeButton) {
+            adminNavButtons.forEach(function (btn) {
+                if (btn === activeButton) {
+                    btn.classList.add('bg-[#47698f]', 'text-white');
+                    btn.classList.remove('text-white/90', 'hover:bg-white/10');
+                } else {
+                    btn.classList.remove('bg-[#47698f]', 'text-white');
+                    btn.classList.add('text-white/90', 'hover:bg-white/10');
+                }
+            });
         }
 
         function showDashboardSection() {
             dashboardSection.classList.remove('hidden');
             itemTrackingSection.classList.add('hidden');
+            reportsSection.classList.add('hidden');
 
             pageTitle.textContent = 'Dashboard';
             pageSubtitle.textContent = 'Manage gate pass requests and approvals';
+            pageSubtitle.classList.remove('hidden');
 
-            activateAdminNav(navDashboard, navItemTracking);
+            setActiveAdminNav(navDashboard);
         }
 
         function showItemTrackingSection() {
             dashboardSection.classList.add('hidden');
             itemTrackingSection.classList.remove('hidden');
+            reportsSection.classList.add('hidden');
 
             pageTitle.textContent = 'Item Tracking';
             pageSubtitle.textContent = 'Track all items with gate passes';
+            pageSubtitle.classList.remove('hidden');
 
-            activateAdminNav(navItemTracking, navDashboard);
+            setActiveAdminNav(navItemTracking);
+        }
+
+        function showReportsSection() {
+            dashboardSection.classList.add('hidden');
+            itemTrackingSection.classList.add('hidden');
+            reportsSection.classList.remove('hidden');
+
+            pageTitle.textContent = 'Reports';
+            pageSubtitle.textContent = '';
+            pageSubtitle.classList.add('hidden');
+
+            setActiveAdminNav(navReports);
+            initReportsAnalyticsIfNeeded();
         }
 
         navDashboard.addEventListener('click', showDashboardSection);
         navItemTracking.addEventListener('click', showItemTrackingSection);
+        navReports.addEventListener('click', showReportsSection);
+
+        let itemTrackingPaginationRequestInFlight = false;
+
+        function setupItemTrackingRealtimePagination() {
+            const paginationWrap = document.getElementById('itemTrackingPagination');
+            if (!paginationWrap) return;
+
+            // Avoid double-binding on SPA-like navigation inside the page.
+            if (paginationWrap.dataset.realtimeBound === 'true') return;
+            paginationWrap.dataset.realtimeBound = 'true';
+
+            paginationWrap.addEventListener('click', function (e) {
+                const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+                if (!link) return;
+
+                const url = link.getAttribute('href');
+                if (!url) return;
+
+                e.preventDefault();
+
+                if (itemTrackingPaginationRequestInFlight) return;
+                itemTrackingPaginationRequestInFlight = true;
+
+                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (res) {
+                        return res.text();
+                    })
+                    .then(function (html) {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+
+                        const newBody = doc.getElementById('itemTrackingTableBody');
+                        const newPagination = doc.getElementById('itemTrackingPagination');
+
+                        const currentBody = document.getElementById('itemTrackingTableBody');
+                        const currentPagination = document.getElementById('itemTrackingPagination');
+
+                        if (newBody && currentBody) {
+                            currentBody.innerHTML = newBody.innerHTML;
+                        }
+
+                        if (newPagination && currentPagination) {
+                            currentPagination.innerHTML = newPagination.innerHTML;
+                        }
+
+                        // Keep browser URL in sync with the loaded page.
+                        window.history.pushState({}, '', url);
+                    })
+                    .catch(function () {
+                        showToast('Failed to load next/previous page.', 'error');
+                    })
+                    .finally(function () {
+                        itemTrackingPaginationRequestInFlight = false;
+                    });
+            });
+        }
 
         function openNewGatePassModal() {
             const modal = document.getElementById('newGatePassModal');
@@ -1002,6 +1365,8 @@
             } else {
                 showDashboardSection();
             }
+
+            setupItemTrackingRealtimePagination();
         });
         document.addEventListener('DOMContentLoaded', function () {
             const form = document.getElementById('newGatePassForm');
@@ -1099,10 +1464,20 @@
             const row = document.getElementById('gatepassRow-' + gatepassNo);
             if (!row) return;
 
+            const newStatusLower = String(newStatus || '').trim().toLowerCase();
             const approveBtn = row.querySelector('button[onclick="approveGatepass(this)"]');
             const rejectBtn = row.querySelector('button[onclick="rejectGatepass(this)"]');
-            if (approveBtn) approveBtn.disabled = String(newStatus || '').toLowerCase() === 'approved';
-            if (rejectBtn) rejectBtn.disabled = String(newStatus || '').toLowerCase() === 'rejected';
+            const takeActionsBtn = row.querySelector('button[data-action="take-actions"]');
+            const rejectActionBtn = row.querySelector('button[data-action="reject-action"]');
+
+            // For rejected status, only show "Take Actions" + "View".
+            if (approveBtn) approveBtn.classList.toggle('!hidden', newStatusLower === 'rejected');
+            if (approveBtn) approveBtn.disabled = newStatusLower === 'approved';
+            if (rejectBtn) rejectBtn.disabled = newStatusLower === 'rejected';
+
+            // Toggle between "Take Actions" and the normal reject button.
+            if (takeActionsBtn) takeActionsBtn.classList.toggle('!hidden', newStatusLower !== 'rejected');
+            if (rejectActionBtn) rejectActionBtn.classList.toggle('!hidden', newStatusLower === 'rejected');
         }
 
         function normalizeStatus(value) {
@@ -1292,6 +1667,313 @@
             document.body.classList.remove('overflow-hidden');
         }
 
+        function openTakeActionsModal(button) {
+            const modal = document.getElementById('takeActionsModal');
+            if (!modal) return;
+
+            const gatepassNo = button?.dataset?.gatepassNo || '';
+            const url = button?.dataset?.url;
+
+            const gatepassNoEl = document.getElementById('takeActionsGatepassNo');
+            const remarksEl = document.getElementById('takeActionsRemarks');
+
+            if (gatepassNoEl) gatepassNoEl.textContent = gatepassNo || '—';
+            if (remarksEl) remarksEl.value = '';
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
+
+            // Best-effort prefill with existing rejection reason.
+            if (!url || !remarksEl) return;
+
+            fetch(url, { headers: { 'Accept': 'application/json' } })
+                .then(function (res) {
+                    return res.json().catch(function () {
+                        return {};
+                    });
+                })
+                .then(function (payload) {
+                    const d = payload?.data || {};
+                    if (typeof d.rejection_reason === 'string' && remarksEl) {
+                        remarksEl.value = d.rejection_reason || '';
+                    }
+                })
+                .catch(function () {
+                    // Ignore prefill errors; user can still type.
+                });
+        }
+
+        function closeTakeActionsModal() {
+            const modal = document.getElementById('takeActionsModal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        function confirmTakeActions() {
+            const remarksEl = document.getElementById('takeActionsRemarks');
+            const modal = document.getElementById('takeActionsModal');
+
+            const remarks = String(remarksEl?.value || '').trim();
+            if (!remarks) {
+                showToast('Please enter remarks before saving.', 'error');
+                return;
+            }
+
+            // UI-only confirmation (no backend call requested).
+            showToast('Remarks captured.', 'success');
+            closeTakeActionsModal();
+        }
+
+        // -----------------------------
+        // Audit Trails Modal (UI only)
+        // -----------------------------
+        let auditTrailsData = null;
+        let auditTrailsItems = [];
+        let auditActiveTab = 'property';
+        let auditSelectedItemIndex = 0;
+
+        function openAuditTrailsModal(button) {
+            const url = button?.dataset?.url;
+            if (!url) return;
+
+            const modal = document.getElementById('auditTrailsModal');
+            if (!modal) return;
+
+            auditTrailsData = null;
+            auditTrailsItems = [];
+            auditActiveTab = 'property';
+            auditSelectedItemIndex = 0;
+
+            const select = document.getElementById('auditItemSelect');
+            const titleEl = document.getElementById('auditItemTitle');
+            const serialEl = document.getElementById('auditItemSerial');
+            const propBadgeEl = document.getElementById('auditItemCurrentPropBadge');
+            const tabContentEl = document.getElementById('auditTabContent');
+            const inOutBodyEl = document.getElementById('auditInOutBody');
+
+            if (select) select.innerHTML = '<option value="">—</option>';
+            if (titleEl) titleEl.textContent = 'Loading...';
+            if (serialEl) serialEl.textContent = '—';
+            if (propBadgeEl) propBadgeEl.textContent = 'Current Prop No: —';
+            if (tabContentEl) tabContentEl.innerHTML = '<div class="text-[14px] text-gray-400">Loading audit trails...</div>';
+            if (inOutBodyEl) inOutBodyEl.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-[14px] text-gray-400">Loading...</td></tr>';
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
+
+            fetch(url, { headers: { 'Accept': 'application/json' } })
+                .then(function (res) {
+                    return res.json().catch(() => ({}));
+                })
+                .then(function (payload) {
+                    const d = payload?.data || {};
+                    auditTrailsData = d;
+                    auditTrailsItems = Array.isArray(d.items) ? d.items : [];
+
+                    if (select) {
+                        select.innerHTML = '<option value="">—</option>' +
+                            auditTrailsItems.map(function (it, idx) {
+                                const label = it?.description ? it.description : (it?.serial_no ? it.serial_no : ('Item #' + (it?.order ?? idx + 1)));
+                                const serial = it?.serial_no ? ' (Serial: ' + it.serial_no + ')' : '';
+                                return '<option value="' + idx + '">' + escapeHtml(label + serial) + '</option>';
+                            }).join('');
+                        if (auditTrailsItems.length > 0) {
+                            select.value = String(auditSelectedItemIndex);
+                        }
+                    }
+
+                    renderAuditItemHeader();
+                    setAuditTrailsTab('property');
+                    renderAuditIncomingOutgoingHistory();
+                })
+                .catch(function () {
+                    showToast('Failed to load audit trails.', 'error');
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    document.body.classList.remove('overflow-hidden');
+                });
+        }
+
+        function closeAuditTrailsModal() {
+            const modal = document.getElementById('auditTrailsModal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        function setAuditTrailsTab(tabKey) {
+            auditActiveTab = tabKey;
+
+            const tabButtons = Array.from(document.querySelectorAll('#auditTrailsModal .auditTabBtn'));
+            tabButtons.forEach(function (btn) {
+                const key = btn?.dataset?.auditTab;
+                const isActive = key === auditActiveTab;
+                if (isActive) {
+                    btn.classList.add('bg-[#003b95]', 'text-white');
+                    btn.classList.remove('bg-white', 'text-[#003b95]', 'border', 'border-[#003b95]/30', 'hover:bg-[#003b95]/10');
+                } else {
+                    btn.classList.add('bg-white', 'text-[#003b95]', 'border', 'border-[#003b95]/30');
+                    btn.classList.remove('bg-[#003b95]', 'text-white');
+                }
+            });
+
+            renderAuditTabContent();
+        }
+
+        function handleAuditItemSelectChange() {
+            const select = document.getElementById('auditItemSelect');
+            if (!select) return;
+
+            const val = String(select.value || '');
+            if (val === '') {
+                auditSelectedItemIndex = 0;
+            } else {
+                const idx = parseInt(val, 10);
+                auditSelectedItemIndex = Number.isFinite(idx) ? idx : 0;
+            }
+
+            renderAuditItemHeader();
+            renderAuditTabContent();
+        }
+
+        function renderAuditItemHeader() {
+            const titleEl = document.getElementById('auditItemTitle');
+            const serialEl = document.getElementById('auditItemSerial');
+            const propBadgeEl = document.getElementById('auditItemCurrentPropBadge');
+
+            if (!auditTrailsItems.length) {
+                if (titleEl) titleEl.textContent = '—';
+                if (serialEl) serialEl.textContent = '—';
+                if (propBadgeEl) propBadgeEl.textContent = 'Current Prop No: —';
+                return;
+            }
+
+            const item = auditTrailsItems[auditSelectedItemIndex] || auditTrailsItems[0];
+            const desc = item?.description || 'Item';
+            const serial = item?.serial_no || '—';
+            const propNo = item?.prop_no || '—';
+
+            if (titleEl) titleEl.textContent = desc;
+            if (serialEl) serialEl.textContent = 'Serial: ' + serial;
+            if (propBadgeEl) propBadgeEl.textContent = 'Current Property No: ' + propNo;
+        }
+
+        function renderAuditTabContent() {
+            const tabContentEl = document.getElementById('auditTabContent');
+            if (!tabContentEl) return;
+
+            if (!auditTrailsItems.length) {
+                tabContentEl.innerHTML = '<div class="text-[14px] text-gray-400">No audit trails.</div>';
+                return;
+            }
+
+            const item = auditTrailsItems[auditSelectedItemIndex] || auditTrailsItems[0];
+            const eq = item?.equipment_history || {};
+
+            const renderRows = function (rows, getValue, getDate, extraHtml) {
+                if (!Array.isArray(rows) || rows.length === 0) {
+                    return '<div class="text-[14px] text-gray-500">No records.</div>';
+                }
+
+                return rows.map(function (h) {
+                    const value = getValue(h);
+                    const at = getDate(h);
+                    const extra = extraHtml ? extraHtml(h) : '';
+
+                    return (
+                        '<div class="flex items-start justify-between gap-4 rounded-xl border border-gray-100 bg-white px-3 py-2">' +
+                        '  <div class="min-w-0">' +
+                        '    <div class="flex items-center gap-2 min-w-0">' +
+                        '      <span class="font-bold text-gray-900 text-[13px] break-words">' + escapeHtml(value) + '</span>' +
+                        '      ' + extra +
+                        '    </div>' +
+                        '  </div>' +
+                        '  <div class="text-right text-[12px] text-gray-500 whitespace-nowrap">' + escapeHtml(at) + '</div>' +
+                        '</div>'
+                    );
+                }).join('');
+            };
+
+            let rowsHtml = '';
+            if (auditActiveTab === 'property') {
+                const propHist = Array.isArray(eq.prop_no_history) ? eq.prop_no_history : [];
+                rowsHtml = renderRows(
+                    propHist,
+                    function (h) { return h.prop_no || '—'; },
+                    function (h) { return h.changed_at || h.created_at || '—'; },
+                    function (h) {
+                        if (!h.is_current) return '';
+                        return '<span class="inline-flex items-center px-2 py-[2px] rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap">Current</span>';
+                    }
+                );
+            } else if (auditActiveTab === 'remarks') {
+                const remarksHist = Array.isArray(eq.remarks_history) ? eq.remarks_history : [];
+                rowsHtml = renderRows(
+                    remarksHist,
+                    function (h) { return h.remark_text || '—'; },
+                    function (h) { return h.created_at || '—'; },
+                    function () { return ''; }
+                );
+            } else if (auditActiveTab === 'end_user') {
+                const endUserHist = Array.isArray(eq.end_user_history) ? eq.end_user_history : [];
+                rowsHtml = renderRows(
+                    endUserHist,
+                    function (h) { return h.end_user || '—'; },
+                    function (h) { return h.created_at || '—'; },
+                    function () { return ''; }
+                );
+            } else if (auditActiveTab === 'unit_cost') {
+                const unitCostHist = Array.isArray(eq.unit_cost_history) ? eq.unit_cost_history : [];
+                rowsHtml = renderRows(
+                    unitCostHist,
+                    function (h) { return h.unit_cost !== undefined && h.unit_cost !== null ? String(h.unit_cost) : '—'; },
+                    function (h) { return h.created_at || '—'; },
+                    function () { return ''; }
+                );
+            } else {
+                rowsHtml = '<div class="text-[14px] text-gray-400">Unknown tab.</div>';
+            }
+
+            tabContentEl.innerHTML = '<div class="space-y-2">' + rowsHtml + '</div>';
+        }
+
+        function renderAuditIncomingOutgoingHistory() {
+            const bodyEl = document.getElementById('auditInOutBody');
+            if (!bodyEl) return;
+
+            const logs = Array.isArray(auditTrailsData?.incoming_outgoing_history)
+                ? auditTrailsData.incoming_outgoing_history
+                : [];
+
+            if (!logs.length) {
+                bodyEl.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-[14px] text-gray-400">No history.</td></tr>';
+                return;
+            }
+
+            bodyEl.innerHTML = logs.map(function (log) {
+                const type = log.log_type || '—';
+                const dt = log.log_datetime || '—';
+                const guard = log.guard_name || log.guard_employee_id || log.scanned_by_guard_id || '—';
+                const requester = log.requester_name || log.requester_employee_id || '—';
+                const remarks = log.remarks || '—';
+
+                return (
+                    '<tr class="border-t border-gray-100">' +
+                    '<td class="px-4 py-3 text-[14px] text-gray-700 whitespace-nowrap">' + escapeHtml(type) + '</td>' +
+                    '<td class="px-4 py-3 text-[14px] text-gray-700 whitespace-nowrap">' + escapeHtml(dt) + '</td>' +
+                    '<td class="px-4 py-3 text-[14px] text-gray-800">' + escapeHtml(guard) + '</td>' +
+                    '<td class="px-4 py-3 text-[14px] text-gray-800">' + escapeHtml(requester) + '</td>' +
+                    '<td class="px-4 py-3 text-[14px] text-gray-700">' + escapeHtml(remarks) + '</td>' +
+                    '</tr>'
+                );
+            }).join('');
+        }
+
         async function viewGatepass(button) {
             const url = button?.dataset?.url;
             if (!url) return;
@@ -1316,6 +1998,26 @@
                 document.getElementById('gpDetailDestination').textContent = d.destination || '—';
                 document.getElementById('gpDetailRemarks').textContent = d.remarks || '—';
 
+                const rejectionReasonEl = document.getElementById('gpDetailRejectionReason');
+                if (rejectionReasonEl) {
+                    rejectionReasonEl.textContent = d.rejection_reason || '—';
+                }
+
+                const rejectedByGuardEl = document.getElementById('gpDetailRejectedByGuard');
+                const isRejected = String(d.status || '').trim().toLowerCase() === 'rejected';
+                if (rejectedByGuardEl) {
+                    if (isRejected && d.rejected_by_guard) {
+                        const guardName = d.rejected_by_guard_name || '';
+                        rejectedByGuardEl.textContent = guardName
+                            ? 'Rejected by Guard: ' + guardName
+                            : 'Rejected by Guard';
+                        rejectedByGuardEl.className = 'inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold bg-red-50 text-red-800 border border-red-200';
+                    } else {
+                        rejectedByGuardEl.textContent = '—';
+                        rejectedByGuardEl.className = 'inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold bg-gray-100 text-gray-800 border border-gray-200';
+                    }
+                }
+
                 const itemsBody = document.getElementById('gpDetailItemsBody');
                 const items = Array.isArray(d.items) ? d.items : [];
                 if (itemsBody) {
@@ -1337,6 +2039,164 @@
                     }
                 }
 
+                const equipmentAuditEl = document.getElementById('gpDetailEquipmentAudit');
+                if (equipmentAuditEl) {
+                    if (!items.length) {
+                        equipmentAuditEl.innerHTML = '<div class="text-[14px] text-gray-400">No audit trails.</div>';
+                    } else {
+                        equipmentAuditEl.innerHTML = items.map(function (it) {
+                            const eq = it.equipment_history || {};
+
+                            const propHist = Array.isArray(eq.prop_no_history) ? eq.prop_no_history : [];
+                            const remarksHist = Array.isArray(eq.remarks_history) ? eq.remarks_history : [];
+                            const endUserHist = Array.isArray(eq.end_user_history) ? eq.end_user_history : [];
+                            const unitCostHist = Array.isArray(eq.unit_cost_history) ? eq.unit_cost_history : [];
+
+                            const propHtml = propHist.length
+                                ? propHist.map(function (h) {
+                                    const propNo = h.prop_no || '—';
+                                    const at = h.changed_at || h.created_at || '—';
+                                    const isCurrent = Boolean(h.is_current);
+                                    const currentBadge = isCurrent
+                                        ? '<span class="ml-2 inline-flex items-center px-2 py-[2px] rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">Current</span>'
+                                        : '';
+
+                                    return (
+                                        '<div class="flex items-start gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2">' +
+                                        '  <div class="mt-2 w-2 h-2 rounded-full bg-[#003b95] flex-shrink-0"></div>' +
+                                        '  <div class="flex-1 flex items-start justify-between gap-3">' +
+                                        '    <div class="min-w-0">' +
+                                        '      <span class="font-semibold text-gray-900 text-[13px] whitespace-nowrap overflow-hidden text-ellipsis">' + escapeHtml(propNo) + '</span>' +
+                                        currentBadge +
+                                        '    </div>' +
+                                        '    <div class="text-right text-[12px] text-gray-500 whitespace-nowrap">' + escapeHtml(at) + '</div>' +
+                                        '  </div>' +
+                                        '</div>'
+                                    );
+                                }).join('')
+                                : '<div class="text-[13px] text-gray-500">No property history.</div>';
+
+                            const remarksHtml = remarksHist.length
+                                ? remarksHist.map(function (h) {
+                                    const text = h.remark_text || '—';
+                                    const at = h.created_at || '—';
+                                    return (
+                                        '<div class="flex items-start gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2">' +
+                                        '  <div class="mt-2 w-2 h-2 rounded-full bg-gray-300 flex-shrink-0"></div>' +
+                                        '  <div class="flex-1 flex items-start justify-between gap-3">' +
+                                        '    <div class="min-w-0 pr-2">' +
+                                        '      <div class="font-semibold text-gray-900 text-[13px] whitespace-pre-line break-words">' + escapeHtml(text) + '</div>' +
+                                        '    </div>' +
+                                        '    <div class="text-right text-[12px] text-gray-500 whitespace-nowrap">' + escapeHtml(at) + '</div>' +
+                                        '  </div>' +
+                                        '</div>'
+                                    );
+                                }).join('')
+                                : '<div class="text-[13px] text-gray-500">No remarks history.</div>';
+
+                            const endUserHtml = endUserHist.length
+                                ? endUserHist.map(function (h) {
+                                    const text = h.end_user || '—';
+                                    const at = h.created_at || '—';
+                                    return (
+                                        '<div class="flex items-start gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2">' +
+                                        '  <div class="mt-2 w-2 h-2 rounded-full bg-gray-300 flex-shrink-0"></div>' +
+                                        '  <div class="flex-1 flex items-start justify-between gap-3">' +
+                                        '    <div class="min-w-0">' +
+                                        '      <span class="font-semibold text-gray-900 text-[13px]">' + escapeHtml(text) + '</span>' +
+                                        '    </div>' +
+                                        '    <div class="text-right text-[12px] text-gray-500 whitespace-nowrap">' + escapeHtml(at) + '</div>' +
+                                        '  </div>' +
+                                        '</div>'
+                                    );
+                                }).join('')
+                                : '<div class="text-[13px] text-gray-500">No end-user history.</div>';
+
+                            const unitCostHtml = unitCostHist.length
+                                ? unitCostHist.map(function (h) {
+                                    const value = h.unit_cost !== undefined && h.unit_cost !== null ? String(h.unit_cost) : '—';
+                                    const at = h.created_at || '—';
+                                    return (
+                                        '<div class="flex items-start gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2">' +
+                                        '  <div class="mt-2 w-2 h-2 rounded-full bg-gray-300 flex-shrink-0"></div>' +
+                                        '  <div class="flex-1 flex items-start justify-between gap-3">' +
+                                        '    <div class="min-w-0">' +
+                                        '      <span class="font-semibold text-gray-900 text-[13px]">' + escapeHtml(value) + '</span>' +
+                                        '    </div>' +
+                                        '    <div class="text-right text-[12px] text-gray-500 whitespace-nowrap">' + escapeHtml(at) + '</div>' +
+                                        '  </div>' +
+                                        '</div>'
+                                    );
+                                }).join('')
+                                : '<div class="text-[13px] text-gray-500">No unit-cost history.</div>';
+
+                            const itemDescription = it.description || '—';
+                            const serialNo = it.serial_no || '—';
+                            const currentPropNo = it.prop_no || '—';
+                            const order = it.order || '';
+
+                            return (
+                                '<div class="rounded-2xl border border-gray-200 bg-white p-5">' +
+                                '  <div class="flex items-start justify-between gap-4">' +
+                                '    <div class="min-w-0">' +
+                                '      <p class="text-[14px] font-semibold text-gray-900 truncate">' + escapeHtml(itemDescription) + '</p>' +
+                                '      <p class="mt-1 text-[13px] text-gray-600 whitespace-nowrap">Serial: ' + escapeHtml(serialNo) + '</p>' +
+                                '      <p class="mt-2 text-[12px] text-gray-500">' + escapeHtml('Item # ' + order) + '</p>' +
+                                '    </div>' +
+                                '    <span class="inline-flex items-center px-3 py-1 rounded-full border border-gray-200 bg-gray-50 text-[12px] font-semibold text-gray-800 whitespace-nowrap">' +
+                                '      Current Property No: ' + escapeHtml(currentPropNo) +
+                                '    </span>' +
+                                '  </div>' +
+                                '  <div class="mt-6 space-y-6">' +
+                                '    <div>' +
+                                '      <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Property No History</p>' +
+                                '      <div class="space-y-2">' + propHtml + '</div>' +
+                                '    </div>' +
+                                '    <div>' +
+                                '      <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Remarks History</p>' +
+                                '      <div class="space-y-2">' + remarksHtml + '</div>' +
+                                '    </div>' +
+                                '    <div>' +
+                                '      <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide mb-3">End User History</p>' +
+                                '      <div class="space-y-2">' + endUserHtml + '</div>' +
+                                '    </div>' +
+                                '    <div>' +
+                                '      <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Unit Cost History</p>' +
+                                '      <div class="space-y-2">' + unitCostHtml + '</div>' +
+                                '    </div>' +
+                                '  </div>' +
+                                '</div>'
+                            );
+                        }).join('');
+                    }
+                }
+
+                const inOutBody = document.getElementById('gpDetailIncomingOutgoingBody');
+                const logs = Array.isArray(d.incoming_outgoing_history) ? d.incoming_outgoing_history : [];
+                if (inOutBody) {
+                    if (!logs.length) {
+                        inOutBody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-[14px] text-gray-400">No history.</td></tr>';
+                    } else {
+                        inOutBody.innerHTML = logs.map(function (log) {
+                            const type = log.log_type || '—';
+                            const dt = log.log_datetime || '—';
+                            const guard = log.guard_name || log.guard_employee_id || log.scanned_by_guard_id || '—';
+                            const requester = log.requester_name || log.requester_employee_id || '—';
+                            const remarks = log.remarks || '—';
+
+                            return (
+                                '<tr class="border-t border-gray-100">' +
+                                '<td class="px-4 py-3 text-[14px] text-gray-700 whitespace-nowrap">' + escapeHtml(type) + '</td>' +
+                                '<td class="px-4 py-3 text-[14px] text-gray-700 whitespace-nowrap">' + escapeHtml(dt) + '</td>' +
+                                '<td class="px-4 py-3 text-[14px] text-gray-800">' + escapeHtml(guard) + '</td>' +
+                                '<td class="px-4 py-3 text-[14px] text-gray-800">' + escapeHtml(requester) + '</td>' +
+                                '<td class="px-4 py-3 text-[14px] text-gray-700">' + escapeHtml(remarks) + '</td>' +
+                                '</tr>'
+                            );
+                        }).join('');
+                    }
+                }
+
                 openGatepassDetailsModal();
             } catch (e) {
                 showToast('Failed to load details.', 'error');
@@ -1347,6 +2207,273 @@
             const div = document.createElement('div');
             div.textContent = String(text || '');
             return div.innerHTML;
+        }
+
+        // -----------------------------
+        // Reports / Analytics (Chart.js)
+        // -----------------------------
+        @php
+            $movementTrackingDefault = [
+                'incoming_count' => 0,
+                'outgoing_count' => 0,
+                'total_movements' => 0,
+            ];
+        @endphp
+        const movementTracking = @json($movementTracking ?? $movementTrackingDefault);
+
+        const gatepassTrendsByFilter = @json($gatepassTrendsByFilter ?? []);
+
+        let reportsChartsInitialized = false;
+        let movementDoughnutChart = null;
+        let gatepassTrendsBarChart = null;
+
+        function initReportsAnalyticsIfNeeded() {
+            if (reportsChartsInitialized) return;
+
+            const movementCanvas = document.getElementById('movementDoughnutChart');
+            const trendsCanvas = document.getElementById('gatepassTrendsBarChart');
+            if (!movementCanvas || !trendsCanvas) return;
+
+            if (!window.Chart) {
+                // Chart.js failed to load.
+                return;
+            }
+
+            reportsChartsInitialized = true;
+
+            const incoming = Number(movementTracking?.incoming_count ?? 0);
+            const outgoing = Number(movementTracking?.outgoing_count ?? 0);
+            const total = Number(movementTracking?.total_movements ?? (incoming + outgoing));
+
+            const safePct = (value) => {
+                if (!total || total <= 0) return 0;
+                return (value / total) * 100;
+            };
+
+            // Movement summary labels
+            const outgoingPercentEl = document.getElementById('movementOutgoingPercent');
+            const incomingPercentEl = document.getElementById('movementIncomingPercent');
+            const outgoingCountEl = document.getElementById('movementOutgoingCount');
+            const incomingCountEl = document.getElementById('movementIncomingCount');
+            const outgoingCardCountEl = document.getElementById('movementOutgoingCardCount');
+            const incomingCardCountEl = document.getElementById('movementIncomingCardCount');
+            const totalCardCountEl = document.getElementById('movementTotalCardCount');
+
+            const outgoingPct = safePct(outgoing);
+            const incomingPct = safePct(incoming);
+
+            if (outgoingPercentEl) outgoingPercentEl.textContent = outgoingPct.toFixed(1) + '%';
+            if (incomingPercentEl) incomingPercentEl.textContent = incomingPct.toFixed(1) + '%';
+            if (outgoingCountEl) outgoingCountEl.textContent = String(outgoing);
+            if (incomingCountEl) incomingCountEl.textContent = String(incoming);
+            if (outgoingCardCountEl) outgoingCardCountEl.textContent = String(outgoing);
+            if (incomingCardCountEl) incomingCardCountEl.textContent = String(incoming);
+            if (totalCardCountEl) totalCardCountEl.textContent = String(total);
+
+            // Doughnut chart (Incoming / Outgoing)
+            const movementCtx = movementCanvas.getContext('2d');
+            movementDoughnutChart = new Chart(movementCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Outgoing', 'Incoming'],
+                    datasets: [{
+                        data: [outgoing, incoming],
+                        backgroundColor: ['#f6b400', '#003b95'],
+                        borderWidth: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                boxWidth: 10,
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const pct = total > 0 ? (value / total) * 100 : 0;
+                                    return label + ': ' + value + ' (' + pct.toFixed(1) + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Bar chart (Gate Pass Trends)
+            const trendsCtx = trendsCanvas.getContext('2d');
+            const colors = {
+                total: '#003b95',
+                approved: '#00b84f',
+                rejected: '#ef4444',
+                pending: '#f6b400',
+                active_outside: '#2962ff',
+            };
+
+            const dailyData = gatepassTrendsByFilter?.daily || null;
+            const initial = dailyData?.labels?.length ? dailyData : (gatepassTrendsByFilter?.weekly || dailyData);
+
+            const baseLabels = initial?.labels?.length ? initial.labels : ['No data'];
+
+            gatepassTrendsBarChart = new Chart(trendsCtx, {
+                type: 'bar',
+                data: {
+                    labels: baseLabels,
+                    datasets: [
+                        {
+                            label: 'Total Requests',
+                            data: initial?.total ?? [0],
+                            backgroundColor: colors.total,
+                            borderColor: colors.total,
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Approved',
+                            data: initial?.approved ?? [0],
+                            backgroundColor: colors.approved,
+                            borderColor: colors.approved,
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Rejected',
+                            data: initial?.rejected ?? [0],
+                            backgroundColor: colors.rejected,
+                            borderColor: colors.rejected,
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Pending',
+                            data: initial?.pending ?? [0],
+                            backgroundColor: colors.pending,
+                            borderColor: colors.pending,
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Active Outside',
+                            data: initial?.active_outside ?? [0],
+                            backgroundColor: colors.active_outside,
+                            borderColor: colors.active_outside,
+                            borderWidth: 1,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset?.label || '';
+                                    const value = context.parsed?.y ?? 0;
+                                    return label + ': ' + value;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                autoSkip: true,
+                                maxRotation: 0,
+                                minRotation: 0,
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0,
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Filter buttons
+            const filterButtons = Array.from(document.querySelectorAll('.trendsFilterBtn'));
+            const subtitleEl = document.getElementById('gatepassTrendsSubtitle');
+            const subtitleByFilter = {
+                daily: 'Last 7 days',
+                weekly: 'Weekly overview',
+                monthly: 'Monthly overview',
+                quarterly: 'Quarterly overview',
+                yearly: 'Yearly overview',
+            };
+
+            const setActiveFilterButton = (filterKey) => {
+                filterButtons.forEach(function(btn) {
+                    const key = btn?.dataset?.trendsFilter;
+                    const isActive = key === filterKey;
+
+                    if (isActive) {
+                        btn.classList.add('bg-[#003b95]', 'text-white', 'border', 'border-[#003b95]');
+                        btn.classList.remove(
+                            'bg-white',
+                            'text-[#003b95]',
+                            'border-[#003b95]/30',
+                            'hover:bg-[#003b95]/10'
+                        );
+                    } else {
+                        btn.classList.remove('bg-[#003b95]', 'text-white', 'border', 'border-[#003b95]');
+                        btn.classList.add('bg-white', 'text-[#003b95]', 'border', 'border-[#003b95]/30', 'hover:bg-[#003b95]/10');
+                    }
+                });
+            };
+
+            const applyGatepassTrendsFilter = (filterKey) => {
+                if (!gatepassTrendsBarChart) return;
+
+                const payload = gatepassTrendsByFilter?.[filterKey] ?? null;
+
+                const labels = payload?.labels?.length ? payload.labels : ['No data'];
+                const total = payload?.total?.length ? payload.total : [0];
+                const approved = payload?.approved?.length ? payload.approved : [0];
+                const rejected = payload?.rejected?.length ? payload.rejected : [0];
+                const pending = payload?.pending?.length ? payload.pending : [0];
+                const activeOutside = payload?.active_outside?.length ? payload.active_outside : [0];
+
+                gatepassTrendsBarChart.data.labels = labels;
+                gatepassTrendsBarChart.data.datasets[0].data = total;
+                gatepassTrendsBarChart.data.datasets[1].data = approved;
+                gatepassTrendsBarChart.data.datasets[2].data = rejected;
+                gatepassTrendsBarChart.data.datasets[3].data = pending;
+                gatepassTrendsBarChart.data.datasets[4].data = activeOutside;
+                gatepassTrendsBarChart.update();
+
+                if (subtitleEl) {
+                    subtitleEl.textContent = subtitleByFilter[filterKey] ?? '';
+                }
+
+                setActiveFilterButton(filterKey);
+            };
+
+            filterButtons.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const filterKey = btn?.dataset?.trendsFilter;
+                    if (!filterKey) return;
+                    applyGatepassTrendsFilter(filterKey);
+                });
+            });
+
+            // Ensure the correct filter is applied initially.
+            applyGatepassTrendsFilter('daily');
+
+            // Helps Chart.js compute layout now that cards are visible.
+            setTimeout(function() {
+                movementDoughnutChart?.resize?.();
+                gatepassTrendsBarChart?.resize?.();
+            }, 50);
         }
 
         document.addEventListener('DOMContentLoaded', function () {

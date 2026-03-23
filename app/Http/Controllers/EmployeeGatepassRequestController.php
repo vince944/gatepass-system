@@ -54,6 +54,7 @@ class EmployeeGatepassRequestController extends Controller
             'approved' => (int) ($countsByStatus['Approved'] ?? 0),
             'returned' => (int) ($countsByStatus['Returned'] ?? 0),
             'active_outside' => (int) ($countsByStatus['Active Outside'] ?? 0),
+            'incoming_partial' => (int) ($countsByStatus['Incoming Partial'] ?? 0),
         ];
 
         $listQuery = (clone $baseQuery)
@@ -247,7 +248,8 @@ class EmployeeGatepassRequestController extends Controller
             abort(404, 'Request not found.');
         }
 
-        if (strtolower((string) $requestModel->status) !== 'approved') {
+        $statusLower = strtolower((string) $requestModel->status);
+        if (! in_array($statusLower, ['approved', 'incoming partial'], true)) {
             abort(404, 'QR code not found.');
         }
 

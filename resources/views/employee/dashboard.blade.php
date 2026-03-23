@@ -1040,7 +1040,7 @@
                     card.setAttribute('tabindex', '0');
                     card.setAttribute('aria-label', 'View request details');
                     const gatepassNo = (row.gatepass_no || '').toString();
-                    const showQrButton = statusTextLower === 'approved' && gatepassNo;
+                    const showQrButton = (statusTextLower === 'approved' || statusTextLower === 'incoming partial') && gatepassNo;
                     const qrButtonHtml = showQrButton
                         ? '<button type="button" data-qr-gatepass-no="' + escapeHtml(gatepassNo) + '" aria-label="Show Gate Pass QR Code" class="w-[36px] h-[36px] rounded-full border border-[#00b84f]/30 bg-white text-[#00b84f] flex items-center justify-center text-[16px] hover:bg-[#e8fff0] transition">' +
                             '<i class="fa-solid fa-qrcode"></i>' +
@@ -1188,6 +1188,9 @@
             }
             if (statusLower === 'returned') {
                 return 'bg-[#eef5ff] text-[#1d4ed8] border border-[#2962ff]/30';
+            }
+            if (statusLower === 'incoming partial') {
+                return 'bg-[#fffbeb] text-[#b45309] border border-amber-400/40';
             }
 
             return 'bg-gray-100 text-gray-700 border border-gray-200';

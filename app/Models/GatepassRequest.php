@@ -28,6 +28,10 @@ class GatepassRequest extends Model
         'destination',
         'remarks',
         'status',
+        'rejection_reason',
+        'incoming_inspection_remarks',
+        'incoming_inspected_at',
+        'incoming_inspected_by',
         'noted_by_employee_id',
         'authorized_by_employee_id',
         'qr_code_path',
@@ -36,6 +40,7 @@ class GatepassRequest extends Model
     protected $casts = [
         'request_date' => 'date',
         'qr_code_generated_at' => 'datetime',
+        'incoming_inspected_at' => 'datetime',
     ];
 
     public function items(): HasMany
