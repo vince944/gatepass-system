@@ -12,6 +12,8 @@ use Illuminate\Support\Str;
 
 class GuardGatepassLogController extends Controller
 {
+    public const LOG_PARTIAL = 'PARTIAL';
+
     public const STATUS_INCOMING_PARTIAL = 'Incoming Partial';
 
     public const STATUS_RETURNED = 'Returned';
@@ -58,7 +60,20 @@ class GuardGatepassLogController extends Controller
             ->orderByDesc('log_id')
             ->value('log_type');
 
-        $nextLogType = $this->resolveNextLogType($lastLogType);
+        $isIncomingPartialStatus = strtolower((string) $gatepass->status) === strtolower(self::STATUS_INCOMING_PARTIAL);
+        $nextLogType = $isIncomingPartialStatus
+            ? self::LOG_PARTIAL
+            : $this->resolveNextLogType($lastLogType);
+
+        if ($nextLogType === 'INCOMING') {
+            DB::table('gatepass_items')
+                ->where('gatepass_no', $gatepassNo)
+                ->update([
+                    'item_status' => self::ITEM_PENDING_RETURN,
+                    'returned_at' => null,
+                    'updated_at' => now()->toDateTimeString(),
+                ]);
+        }
 
         return response()->json([
             'gatepass_no' => $gatepassNo,
@@ -73,6 +88,7 @@ class GuardGatepassLogController extends Controller
         $validated = $request->validate([
             'gatepass_no' => ['required', 'string'],
             'requester_name' => ['nullable', 'string'],
+            'complete_partial' => ['nullable', 'boolean'],
         ]);
 
         $guardUserId = $request->user()?->id;
@@ -120,7 +136,11 @@ class GuardGatepassLogController extends Controller
                 ->first();
 
             $lastLogType = $lastLog?->log_type;
-            $nextLogType = $this->resolveNextLogType($lastLogType);
+            $isIncomingPartialStatus = strtolower((string) $gatepass->status) === strtolower(self::STATUS_INCOMING_PARTIAL);
+            $completePartial = (bool) ($validated['complete_partial'] ?? false);
+            $nextLogType = $isIncomingPartialStatus
+                ? self::LOG_PARTIAL
+                : $this->resolveNextLogType($lastLogType);
             $now = now();
 
             DB::table('gatepass_logs')->insert([
@@ -138,8 +158,8 @@ class GuardGatepassLogController extends Controller
                 DB::table('gatepass_items')
                     ->where('gatepass_no', $gatepassNo)
                     ->update([
-                        'item_status' => self::ITEM_RETURNED,
-                        'returned_at' => $now->toDateTimeString(),
+                        'item_status' => self::ITEM_PENDING_RETURN,
+                        'returned_at' => null,
                         'last_inspected_by' => $guardUserId,
                         'updated_at' => $now->toDateTimeString(),
                     ]);
@@ -153,6 +173,47 @@ class GuardGatepassLogController extends Controller
                         'incoming_inspected_by' => $guardUserId,
                         'updated_at' => $now->toDateTimeString(),
                     ]);
+            } elseif ($nextLogType === 'OUTGOING') {
+                DB::table('gatepass_items')
+                    ->where('gatepass_no', $gatepassNo)
+                    ->update([
+                        'item_status' => null,
+                        'returned_at' => null,
+                        'last_inspected_by' => null,
+                        'updated_at' => $now->toDateTimeString(),
+                    ]);
+
+                DB::table('gatepass_requests')
+                    ->where('gatepass_no', $gatepassNo)
+                    ->update([
+                        'status' => 'Approved',
+                        'updated_at' => $now->toDateTimeString(),
+                    ]);
+            } elseif ($nextLogType === self::LOG_PARTIAL) {
+                if ($completePartial) {
+                    DB::table('gatepass_items')
+                        ->where('gatepass_no', $gatepassNo)
+                        ->update([
+                            'item_status' => null,
+                            'returned_at' => null,
+                            'last_inspected_by' => null,
+                            'updated_at' => $now->toDateTimeString(),
+                        ]);
+
+                    DB::table('gatepass_requests')
+                        ->where('gatepass_no', $gatepassNo)
+                        ->update([
+                            'status' => 'Approved',
+                            'updated_at' => $now->toDateTimeString(),
+                        ]);
+                } else {
+                    DB::table('gatepass_requests')
+                        ->where('gatepass_no', $gatepassNo)
+                        ->update([
+                            'status' => self::STATUS_INCOMING_PARTIAL,
+                            'updated_at' => $now->toDateTimeString(),
+                        ]);
+                }
             }
 
             return [
@@ -165,7 +226,9 @@ class GuardGatepassLogController extends Controller
                     'log_type' => $nextLogType,
                     'log_datetime' => $now->toDateTimeString(),
                     'message' => "{$nextLogType} recorded successfully",
-                    'gatepass_status' => $nextLogType === 'INCOMING' ? self::STATUS_RETURNED : null,
+                    'gatepass_status' => $nextLogType === 'INCOMING'
+                        ? self::STATUS_RETURNED
+                        : ($nextLogType === self::LOG_PARTIAL ? self::STATUS_INCOMING_PARTIAL : null),
                 ],
             ];
         });
@@ -199,21 +262,32 @@ class GuardGatepassLogController extends Controller
             return response()->json(['message' => 'Gatepass not found.'], 404);
         }
 
-        $items = $gatepass->items->map(function ($item) {
+        $lastLogType = DB::table('gatepass_logs')
+            ->where('gatepass_no', $gatepass->gatepass_no)
+            ->orderByDesc('log_datetime')
+            ->orderByDesc('log_id')
+            ->value('log_type');
+
+        $nextLogType = $this->resolveNextLogType($lastLogType);
+        $isOutgoingPhase = $nextLogType === 'OUTGOING';
+
+        $items = $gatepass->items->map(function ($item) use ($isOutgoingPhase) {
             return [
                 'gatepass_item_id' => $item->gatepass_item_id,
                 'property_number' => $item->inventory?->current_prop_no ?? 'N/A',
                 'description' => $item->inventory?->description ?? 'N/A',
                 'serial_no' => $item->inventory?->serial_no ?? 'N/A',
                 'remarks' => $item->item_remarks ?? 'N/A',
-                'item_status' => $item->item_status ?? self::ITEM_PENDING_RETURN,
+                'item_status' => $isOutgoingPhase ? null : $item->item_status,
                 'returned_at' => optional($item->returned_at)->toDateTimeString(),
             ];
         })->values()->all();
 
+        $displayStatus = $this->resolveDisplayStatus($gatepass->gatepass_no, (string) $gatepass->status);
+
         return response()->json([
             'gatepass_no' => $gatepass->gatepass_no,
-            'gatepass_status' => $gatepass->status,
+            'gatepass_status' => $displayStatus,
             'items' => $items,
         ]);
     }
@@ -246,10 +320,6 @@ class GuardGatepassLogController extends Controller
 
             if (strtolower((string) $gatepass->status) === 'rejected') {
                 return ['ok' => false, 'status' => 422, 'message' => 'This gatepass is rejected and cannot be updated.'];
-            }
-
-            if (strtolower((string) $gatepass->status) === 'returned') {
-                return ['ok' => false, 'status' => 422, 'message' => 'This gatepass is already fully returned.'];
             }
 
             $lastLogType = DB::table('gatepass_logs')
@@ -393,6 +463,7 @@ class GuardGatepassLogController extends Controller
         return match ($last) {
             'INCOMING' => 'OUTGOING',
             'OUTGOING' => 'INCOMING',
+            self::LOG_PARTIAL => 'OUTGOING',
             default => 'OUTGOING',
         };
     }
@@ -424,5 +495,29 @@ class GuardGatepassLogController extends Controller
         return Employee::query()
             ->where('employee_name', $requesterName)
             ->value('employee_id');
+    }
+
+    private function resolveDisplayStatus(string $gatepassNo, string $currentStatus): string
+    {
+        if (strtolower($currentStatus) !== strtolower(self::STATUS_RETURNED)) {
+            return $currentStatus;
+        }
+
+        $movementCounts = DB::table('gatepass_logs')
+            ->where('gatepass_no', $gatepassNo)
+            ->whereIn('log_type', ['OUTGOING', 'INCOMING'])
+            ->selectRaw("SUM(CASE WHEN log_type = 'OUTGOING' THEN 1 ELSE 0 END) as outgoing_count")
+            ->selectRaw("SUM(CASE WHEN log_type = 'INCOMING' THEN 1 ELSE 0 END) as incoming_count")
+            ->first();
+
+        $outgoingCount = (int) ($movementCounts?->outgoing_count ?? 0);
+        $incomingCount = (int) ($movementCounts?->incoming_count ?? 0);
+        $usageCount = min($outgoingCount, $incomingCount);
+
+        if ($usageCount < 2) {
+            return self::STATUS_RETURNED;
+        }
+
+        return self::STATUS_RETURNED." - number of times gatepass is used: {$usageCount}";
     }
 }

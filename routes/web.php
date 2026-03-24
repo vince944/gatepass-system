@@ -137,6 +137,22 @@ Route::delete('/coordinator/items/{inventory}', [CoordinatorController::class, '
     ->middleware('auth')
     ->name('admin.coordinator.items.destroy');
 
+Route::put('/coordinator/employees/{employee}', [CoordinatorController::class, 'updateEmployee'])
+    ->middleware('auth')
+    ->name('admin.coordinator.employees.update');
+
+Route::get('/coordinator/employees', [CoordinatorController::class, 'listEmployees'])
+    ->middleware('auth')
+    ->name('admin.coordinator.employees.list');
+
+Route::post('/coordinator/employees', [CoordinatorController::class, 'storeEmployee'])
+    ->middleware('auth')
+    ->name('admin.coordinator.employees.store');
+
+Route::delete('/coordinator/employees/{employee}', [CoordinatorController::class, 'destroyEmployee'])
+    ->middleware('auth')
+    ->name('admin.coordinator.employees.destroy');
+
 Route::get('/gdtest', function () {
     return view('admin.gdtest');
 });

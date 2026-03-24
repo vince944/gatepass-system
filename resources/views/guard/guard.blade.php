@@ -216,11 +216,29 @@
                             I confirm that the gatepass and items match verification (complete return for incoming, or valid outgoing scan).
                         </span>
                     </label>
+                    <label id="confirmMissingItemsRow" class="hidden flex items-start gap-3 select-none">
+                        <input id="confirmMissingItemsCheckbox" type="checkbox"
+                               class="h-5 w-5 mt-0.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500" />
+                        <span class="text-sm text-gray-700 text-left">
+                            I confirm that some items are missing/not yet returned, and this partial return is correct.
+                        </span>
+                    </label>
+                    <label id="confirmCompleteItemsRow" class="hidden flex items-start gap-3 select-none">
+                        <input id="confirmCompleteItemsCheckbox" type="checkbox"
+                               class="h-5 w-5 mt-0.5 rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                        <span class="text-sm text-gray-700 text-left">
+                            I confirm that all items are already returned, and this gatepass can be completed.
+                        </span>
+                    </label>
 
                     <div class="flex flex-col sm:flex-row flex-wrap gap-3 sm:justify-end">
                         <button id="partialReturnBtn" type="button"
                                 class="hidden w-full sm:w-auto order-1 bg-amber-500 hover:bg-amber-600 text-[#0f3b78] font-bold px-6 py-3 rounded-xl transition">
                             Partial return / missing item
+                        </button>
+                        <button id="completeReturnBtn" type="button"
+                                class="hidden w-full sm:w-auto order-1 bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-xl transition">
+                            Complete return
                         </button>
                         <button id="approveGatepassBtn" type="button" disabled
                                 class="order-2 w-full sm:w-auto bg-gray-300 text-gray-600 font-bold px-6 py-3 rounded-xl transition opacity-70 cursor-not-allowed">
@@ -294,6 +312,57 @@
         </div>
     </div>
 
+    <!-- Complete return -->
+    <div id="completeReturnModal" class="fixed inset-0 z-[65] hidden items-center justify-center bg-black/50 px-4 modal-animate-in">
+        <div class="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col modal-animate-in">
+            <div class="bg-[#173a6b] px-6 py-4 flex items-center justify-between shrink-0">
+                <div>
+                    <h3 class="text-white text-xl font-bold">Complete return</h3>
+                    <p class="text-white/70 text-sm">Confirm that all listed items are already returned for this gatepass.</p>
+                </div>
+                <button type="button" id="closeCompleteReturnModal" class="text-white text-3xl leading-none hover:text-gray-200">
+                    &times;
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex-1">
+                <p id="completeReturnModalGatepassNo" class="text-sm text-gray-500 mb-4"></p>
+
+                <div id="completeReturnModalError" class="hidden mb-4 p-3 rounded-xl bg-red-100 border border-red-200 text-red-700 text-sm">
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border border-gray-200">
+                    <table class="min-w-full text-sm text-left">
+                        <thead class="bg-[#173a6b] text-white">
+                            <tr>
+                                <th class="px-4 py-3 font-semibold">Property Number</th>
+                                <th class="px-4 py-3 font-semibold">Description</th>
+                                <th class="px-4 py-3 font-semibold">Serial No</th>
+                                <th class="px-4 py-3 font-semibold">Remarks</th>
+                                <th class="px-4 py-3 font-semibold">Item status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="completeReturnModalItemsTable" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+
+                <p id="completeReturnModalNoItems" class="hidden mt-4 text-gray-500 text-center">No items found for this gatepass.</p>
+
+                <div class="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                    <button type="button" id="completeReturnModalCancelBtn"
+                            class="w-full sm:w-auto bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl transition">
+                        Cancel
+                    </button>
+                    <button type="button" id="completeReturnModalConfirmBtn"
+                            class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-xl transition">
+                        Confirm complete return
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Reject Modal -->
     <div id="rejectModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/50 px-4 modal-animate-in">
         <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden modal-animate-in">
@@ -351,9 +420,14 @@
         const successOverlay = document.getElementById('successOverlay');
 
         const confirmGatepassCheckbox = document.getElementById('confirmGatepassCheckbox');
+        const confirmMissingItemsCheckbox = document.getElementById('confirmMissingItemsCheckbox');
+        const confirmMissingItemsRow = document.getElementById('confirmMissingItemsRow');
+        const confirmCompleteItemsCheckbox = document.getElementById('confirmCompleteItemsCheckbox');
+        const confirmCompleteItemsRow = document.getElementById('confirmCompleteItemsRow');
         const approveGatepassBtn = document.getElementById('approveGatepassBtn');
         const rejectGatepassBtn = document.getElementById('rejectGatepassBtn');
         const partialReturnBtn = document.getElementById('partialReturnBtn');
+        const completeReturnBtn = document.getElementById('completeReturnBtn');
 
         const partialReturnModal = document.getElementById('partialReturnModal');
         const closePartialReturnModal = document.getElementById('closePartialReturnModal');
@@ -364,6 +438,14 @@
         const partialReturnModalError = document.getElementById('partialReturnModalError');
         const partialReturnModalGatepassNo = document.getElementById('partialReturnModalGatepassNo');
         const partialReturnRemarks = document.getElementById('partialReturnRemarks');
+        const completeReturnModal = document.getElementById('completeReturnModal');
+        const closeCompleteReturnModal = document.getElementById('closeCompleteReturnModal');
+        const completeReturnModalCancelBtn = document.getElementById('completeReturnModalCancelBtn');
+        const completeReturnModalConfirmBtn = document.getElementById('completeReturnModalConfirmBtn');
+        const completeReturnModalItemsTable = document.getElementById('completeReturnModalItemsTable');
+        const completeReturnModalNoItems = document.getElementById('completeReturnModalNoItems');
+        const completeReturnModalError = document.getElementById('completeReturnModalError');
+        const completeReturnModalGatepassNo = document.getElementById('completeReturnModalGatepassNo');
 
         const rejectModal = document.getElementById('rejectModal');
         const closeRejectModal = document.getElementById('closeRejectModal');
@@ -375,8 +457,11 @@
 
         let currentGatepassNo = null;
         let nextLogType = null;
+        let currentGatepassStatus = null;
         let savedCameraId = null;
         let lastQrPayload = null;
+        let requiresMissingItemsConfirmation = false;
+        let isCompletingPartialReturn = false;
 
         function showError(message) {
             errorBox.classList.remove('hidden');
@@ -522,9 +607,52 @@
             }
         }
 
+        function setMainConfirmationDisabled(disabled) {
+            confirmGatepassCheckbox.disabled = disabled;
+            confirmGatepassCheckbox.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+
+            if (disabled) {
+                confirmGatepassCheckbox.classList.add('cursor-not-allowed', 'opacity-60');
+            } else {
+                confirmGatepassCheckbox.classList.remove('cursor-not-allowed', 'opacity-60');
+            }
+        }
+
+        function setMissingConfirmationDisabled(disabled) {
+            confirmMissingItemsCheckbox.disabled = disabled;
+            confirmMissingItemsCheckbox.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+
+            if (disabled) {
+                confirmMissingItemsCheckbox.classList.add('cursor-not-allowed', 'opacity-60');
+            } else {
+                confirmMissingItemsCheckbox.classList.remove('cursor-not-allowed', 'opacity-60');
+            }
+        }
+
+        function applyPartialApprovalMode(isPartial) {
+            requiresMissingItemsConfirmation = isPartial;
+            confirmMissingItemsRow.classList.toggle('hidden', !isPartial);
+            setMainConfirmationDisabled(isPartial);
+            setMissingConfirmationDisabled(false);
+            confirmCompleteItemsRow.classList.add('hidden');
+            confirmCompleteItemsCheckbox.checked = false;
+            isCompletingPartialReturn = false;
+
+            if (isPartial) {
+                confirmGatepassCheckbox.checked = true;
+                setApprovalEnabled(confirmMissingItemsCheckbox.checked);
+                return;
+            }
+
+            confirmMissingItemsCheckbox.checked = false;
+            setApprovalEnabled(confirmGatepassCheckbox.checked);
+        }
+
         function resetApprovalControls() {
             confirmGatepassCheckbox.checked = false;
-            setApprovalEnabled(false);
+            confirmMissingItemsCheckbox.checked = false;
+            confirmCompleteItemsCheckbox.checked = false;
+            applyPartialApprovalMode(false);
             approveGatepassBtn.dataset.submitted = '0';
         }
 
@@ -571,6 +699,7 @@
         function setStatusStyle(status) {
             const statusEl = document.getElementById('modalStatus');
             statusEl.textContent = status ?? 'N/A';
+            currentGatepassStatus = status ?? null;
 
             statusEl.className = 'text-lg font-semibold';
 
@@ -584,7 +713,7 @@
                 statusEl.classList.add('text-red-600');
             } else if (lowerStatus === 'incoming partial') {
                 statusEl.classList.add('text-amber-600');
-            } else if (lowerStatus === 'returned') {
+            } else if (lowerStatus.startsWith('returned')) {
                 statusEl.classList.add('text-blue-600');
             } else {
                 statusEl.classList.add('text-[#173a6b]');
@@ -593,18 +722,32 @@
 
         function updatePartialReturnButtonVisibility() {
             const upper = String(nextLogType ?? '').toUpperCase();
+            const isIncomingPartialStatus = String(currentGatepassStatus ?? '').toLowerCase() === 'incoming partial';
             if (!partialReturnBtn) {
                 return;
             }
-            if (upper === 'INCOMING') {
+            partialReturnBtn.textContent = 'Partial return / missing item';
+            if (isIncomingPartialStatus) {
+                partialReturnBtn.classList.add('hidden');
+                completeReturnBtn.classList.remove('hidden');
+            } else if (upper === 'INCOMING') {
                 partialReturnBtn.classList.remove('hidden');
+                completeReturnBtn.classList.add('hidden');
+            } else if (upper === 'PARTIAL') {
+                partialReturnBtn.classList.add('hidden');
+                completeReturnBtn.classList.remove('hidden');
             } else {
                 partialReturnBtn.classList.add('hidden');
+                completeReturnBtn.classList.add('hidden');
             }
         }
 
         function itemStatusBadgeHtml(itemStatus) {
-            const s = String(itemStatus || 'pending_return').toLowerCase();
+            if (itemStatus === null || itemStatus === undefined || String(itemStatus).trim() === '') {
+                return '';
+            }
+
+            const s = String(itemStatus).toLowerCase();
             let label = 'Pending return';
             let cls = 'bg-gray-100 text-gray-800';
             if (s === 'returned') {
@@ -653,7 +796,7 @@
                 description: item.description ?? item.item_description ?? 'N/A',
                 serial_no: item.serial_no ?? item.serial_number ?? 'N/A',
                 remarks: item.item_remarks ?? 'N/A',
-                item_status: 'pending_return',
+                item_status: item.item_status ?? null,
             }));
             renderGatepassItemsRows(mapped);
         }
@@ -678,6 +821,7 @@
                 }
 
                 setStatusStyle(data.gatepass_status);
+                applyPartialApprovalMode(String(data.gatepass_status ?? '').toLowerCase() === 'incoming partial');
                 renderGatepassItemsRows(data.items || []);
             } catch (e) {
                 console.error(e);
@@ -772,7 +916,31 @@
         closeScanModal.addEventListener('click', closeModal);
 
         confirmGatepassCheckbox.addEventListener('change', (e) => {
-            setApprovalEnabled(Boolean(e.target.checked) && approveGatepassBtn.dataset.submitted !== '1');
+            if (approveGatepassBtn.dataset.submitted === '1' || requiresMissingItemsConfirmation) {
+                return;
+            }
+            setApprovalEnabled(Boolean(e.target.checked));
+        });
+
+        confirmMissingItemsCheckbox.addEventListener('change', (e) => {
+            if (approveGatepassBtn.dataset.submitted === '1') {
+                return;
+            }
+            if (!requiresMissingItemsConfirmation) {
+                setApprovalEnabled(confirmGatepassCheckbox.checked);
+                return;
+            }
+            if (isCompletingPartialReturn) {
+                return;
+            }
+            setApprovalEnabled(Boolean(e.target.checked));
+        });
+
+        confirmCompleteItemsCheckbox.addEventListener('change', (e) => {
+            if (approveGatepassBtn.dataset.submitted === '1' || !isCompletingPartialReturn) {
+                return;
+            }
+            setApprovalEnabled(Boolean(e.target.checked));
         });
 
         approveGatepassBtn.addEventListener('click', async () => {
@@ -803,6 +971,7 @@
                     credentials: 'same-origin',
                     body: JSON.stringify({
                         gatepass_no: currentGatepassNo,
+                        complete_partial: isCompletingPartialReturn,
                     }),
                 });
 
@@ -821,7 +990,11 @@
             } catch (e) {
                 console.error(e);
                 approveGatepassBtn.dataset.submitted = '0';
-                setApprovalEnabled(confirmGatepassCheckbox.checked);
+                if (requiresMissingItemsConfirmation) {
+                    setApprovalEnabled(confirmMissingItemsCheckbox.checked);
+                } else {
+                    setApprovalEnabled(confirmGatepassCheckbox.checked);
+                }
                 showToast(e?.message || 'Something went wrong.', 'error');
             }
         });
@@ -922,6 +1095,70 @@
             partialReturnModal.classList.remove('flex');
         }
 
+        async function fetchCompleteReturnModalItems() {
+            completeReturnModalItemsTable.innerHTML = '';
+            completeReturnModalNoItems.classList.add('hidden');
+            completeReturnModalError.classList.add('hidden');
+
+            try {
+                const res = await fetch(`/guard/gatepass-items?gatepass_no=${encodeURIComponent(currentGatepassNo)}`, {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                });
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    completeReturnModalItemsTable.innerHTML = '<tr><td colspan="5" class="px-4 py-4 text-center text-red-500">Failed to load items.</td></tr>';
+                    completeReturnModalConfirmBtn.disabled = true;
+                    return;
+                }
+
+                const items = data.items || [];
+                if (items.length === 0) {
+                    completeReturnModalNoItems.classList.remove('hidden');
+                    completeReturnModalConfirmBtn.disabled = true;
+                    return;
+                }
+
+                completeReturnModalConfirmBtn.disabled = false;
+                completeReturnModalItemsTable.innerHTML = items.map(item => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(item.property_number || 'N/A')}</td>
+                        <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(item.description || 'N/A')}</td>
+                        <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(item.serial_no || 'N/A')}</td>
+                        <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(item.remarks || 'N/A')}</td>
+                        <td class="px-4 py-3">${itemStatusBadgeHtml(item.item_status)}</td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error(e);
+                completeReturnModalItemsTable.innerHTML = '<tr><td colspan="5" class="px-4 py-4 text-center text-red-500">Failed to load items.</td></tr>';
+                completeReturnModalConfirmBtn.disabled = true;
+            }
+        }
+
+        function openCompleteReturnModal() {
+            if (!currentGatepassNo) {
+                showToast('No gatepass selected.', 'error');
+                return;
+            }
+            if (String(currentGatepassStatus ?? '').toLowerCase() !== 'incoming partial') {
+                showToast('Complete return is only available for partial gatepasses.', 'error');
+                return;
+            }
+
+            completeReturnModalGatepassNo.textContent = 'Gatepass No: ' + currentGatepassNo;
+            completeReturnModalError.classList.add('hidden');
+            completeReturnModal.classList.remove('hidden');
+            completeReturnModal.classList.add('flex');
+            void fetchCompleteReturnModalItems();
+        }
+
+        function closeCompleteReturnModalFn() {
+            completeReturnModal.classList.add('hidden');
+            completeReturnModal.classList.remove('flex');
+        }
+
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
@@ -929,12 +1166,21 @@
         }
 
         partialReturnBtn.addEventListener('click', openPartialReturnModal);
+        completeReturnBtn.addEventListener('click', openCompleteReturnModal);
         closePartialReturnModal.addEventListener('click', closePartialReturnModalFn);
         partialReturnModalCancelBtn.addEventListener('click', closePartialReturnModalFn);
+        closeCompleteReturnModal.addEventListener('click', closeCompleteReturnModalFn);
+        completeReturnModalCancelBtn.addEventListener('click', closeCompleteReturnModalFn);
 
         partialReturnModal.addEventListener('click', function (e) {
             if (e.target === partialReturnModal) {
                 closePartialReturnModalFn();
+            }
+        });
+
+        completeReturnModal.addEventListener('click', function (e) {
+            if (e.target === completeReturnModal) {
+                closeCompleteReturnModalFn();
             }
         });
 
@@ -976,6 +1222,8 @@
 
                 showToast(data?.message || 'Partial return recorded.', 'success');
                 closePartialReturnModalFn();
+                confirmMissingItemsCheckbox.checked = false;
+                applyPartialApprovalMode(true);
                 if (data.gatepass_status) {
                     setStatusStyle(data.gatepass_status);
                 }
@@ -985,6 +1233,16 @@
             } finally {
                 partialReturnModalConfirmBtn.disabled = false;
             }
+        });
+
+        completeReturnModalConfirmBtn.addEventListener('click', () => {
+            isCompletingPartialReturn = true;
+            confirmMissingItemsCheckbox.checked = false;
+            setMissingConfirmationDisabled(true);
+            confirmCompleteItemsCheckbox.checked = false;
+            confirmCompleteItemsRow.classList.remove('hidden');
+            setApprovalEnabled(false);
+            closeCompleteReturnModalFn();
         });
 
         rejectGatepassBtn.addEventListener('click', openRejectModal);

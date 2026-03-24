@@ -94,6 +94,7 @@ class CoordinatorController extends Controller
 
         return view('admin.coordinator', [
             'employees' => $employees,
+            'employeeRecords' => $employees,
             'selectedEmployeeId' => $selectedEmployeeId,
             'selectedEmployee' => $selectedEmployee,
             'items' => $items,
@@ -330,5 +331,77 @@ class CoordinatorController extends Controller
         return redirect()
             ->route('admin.coordinator.index', ['employee_id' => $item->employee_id])
             ->with('status', 'Equipment updated successfully.');
+    }
+
+    public function updateEmployee(Request $request, string $employee): RedirectResponse|JsonResponse
+    {
+        $employeeRecord = Employee::query()->findOrFail($employee);
+
+        $validated = $request->validate([
+            'employee_name' => ['required', 'string', 'max:255'],
+            'center' => ['required', 'string', 'max:255'],
+            'empl_status' => ['required', 'string', 'max:255'],
+        ]);
+
+        $employeeRecord->update($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Employee updated successfully.',
+                'employee' => $employeeRecord->fresh(),
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.coordinator.index')
+            ->with('status', 'Employee updated successfully.');
+    }
+
+    public function listEmployees(): JsonResponse
+    {
+        $employees = Employee::query()
+            ->orderBy('employee_id')
+            ->get(['employee_id', 'employee_name', 'center', 'empl_status', 'created_at', 'updated_at']);
+
+        return response()->json([
+            'employees' => $employees,
+        ]);
+    }
+
+    public function storeEmployee(Request $request): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'employee_id' => ['required', 'string', 'max:50', 'unique:employees,employee_id'],
+            'employee_name' => ['required', 'string', 'max:255'],
+            'center' => ['required', 'string', 'max:255'],
+            'empl_status' => ['required', 'string', 'max:255'],
+        ]);
+
+        $employeeRecord = Employee::query()->create($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Employee added successfully.',
+                'employee' => $employeeRecord->fresh(),
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.coordinator.index')
+            ->with('status', 'Employee added successfully.');
+    }
+
+    public function destroyEmployee(Request $request, string $employee): RedirectResponse|JsonResponse
+    {
+        $employeeRecord = Employee::query()->findOrFail($employee);
+        $employeeRecord->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Employee deleted successfully.']);
+        }
+
+        return redirect()
+            ->route('admin.coordinator.index')
+            ->with('status', 'Employee deleted successfully.');
     }
 }

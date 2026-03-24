@@ -128,8 +128,8 @@
         <!-- Delete Confirmation Modal -->
         <div id="deleteConfirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6">
             <div id="deleteConfirmCard" class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 transform transition-all duration-150 opacity-0 scale-95">
-                <h3 class="text-[18px] font-semibold text-[#111827] mb-2">Delete equipment?</h3>
-                <p class="text-[14px] text-[#4b5563] mb-5">
+                <h3 id="deleteConfirmTitle" class="text-[18px] font-semibold text-[#111827] mb-2">Delete equipment?</h3>
+                <p id="deleteConfirmMessage" class="text-[14px] text-[#4b5563] mb-5">
                     This will permanently remove the selected equipment from the inventory for this employee.
                 </p>
                 <div class="flex justify-end gap-3">
@@ -162,6 +162,12 @@
                         class="w-full flex items-center gap-4 px-5 py-4 text-[16px] font-semibold text-left text-white/90 hover:bg-white/10 rounded-2xl transition">
                         <i class="fa-solid fa-cube text-[18px]"></i>
                         <span>Inventory Portal</span>
+                    </button>
+
+                    <button id="navEmployeeManagement" type="button"
+                        class="w-full flex items-center gap-4 px-5 py-4 text-[16px] font-semibold text-left text-white/90 hover:bg-white/10 rounded-2xl transition">
+                        <i class="fa-solid fa-users text-[18px]"></i>
+                        <span>Employee</span>
                     </button>
                 </nav>
             </div>
@@ -532,6 +538,108 @@
                 </div>
                 </div>
 
+                <!-- EMPLOYEE MANAGEMENT SECTION -->
+                <div id="employeeManagementSection" class="hidden">
+                    <div class="bg-white border border-gray-200 rounded-[18px] overflow-hidden">
+                        <div class="px-6 py-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                            <div>
+                                <h3 class="text-[17px] font-semibold text-black">Employee Management</h3>
+                                <p class="text-[14px] text-[#667085] mt-1">Manage employee records</p>
+                            </div>
+                            <button id="openAddEmployeeModal" type="button"
+                                class="w-full sm:w-auto h-[42px] px-4 rounded-xl bg-[#f6b400] hover:bg-[#e5a900] text-[#003b95] font-semibold text-[14px] flex items-center justify-center gap-2 transition whitespace-nowrap">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Add Employee</span>
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-2xl">
+                            <table class="w-full min-w-[980px]">
+                                <thead>
+                                    <tr class="bg-[#003b95] text-white text-left">
+                                        <th class="px-4 py-4 text-[14px] font-semibold">#</th>
+                                        <th class="px-4 py-4 text-[14px] font-semibold">Employee ID</th>
+                                        <th class="px-4 py-4 text-[14px] font-semibold">Employee Name</th>
+                                        <th class="px-4 py-4 text-[14px] font-semibold">Center</th>
+                                        <th class="px-4 py-4 text-[14px] font-semibold">Empl. Status</th>
+                                        <th class="px-4 py-4 text-[14px] font-semibold">Created At</th>
+                                        <th class="px-4 py-4 text-[14px] font-semibold">Updated At</th>
+                                        <th class="px-4 py-4 text-[14px] font-semibold">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employeeManagementTableBody">
+                                    @php
+                                        $formatEmployeeTimestamp = static function ($value): string {
+                                            if ($value === null) {
+                                                return '-';
+                                            }
+
+                                            if ($value instanceof \DateTimeInterface) {
+                                                return $value->format('Y-m-d H:i:s');
+                                            }
+
+                                            $stringValue = trim((string) $value);
+                                            if ($stringValue === '') {
+                                                return '-';
+                                            }
+
+                                            try {
+                                                return \Illuminate\Support\Carbon::parse($stringValue)->format('Y-m-d H:i:s');
+                                            } catch (\Throwable $e) {
+                                                return $stringValue;
+                                            }
+                                        };
+                                    @endphp
+                                    @forelse($employeeRecords as $index => $employeeRecord)
+                                        <tr class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} text-[14px] text-[#111827]">
+                                            <td class="px-4 py-3 align-top">{{ $index + 1 }}</td>
+                                            <td class="px-4 py-3 align-top">{{ $employeeRecord->employee_id }}</td>
+                                            <td class="px-4 py-3 align-top">{{ $employeeRecord->employee_name }}</td>
+                                            <td class="px-4 py-3 align-top">{{ $employeeRecord->center }}</td>
+                                            <td class="px-4 py-3 align-top">{{ $employeeRecord->empl_status }}</td>
+                                            <td class="px-4 py-3 align-top">{{ $formatEmployeeTimestamp($employeeRecord->created_at) }}</td>
+                                            <td class="px-4 py-3 align-top">{{ $formatEmployeeTimestamp($employeeRecord->updated_at) }}</td>
+                                            <td class="px-4 py-3 align-top">
+                                                <div class="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        class="employee-edit p-1.5 rounded-lg border border-gray-300 text-xs text-[#047857] hover:bg-gray-50 transition"
+                                                        data-employee-id="{{ $employeeRecord->employee_id }}"
+                                                        data-employee-name="{{ $employeeRecord->employee_name }}"
+                                                        data-center="{{ $employeeRecord->center }}"
+                                                        data-empl-status="{{ $employeeRecord->empl_status }}"
+                                                        data-update-url="{{ route('admin.coordinator.employees.update', $employeeRecord->employee_id) }}"
+                                                        title="Edit employee"
+                                                    >
+                                                        <i class="fa-solid fa-pen"></i>
+                                                    </button>
+                                                    <form method="POST" action="{{ route('admin.coordinator.employees.destroy', $employeeRecord->employee_id) }}" class="employee-delete-form">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button
+                                                            type="submit"
+                                                            class="employee-delete p-1.5 rounded-lg border border-red-300 text-xs text-red-600 hover:bg-red-50 transition"
+                                                            title="Delete employee"
+                                                        >
+                                                            <i class="fa-solid fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="8" class="px-4 py-6 text-center text-[14px] text-[#98a2b3]">
+                                                No employees available.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Add Item Modal -->
                 <div id="addItemModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6">
                     <div id="addItemModalCard" class="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden relative">
@@ -711,6 +819,99 @@
                                     class="px-5 h-[42px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[14px] font-semibold flex items-center gap-2 transition">
                                     <i class="fa-solid fa-plus"></i>
                                     <span>Add Equipment</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Edit Employee Modal -->
+                <div id="editEmployeeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6">
+                    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden">
+                        <div class="bg-[#003b95] px-6 py-4 flex items-start justify-between">
+                            <div>
+                                <h3 class="text-white text-[22px] font-bold leading-tight">Edit Employee</h3>
+                                <p class="text-white/80 text-[14px] mt-1">Update employee details</p>
+                            </div>
+                            <button id="closeEditEmployeeModal" type="button" class="text-white text-[22px] hover:text-white/80 transition">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <form id="editEmployeeForm" method="POST" action="" class="px-6 py-6">
+                            @csrf
+                            <input type="hidden" name="_method" value="PUT">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">Employee ID</label>
+                                    <input id="editEmployeeNumberField" type="text" class="w-full h-[44px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[14px] text-black focus:outline-none" readonly>
+                                </div>
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">Employee Name</label>
+                                    <input id="editEmployeeNameField" type="text" name="employee_name" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">Center</label>
+                                    <input id="editEmployeeCenterField" type="text" name="center" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">Empl. Status</label>
+                                    <input id="editEmployeeStatusField" type="text" name="empl_status" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
+                                </div>
+                            </div>
+                            <div class="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200">
+                                <button id="cancelEditEmployeeModal" type="button" class="px-5 h-[42px] rounded-xl border border-gray-300 text-[14px] font-medium text-black hover:bg-gray-50 transition">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="px-5 h-[42px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[14px] font-semibold flex items-center gap-2 transition">
+                                    <i class="fa-solid fa-floppy-disk"></i>
+                                    <span>Update Employee</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Add Employee Modal -->
+                <div id="addEmployeeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6">
+                    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden">
+                        <div class="bg-[#003b95] px-6 py-4 flex items-start justify-between">
+                            <div>
+                                <h3 class="text-white text-[22px] font-bold leading-tight">Add Employee</h3>
+                                <p class="text-white/80 text-[14px] mt-1">Create a new employee record</p>
+                            </div>
+                            <button id="closeAddEmployeeModal" type="button" class="text-white text-[22px] hover:text-white/80 transition">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <form id="addEmployeeForm" method="POST" action="{{ route('admin.coordinator.employees.store') }}" class="px-6 py-6">
+                            @csrf
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">Employee ID</label>
+                                    <input id="addEmployeeIdField" type="text" name="employee_id" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">Employee Name</label>
+                                    <input id="addEmployeeNameField" type="text" name="employee_name" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">Center</label>
+                                    <input id="addEmployeeCenterField" type="text" name="center" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">Empl. Status</label>
+                                    <input id="addEmployeeStatusField" type="text" name="empl_status" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
+                                </div>
+                            </div>
+                            <div class="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200">
+                                <button id="cancelAddEmployeeModal" type="button" class="px-5 h-[42px] rounded-xl border border-gray-300 text-[14px] font-medium text-black hover:bg-gray-50 transition">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="px-5 h-[42px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[14px] font-semibold flex items-center gap-2 transition">
+                                    <i class="fa-solid fa-plus"></i>
+                                    <span>Add Employee</span>
                                 </button>
                             </div>
                         </form>
@@ -936,9 +1137,11 @@
     <script>
     const navDashboard = document.getElementById('navDashboard');
     const navInventoryPortal = document.getElementById('navInventoryPortal');
+    const navEmployeeManagement = document.getElementById('navEmployeeManagement');
 
     const dashboardSection = document.getElementById('dashboardSection');
     const inventoryPortalSection = document.getElementById('inventoryPortalSection');
+    const employeeManagementSection = document.getElementById('employeeManagementSection');
 
     const pageTitle = document.getElementById('pageTitle');
     const pageSubtitle = document.getElementById('pageSubtitle');
@@ -991,6 +1194,20 @@
     const editEndUserField = document.getElementById('editEndUserField');
     const editAccountabilityField = document.getElementById('editAccountabilityField');
     const editRemarksField = document.getElementById('editRemarksField');
+    const employeeManagementTableBody = document.getElementById('employeeManagementTableBody');
+    const editEmployeeModal = document.getElementById('editEmployeeModal');
+    const editEmployeeForm = document.getElementById('editEmployeeForm');
+    const closeEditEmployeeModalBtn = document.getElementById('closeEditEmployeeModal');
+    const cancelEditEmployeeModalBtn = document.getElementById('cancelEditEmployeeModal');
+    const editEmployeeNumberField = document.getElementById('editEmployeeNumberField');
+    const editEmployeeNameField = document.getElementById('editEmployeeNameField');
+    const editEmployeeCenterField = document.getElementById('editEmployeeCenterField');
+    const editEmployeeStatusField = document.getElementById('editEmployeeStatusField');
+    const openAddEmployeeModalBtn = document.getElementById('openAddEmployeeModal');
+    const addEmployeeModal = document.getElementById('addEmployeeModal');
+    const addEmployeeForm = document.getElementById('addEmployeeForm');
+    const closeAddEmployeeModalBtn = document.getElementById('closeAddEmployeeModal');
+    const cancelAddEmployeeModalBtn = document.getElementById('cancelAddEmployeeModal');
 
     const csrfToken = '{{ csrf_token() }}';
 
@@ -1000,12 +1217,20 @@
         total: {{ $totalCount }},
     };
 
-    function activateSidebar(activeBtn, inactiveBtn) {
-        activeBtn.classList.add('bg-[#47698f]', 'text-white');
-        activeBtn.classList.remove('text-white/90', 'hover:bg-white/10');
+    function activateSidebar(activeBtn, allButtons) {
+        allButtons.forEach((button) => {
+            if (!button) {
+                return;
+            }
 
-        inactiveBtn.classList.remove('bg-[#47698f]', 'text-white');
-        inactiveBtn.classList.add('text-white/90', 'hover:bg-white/10');
+            button.classList.remove('bg-[#47698f]', 'text-white');
+            button.classList.add('text-white/90', 'hover:bg-white/10');
+        });
+
+        if (activeBtn) {
+            activeBtn.classList.add('bg-[#47698f]', 'text-white');
+            activeBtn.classList.remove('text-white/90', 'hover:bg-white/10');
+        }
     }
 
     function resetCards() {
@@ -1035,6 +1260,7 @@
     function showDashboardSection() {
         dashboardSection.classList.remove('hidden');
         inventoryPortalSection.classList.add('hidden');
+        employeeManagementSection.classList.add('hidden');
 
         pageTitle.textContent = 'Dashboard';
         pageSubtitle.textContent = 'List of Inventory';
@@ -1043,13 +1269,17 @@
             openAddItemModal.classList.add('hidden');
         }
 
-        activateSidebar(navDashboard, navInventoryPortal);
+        activateSidebar(navDashboard, [navDashboard, navInventoryPortal, navEmployeeManagement]);
         showAccountable();
+        if (window.location.hash !== '#dashboard') {
+            window.history.replaceState(null, '', '#dashboard');
+        }
     }
 
     function showInventoryPortalSection() {
         dashboardSection.classList.add('hidden');
         inventoryPortalSection.classList.remove('hidden');
+        employeeManagementSection.classList.add('hidden');
 
         pageTitle.textContent = 'Inventory Portal';
         pageSubtitle.textContent = 'Manage all equipment inventory';
@@ -1058,7 +1288,30 @@
             openAddItemModal.classList.remove('hidden');
         }
 
-        activateSidebar(navInventoryPortal, navDashboard);
+        activateSidebar(navInventoryPortal, [navDashboard, navInventoryPortal, navEmployeeManagement]);
+        if (window.location.hash !== '#inventory-portal') {
+            window.history.replaceState(null, '', '#inventory-portal');
+        }
+    }
+
+    function showEmployeeManagementSection() {
+        dashboardSection.classList.add('hidden');
+        inventoryPortalSection.classList.add('hidden');
+        employeeManagementSection.classList.remove('hidden');
+
+        pageTitle.textContent = 'Employee Management';
+        pageSubtitle.textContent = 'Manage employee records';
+
+        if (openAddItemModal) {
+            openAddItemModal.classList.add('hidden');
+        }
+
+        activateSidebar(navEmployeeManagement, [navDashboard, navInventoryPortal, navEmployeeManagement]);
+        if (window.location.hash !== '#employee-management') {
+            window.history.replaceState(null, '', '#employee-management');
+        }
+
+        loadEmployees();
     }
 
     function showAccountable() {
@@ -1152,6 +1405,111 @@
         }
         const trimmed = String(value).trim();
         return trimmed === '' ? 'N/A' : trimmed;
+    }
+
+    function formatEmployeeTimestamp(value) {
+        if (value === null || value === undefined) {
+            return '-';
+        }
+
+        const trimmed = String(value).trim();
+        if (trimmed === '') {
+            return '-';
+        }
+
+        const parsedDate = new Date(trimmed);
+        if (Number.isNaN(parsedDate.getTime())) {
+            return trimmed;
+        }
+
+        const year = parsedDate.getFullYear();
+        const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(parsedDate.getDate()).padStart(2, '0');
+        const hours = String(parsedDate.getHours()).padStart(2, '0');
+        const minutes = String(parsedDate.getMinutes()).padStart(2, '0');
+        const seconds = String(parsedDate.getSeconds()).padStart(2, '0');
+
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    function renderEmployeeRows(employees) {
+        if (!employeeManagementTableBody) {
+            return;
+        }
+
+        employeeManagementTableBody.innerHTML = '';
+
+        if (!employees || employees.length === 0) {
+            employeeManagementTableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="px-4 py-6 text-center text-[14px] text-[#98a2b3]">
+                        No employees available.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        employees.forEach((employeeRecord, index) => {
+            const row = document.createElement('tr');
+            row.className = `${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} text-[14px] text-[#111827]`;
+            row.innerHTML = `
+                <td class="px-4 py-3 align-top">${index + 1}</td>
+                <td class="px-4 py-3 align-top">${employeeRecord.employee_id ?? ''}</td>
+                <td class="px-4 py-3 align-top">${employeeRecord.employee_name ?? ''}</td>
+                <td class="px-4 py-3 align-top">${employeeRecord.center ?? ''}</td>
+                <td class="px-4 py-3 align-top">${employeeRecord.empl_status ?? ''}</td>
+                <td class="px-4 py-3 align-top">${formatEmployeeTimestamp(employeeRecord.created_at)}</td>
+                <td class="px-4 py-3 align-top">${formatEmployeeTimestamp(employeeRecord.updated_at)}</td>
+                <td class="px-4 py-3 align-top">
+                    <div class="flex items-center gap-2">
+                        <button
+                            type="button"
+                            class="employee-edit p-1.5 rounded-lg border border-gray-300 text-xs text-[#047857] hover:bg-gray-50 transition"
+                            data-employee-id="${employeeRecord.employee_id ?? ''}"
+                            data-employee-name="${employeeRecord.employee_name ?? ''}"
+                            data-center="${employeeRecord.center ?? ''}"
+                            data-empl-status="${employeeRecord.empl_status ?? ''}"
+                            data-update-url="/coordinator/employees/${employeeRecord.employee_id ?? ''}"
+                            title="Edit employee"
+                        >
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <form method="POST" action="/coordinator/employees/${employeeRecord.employee_id ?? ''}" class="employee-delete-form">
+                            <input type="hidden" name="_token" value="${csrfToken}">
+                            <input type="hidden" name="_method" value="DELETE">
+                            <button
+                                type="submit"
+                                class="employee-delete p-1.5 rounded-lg border border-red-300 text-xs text-red-600 hover:bg-red-50 transition"
+                                title="Delete employee"
+                            >
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            `;
+            employeeManagementTableBody.appendChild(row);
+        });
+    }
+
+    async function loadEmployees() {
+        try {
+            const response = await fetch('/coordinator/employees', {
+                headers: {
+                    'Accept': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                return;
+            }
+
+            const data = await response.json();
+            renderEmployeeRows(data.employees ?? []);
+        } catch (error) {
+            // silent fail
+        }
     }
 
     function statusLabelFromCode(code) {
@@ -1532,6 +1890,9 @@
 
     navDashboard.addEventListener('click', showDashboardSection);
     navInventoryPortal.addEventListener('click', showInventoryPortalSection);
+    if (navEmployeeManagement) {
+        navEmployeeManagement.addEventListener('click', showEmployeeManagementSection);
+    }
 
     cardAccountable.addEventListener('click', showAccountable);
     cardUnaccountable.addEventListener('click', showUnaccountable);
@@ -1694,12 +2055,26 @@
     const deleteConfirmCard = document.getElementById('deleteConfirmCard');
     const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
     const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+    const deleteConfirmTitle = document.getElementById('deleteConfirmTitle');
+    const deleteConfirmMessage = document.getElementById('deleteConfirmMessage');
     let pendingDeleteForm = null;
+    let pendingDeleteType = 'equipment';
 
-    function openDeleteModal(form) {
+    function openDeleteModal(form, type = 'equipment') {
         pendingDeleteForm = form;
+        pendingDeleteType = type;
         if (!deleteConfirmModal || !deleteConfirmCard) {
             return;
+        }
+
+        if (deleteConfirmTitle && deleteConfirmMessage) {
+            if (type === 'employee') {
+                deleteConfirmTitle.textContent = 'Delete employee?';
+                deleteConfirmMessage.textContent = 'This will permanently remove the selected employee record.';
+            } else {
+                deleteConfirmTitle.textContent = 'Delete equipment?';
+                deleteConfirmMessage.textContent = 'This will permanently remove the selected equipment from the inventory for this employee.';
+            }
         }
 
         deleteConfirmModal.classList.remove('hidden');
@@ -1747,6 +2122,12 @@
 
             closeDeleteModal();
             pendingDeleteForm = null;
+            if (pendingDeleteType === 'employee') {
+                await loadEmployees();
+                showItemSuccessToast('Employee deleted successfully');
+                return;
+            }
+
             await loadEmployeeInventory();
             showItemSuccessToast('Equipment deleted successfully');
         } catch (error) {
@@ -1763,7 +2144,7 @@
                 if (!form) {
                     return;
                 }
-                openDeleteModal(form);
+                openDeleteModal(form, 'equipment');
                 return;
             }
 
@@ -1771,6 +2152,194 @@
             if (editButton) {
                 event.preventDefault();
                 openEditModalFromButton(editButton);
+            }
+        });
+    }
+
+    function openEditEmployeeModalFromButton(button) {
+        if (!editEmployeeModal || !editEmployeeForm) {
+            return;
+        }
+
+        editEmployeeForm.action = button.getAttribute('data-update-url') || '';
+
+        if (editEmployeeNumberField) {
+            editEmployeeNumberField.value = button.getAttribute('data-employee-id') || '';
+        }
+        if (editEmployeeNameField) {
+            editEmployeeNameField.value = button.getAttribute('data-employee-name') || '';
+        }
+        if (editEmployeeCenterField) {
+            editEmployeeCenterField.value = button.getAttribute('data-center') || '';
+        }
+        if (editEmployeeStatusField) {
+            editEmployeeStatusField.value = button.getAttribute('data-empl-status') || '';
+        }
+
+        editEmployeeModal.classList.remove('hidden');
+        editEmployeeModal.classList.add('flex');
+    }
+
+    function closeEditEmployeeModal() {
+        if (!editEmployeeModal) {
+            return;
+        }
+        editEmployeeModal.classList.add('hidden');
+        editEmployeeModal.classList.remove('flex');
+    }
+
+    function openAddEmployeeModal() {
+        if (!addEmployeeModal) {
+            return;
+        }
+        addEmployeeModal.classList.remove('hidden');
+        addEmployeeModal.classList.add('flex');
+    }
+
+    function closeAddEmployeeModal() {
+        if (!addEmployeeModal) {
+            return;
+        }
+        addEmployeeModal.classList.add('hidden');
+        addEmployeeModal.classList.remove('flex');
+    }
+
+    if (closeEditEmployeeModalBtn) {
+        closeEditEmployeeModalBtn.addEventListener('click', closeEditEmployeeModal);
+    }
+    if (cancelEditEmployeeModalBtn) {
+        cancelEditEmployeeModalBtn.addEventListener('click', closeEditEmployeeModal);
+    }
+    if (editEmployeeModal) {
+        editEmployeeModal.addEventListener('click', function (event) {
+            if (event.target === editEmployeeModal) {
+                closeEditEmployeeModal();
+            }
+        });
+    }
+
+    if (openAddEmployeeModalBtn) {
+        openAddEmployeeModalBtn.addEventListener('click', openAddEmployeeModal);
+    }
+
+    if (closeAddEmployeeModalBtn) {
+        closeAddEmployeeModalBtn.addEventListener('click', closeAddEmployeeModal);
+    }
+
+    if (cancelAddEmployeeModalBtn) {
+        cancelAddEmployeeModalBtn.addEventListener('click', closeAddEmployeeModal);
+    }
+
+    if (addEmployeeModal) {
+        addEmployeeModal.addEventListener('click', function (event) {
+            if (event.target === addEmployeeModal) {
+                closeAddEmployeeModal();
+            }
+        });
+    }
+
+    async function submitAddEmployeeForm(event) {
+        if (!addEmployeeForm) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const employeeId = addEmployeeForm.querySelector('[name="employee_id"]')?.value;
+        const employeeName = addEmployeeForm.querySelector('[name="employee_name"]')?.value;
+        const center = addEmployeeForm.querySelector('[name="center"]')?.value;
+        const emplStatus = addEmployeeForm.querySelector('[name="empl_status"]')?.value;
+
+        if (isBlank(employeeId) || isBlank(employeeName) || isBlank(center) || isBlank(emplStatus)) {
+            showFormErrorToast('Please complete all required fields before adding employee.');
+            return;
+        }
+
+        try {
+            const formData = new FormData(addEmployeeForm);
+            const response = await fetch(addEmployeeForm.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                showFormErrorToast(data?.message || 'Failed to add employee. Please try again.');
+                return;
+            }
+
+            addEmployeeForm.reset();
+            closeAddEmployeeModal();
+            await loadEmployees();
+            showItemSuccessToast('Employee added successfully');
+        } catch (error) {
+            showFormErrorToast('Failed to add employee. Please try again.');
+        }
+    }
+
+    if (addEmployeeForm) {
+        addEmployeeForm.addEventListener('submit', submitAddEmployeeForm);
+    }
+
+    async function submitEditEmployeeForm(event) {
+        if (!editEmployeeForm) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const formData = new FormData(editEmployeeForm);
+        formData.set('_method', 'PUT');
+
+        try {
+            const response = await fetch(editEmployeeForm.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                return;
+            }
+
+            closeEditEmployeeModal();
+            await loadEmployees();
+            showItemSuccessToast('Employee updated successfully');
+        } catch (error) {
+            // silent fail
+        }
+    }
+
+    if (editEmployeeForm) {
+        editEmployeeForm.addEventListener('submit', submitEditEmployeeForm);
+    }
+
+    if (employeeManagementTableBody) {
+        employeeManagementTableBody.addEventListener('click', function (event) {
+            const editButton = event.target.closest('.employee-edit');
+            if (editButton) {
+                event.preventDefault();
+                openEditEmployeeModalFromButton(editButton);
+                return;
+            }
+
+            const deleteButton = event.target.closest('.employee-delete');
+            if (deleteButton) {
+                event.preventDefault();
+                const form = deleteButton.closest('.employee-delete-form');
+                if (!form) {
+                    return;
+                }
+                openDeleteModal(form, 'employee');
             }
         });
     }
@@ -1796,7 +2365,13 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        showDashboardSection();
+        if (window.location.hash === '#employee-management') {
+            showEmployeeManagementSection();
+        } else if (window.location.hash === '#inventory-portal') {
+            showInventoryPortalSection();
+        } else {
+            showDashboardSection();
+        }
         setTodayDate();
 
         const loginSuccessToast = document.getElementById('loginSuccessToast');

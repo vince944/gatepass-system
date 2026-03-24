@@ -443,6 +443,7 @@ class EmployeeGatepassRequestController extends Controller
                         'gatepass_no' => $requestModel->gatepass_no,
                         'inventory_id' => $inventoryId,
                         'item_remarks' => null,
+                        'item_status' => null,
                     ]);
                 }
 

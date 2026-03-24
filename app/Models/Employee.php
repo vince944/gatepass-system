@@ -15,7 +15,7 @@ class Employee extends Model
 
     protected $keyType = 'string';
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = [
         'employee_id',
@@ -24,6 +24,14 @@ class Employee extends Model
         'empl_status',
         'user_id',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+        ];
+    }
 
     public function user(): BelongsTo
     {
