@@ -11,7 +11,7 @@ class EmployeeProfile extends Model
         'user_id',
         'employee_id',
         'center',
-        'status'
+        'status',
     ];
 
     public function user()

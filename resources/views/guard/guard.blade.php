@@ -209,7 +209,7 @@
                 </div>
 
                 <div class="mt-6 flex flex-col gap-4">
-                    <label class="flex items-start gap-3 select-none">
+                    <label id="confirmGatepassRow" class="flex items-start gap-3 select-none">
                         <input id="confirmGatepassCheckbox" type="checkbox"
                                class="h-5 w-5 mt-0.5 rounded border-gray-300 text-[#173a6b] focus:ring-[#173a6b]" />
                         <span class="text-sm text-gray-700 text-left">
@@ -227,7 +227,7 @@
                         <input id="confirmCompleteItemsCheckbox" type="checkbox"
                                class="h-5 w-5 mt-0.5 rounded border-gray-300 text-green-600 focus:ring-green-500" />
                         <span class="text-sm text-gray-700 text-left">
-                            I confirm that all items are already returned, and this gatepass can be completed.
+                            All items have been returned
                         </span>
                     </label>
 
@@ -245,10 +245,35 @@
                             Approve
                         </button>
                         <button id="rejectGatepassBtn" type="button"
-                                class="order-3 w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-xl transition">
+                                class="hidden order-3 w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-xl transition">
                             Reject
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log type picker modal -->
+    <div id="logTypePickerModal" class="fixed inset-0 z-[55] hidden items-center justify-center bg-black/50 px-4">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div class="bg-[#173a6b] px-6 py-4">
+                <h3 class="text-white text-xl font-bold">Select log type</h3>
+                <p class="text-white/70 text-sm">Choose how to record this scanned gate pass.</p>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-500 mb-4">
+                    Gatepass No: <span id="logTypePickerGatepassNo" class="font-semibold text-[#173a6b]">N/A</span>
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button id="pickOutgoingBtn" type="button"
+                            class="w-full bg-[#f6bf1e] hover:bg-[#e0ac13] text-[#0f3b78] font-bold px-6 py-3 rounded-xl transition">
+                        Outgoing
+                    </button>
+                    <button id="pickIncomingBtn" type="button"
+                            class="w-full bg-[#173a6b] hover:bg-[#123154] text-white font-bold px-6 py-3 rounded-xl transition">
+                        Incoming
+                    </button>
                 </div>
             </div>
         </div>
@@ -418,8 +443,13 @@
         const scanModal = document.getElementById('scanModal');
         const closeScanModal = document.getElementById('closeScanModal');
         const successOverlay = document.getElementById('successOverlay');
+        const logTypePickerModal = document.getElementById('logTypePickerModal');
+        const logTypePickerGatepassNo = document.getElementById('logTypePickerGatepassNo');
+        const pickOutgoingBtn = document.getElementById('pickOutgoingBtn');
+        const pickIncomingBtn = document.getElementById('pickIncomingBtn');
 
         const confirmGatepassCheckbox = document.getElementById('confirmGatepassCheckbox');
+        const confirmGatepassRow = document.getElementById('confirmGatepassRow');
         const confirmMissingItemsCheckbox = document.getElementById('confirmMissingItemsCheckbox');
         const confirmMissingItemsRow = document.getElementById('confirmMissingItemsRow');
         const confirmCompleteItemsCheckbox = document.getElementById('confirmCompleteItemsCheckbox');
@@ -456,7 +486,7 @@
         const rejectReasonInput = document.getElementById('rejectReasonInput');
 
         let currentGatepassNo = null;
-        let nextLogType = null;
+        let selectedLogType = null;
         let currentGatepassStatus = null;
         let savedCameraId = null;
         let lastQrPayload = null;
@@ -515,9 +545,21 @@
             scanModal.classList.add('flex');
         }
 
+        function openLogTypePicker(gatepassNo) {
+            logTypePickerGatepassNo.textContent = gatepassNo || 'N/A';
+            logTypePickerModal.classList.remove('hidden');
+            logTypePickerModal.classList.add('flex');
+        }
+
+        function closeLogTypePicker() {
+            logTypePickerModal.classList.add('hidden');
+            logTypePickerModal.classList.remove('flex');
+        }
+
         async function closeModal() {
             scanModal.classList.add('hidden');
             scanModal.classList.remove('flex');
+            closeLogTypePicker();
             hideSuccessOverlay();
             if (scanning) {
                 await restartScanner();
@@ -560,8 +602,10 @@
                             showSuccessAnimation();
                             setTimeout(() => {
                                 hideSuccessOverlay();
-                                void fillModal(parsedData);
-                                openModal();
+                                lastQrPayload = parsedData;
+                                currentGatepassNo = parsedData.gatepass_no || null;
+                                selectedLogType = null;
+                                openLogTypePicker(currentGatepassNo);
                             }, 700);
                         } catch (e) {
                             showError("Scanned QR code is not valid.");
@@ -629,22 +673,34 @@
             }
         }
 
+        function isIncomingPartialStatus() {
+            return String(currentGatepassStatus ?? '').toLowerCase() === 'incoming partial';
+        }
+
         function applyPartialApprovalMode(isPartial) {
-            requiresMissingItemsConfirmation = isPartial;
-            confirmMissingItemsRow.classList.toggle('hidden', !isPartial);
-            setMainConfirmationDisabled(isPartial);
-            setMissingConfirmationDisabled(false);
-            confirmCompleteItemsRow.classList.add('hidden');
+            requiresMissingItemsConfirmation = false;
+            isCompletingPartialReturn = isPartial;
+            const isIncomingSelection = String(selectedLogType ?? '').toUpperCase() === 'INCOMING';
+
+            confirmGatepassCheckbox.checked = false;
+            confirmMissingItemsCheckbox.checked = false;
             confirmCompleteItemsCheckbox.checked = false;
-            isCompletingPartialReturn = false;
 
             if (isPartial) {
-                confirmGatepassCheckbox.checked = true;
-                setApprovalEnabled(confirmMissingItemsCheckbox.checked);
+                confirmGatepassRow.classList.add('hidden');
+                confirmMissingItemsRow.classList.add('hidden');
+                confirmCompleteItemsRow.classList.toggle('hidden', !isIncomingSelection);
+                setMainConfirmationDisabled(true);
+                setMissingConfirmationDisabled(true);
+                setApprovalEnabled(false);
                 return;
             }
 
-            confirmMissingItemsCheckbox.checked = false;
+            confirmGatepassRow.classList.remove('hidden');
+            confirmMissingItemsRow.classList.add('hidden');
+            confirmCompleteItemsRow.classList.add('hidden');
+            setMainConfirmationDisabled(false);
+            setMissingConfirmationDisabled(false);
             setApprovalEnabled(confirmGatepassCheckbox.checked);
         }
 
@@ -656,44 +712,15 @@
             approveGatepassBtn.dataset.submitted = '0';
         }
 
-        async function refreshNextLogInfo(gatepassNo) {
+        function refreshSelectedLogInfo() {
             const labelEl = document.getElementById('modalLogLabel');
             const datetimeEl = document.getElementById('modalLogDatetime');
             const hintEl = document.getElementById('modalLogTypeHint');
 
-            labelEl.textContent = 'Time In';
-            datetimeEl.textContent = '';
-            hintEl.textContent = '';
-            nextLogType = null;
-
-            try {
-                const url = `/guard/gatepass-logs/next?gatepass_no=${encodeURIComponent(gatepassNo)}`;
-                const res = await fetch(url, {
-                    headers: {
-                        'Accept': 'application/json',
-                    },
-                    credentials: 'same-origin',
-                });
-
-                if (!res.ok) {
-                    throw new Error('Failed to fetch next log type');
-                }
-
-                const data = await res.json();
-                nextLogType = data.log_type ?? null;
-
-                labelEl.textContent = logTypeToLabel(nextLogType);
-                datetimeEl.textContent = data.log_datetime ?? '';
-                hintEl.textContent = String(nextLogType ?? '').toUpperCase();
-                updatePartialReturnButtonVisibility();
-            } catch (e) {
-                console.error(e);
-                labelEl.textContent = 'Time In';
-                datetimeEl.textContent = new Date().toLocaleString();
-                hintEl.textContent = '';
-                nextLogType = null;
-                updatePartialReturnButtonVisibility();
-            }
+            labelEl.textContent = logTypeToLabel(selectedLogType);
+            datetimeEl.textContent = new Date().toLocaleString();
+            hintEl.textContent = String(selectedLogType ?? '').toUpperCase();
+            updatePartialReturnButtonVisibility();
         }
 
         function setStatusStyle(status) {
@@ -721,21 +748,21 @@
         }
 
         function updatePartialReturnButtonVisibility() {
-            const upper = String(nextLogType ?? '').toUpperCase();
-            const isIncomingPartialStatus = String(currentGatepassStatus ?? '').toLowerCase() === 'incoming partial';
+            const upper = String(selectedLogType ?? '').toUpperCase();
+            const isPartial = isIncomingPartialStatus();
             if (!partialReturnBtn) {
                 return;
             }
             partialReturnBtn.textContent = 'Partial return / missing item';
-            if (isIncomingPartialStatus) {
+            if (isPartial) {
                 partialReturnBtn.classList.add('hidden');
-                completeReturnBtn.classList.remove('hidden');
+                completeReturnBtn.classList.add('hidden');
             } else if (upper === 'INCOMING') {
                 partialReturnBtn.classList.remove('hidden');
                 completeReturnBtn.classList.add('hidden');
             } else if (upper === 'PARTIAL') {
                 partialReturnBtn.classList.add('hidden');
-                completeReturnBtn.classList.remove('hidden');
+                completeReturnBtn.classList.add('hidden');
             } else {
                 partialReturnBtn.classList.add('hidden');
                 completeReturnBtn.classList.add('hidden');
@@ -821,7 +848,7 @@
                 }
 
                 setStatusStyle(data.gatepass_status);
-                applyPartialApprovalMode(String(data.gatepass_status ?? '').toLowerCase() === 'incoming partial');
+                applyPartialApprovalMode(isIncomingPartialStatus());
                 renderGatepassItemsRows(data.items || []);
             } catch (e) {
                 console.error(e);
@@ -852,7 +879,7 @@
             resetApprovalControls();
 
             if (currentGatepassNo) {
-                await refreshNextLogInfo(currentGatepassNo);
+                refreshSelectedLogInfo();
                 await refreshGatepassItemsFromServer(currentGatepassNo);
             }
         }
@@ -909,6 +936,7 @@
             cameraView.classList.add('hidden');
             defaultView.classList.remove('hidden');
             stopBtn.classList.add('hidden');
+            closeLogTypePicker();
         }
 
         startBtn.addEventListener('click', startScanner);
@@ -953,6 +981,11 @@
                 return;
             }
 
+            if (!selectedLogType) {
+                showToast('Please select a log type first.', 'error');
+                return;
+            }
+
             if (approveGatepassBtn.dataset.submitted === '1') {
                 return;
             }
@@ -971,6 +1004,7 @@
                     credentials: 'same-origin',
                     body: JSON.stringify({
                         gatepass_no: currentGatepassNo,
+                        log_type: selectedLogType,
                         complete_partial: isCompletingPartialReturn,
                     }),
                 });
@@ -984,7 +1018,7 @@
 
                 showToast(data?.message || 'Recorded successfully', 'success');
 
-                await refreshNextLogInfo(currentGatepassNo);
+                refreshSelectedLogInfo();
                 await refreshGatepassItemsFromServer(currentGatepassNo);
                 closeModal();
             } catch (e) {
@@ -1075,7 +1109,7 @@
                 showToast('No gatepass selected.', 'error');
                 return;
             }
-            const upper = String(nextLogType ?? '').toUpperCase();
+            const upper = String(selectedLogType ?? '').toUpperCase();
             if (upper !== 'INCOMING') {
                 showToast('Partial return is only available for an incoming return scan.', 'error');
                 return;
@@ -1184,6 +1218,30 @@
             }
         });
 
+        pickOutgoingBtn.addEventListener('click', async () => {
+            if (!lastQrPayload) {
+                showToast('No scanned gatepass found.', 'error');
+                return;
+            }
+
+            selectedLogType = 'OUTGOING';
+            closeLogTypePicker();
+            await fillModal(lastQrPayload);
+            openModal();
+        });
+
+        pickIncomingBtn.addEventListener('click', async () => {
+            if (!lastQrPayload) {
+                showToast('No scanned gatepass found.', 'error');
+                return;
+            }
+
+            selectedLogType = 'INCOMING';
+            closeLogTypePicker();
+            await fillModal(lastQrPayload);
+            openModal();
+        });
+
         partialReturnModalConfirmBtn.addEventListener('click', async () => {
             const checked = Array.from(document.querySelectorAll('#partialReturnModal input[name="partial_missing_item"]:checked'))
                 .map(el => parseInt(el.value, 10))
@@ -1222,12 +1280,7 @@
 
                 showToast(data?.message || 'Partial return recorded.', 'success');
                 closePartialReturnModalFn();
-                confirmMissingItemsCheckbox.checked = false;
-                applyPartialApprovalMode(true);
-                if (data.gatepass_status) {
-                    setStatusStyle(data.gatepass_status);
-                }
-                await refreshGatepassItemsFromServer(currentGatepassNo);
+                await closeModal();
             } catch (e) {
                 showToast(e?.message || 'Something went wrong.', 'error');
             } finally {

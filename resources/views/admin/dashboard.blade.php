@@ -1044,7 +1044,14 @@
     </div>
 
     <script>
-        let nextGatePassNumber = 260000;
+        let nextGatePassNumber = 'GP2601';
+
+        function incrementGatePassNumber(currentValue) {
+            const s = String(currentValue ?? '').trim();
+            const match = s.match(/(\d+)$/);
+            const currentNumeric = match ? parseInt(match[1], 10) : 2601;
+            return 'GP' + (currentNumeric + 1);
+        }
 
         const adminGatepassShowUrlTemplate = "{{ route('admin.gatepass-requests.show', ['gatepassNo' => '__GP__']) }}";
         const adminGatepassStoreQrUrlTemplate = "{{ route('admin.gatepass-requests.store-qr-code', ['gatepassNo' => '__GP__']) }}";
@@ -1374,7 +1381,7 @@
                 form.addEventListener('submit', function (event) {
                     event.preventDefault();
                     if (validateNewGatePassForm()) {
-                        nextGatePassNumber += 1;
+                        nextGatePassNumber = incrementGatePassNumber(nextGatePassNumber);
                         closeNewGatePassModal();
                         alert('Gate pass request is valid and ready to be submitted.');
                     }

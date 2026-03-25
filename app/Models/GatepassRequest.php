@@ -55,13 +55,39 @@ class GatepassRequest extends Model
 
     public static function generateGatepassNo(int $start = 260000): string
     {
-        $last = static::query()
-            ->selectRaw("MAX(CAST(IF(INSTR(gatepass_no, '-') > 0, SUBSTRING_INDEX(gatepass_no, '-', -1), gatepass_no) AS UNSIGNED)) as max_no")
+        // Existing records were generated as numeric values starting from `260000`.
+        // We now want an alphanumeric format: `GP2601`, `GP2602`, ...
+        // Mapping rule:
+        // - numeric `260000` -> display `2601`
+        // - numeric `260001` -> display `2602`
+        // After migration, new records will store `GP{display}`.
+        $displayStart = 2601;
+        $offset = $start - $displayStart;
+
+        $suffixExpr = "CASE
+            WHEN INSTR(gatepass_no, '-') > 0
+            THEN SUBSTRING_INDEX(gatepass_no, '-', -1)
+            ELSE gatepass_no
+        END";
+
+        // Compute max "display" number regardless of whether gatepass_no is:
+        // - numeric (e.g. 260015) -> convert to display (260015 - $offset)
+        // - already prefixed (e.g. GP2616) -> extract numeric directly
+        $lastDisplay = static::query()
+            ->selectRaw(
+                "MAX(CAST(
+                    CASE
+                        WHEN {$suffixExpr} LIKE 'GP%' THEN REPLACE({$suffixExpr}, 'GP', '')
+                        ELSE CAST({$suffixExpr} AS UNSIGNED) - ?
+                    END
+                AS UNSIGNED)) as max_no",
+                [$offset]
+            )
             ->lockForUpdate()
             ->value('max_no');
 
-        $next = (int) ($last ?: ($start - 1)) + 1;
+        $nextDisplay = (int) ($lastDisplay ?: ($displayStart - 1)) + 1;
 
-        return (string) $next;
+        return 'GP'.$nextDisplay;
     }
 }

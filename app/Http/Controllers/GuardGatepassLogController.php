@@ -88,6 +88,7 @@ class GuardGatepassLogController extends Controller
         $validated = $request->validate([
             'gatepass_no' => ['required', 'string'],
             'requester_name' => ['nullable', 'string'],
+            'log_type' => ['required', 'string', 'in:OUTGOING,INCOMING'],
             'complete_partial' => ['nullable', 'boolean'],
         ]);
 
@@ -128,20 +129,18 @@ class GuardGatepassLogController extends Controller
                 ];
             }
 
-            $lastLog = DB::table('gatepass_logs')
-                ->where('gatepass_no', $gatepassNo)
-                ->orderByDesc('log_datetime')
-                ->orderByDesc('log_id')
-                ->lockForUpdate()
-                ->first();
-
-            $lastLogType = $lastLog?->log_type;
             $isIncomingPartialStatus = strtolower((string) $gatepass->status) === strtolower(self::STATUS_INCOMING_PARTIAL);
             $completePartial = (bool) ($validated['complete_partial'] ?? false);
-            $nextLogType = $isIncomingPartialStatus
-                ? self::LOG_PARTIAL
-                : $this->resolveNextLogType($lastLogType);
+            $nextLogType = strtoupper((string) $validated['log_type']);
             $now = now();
+
+            if ($isIncomingPartialStatus && $nextLogType !== 'INCOMING') {
+                return [
+                    'ok' => false,
+                    'status' => 422,
+                    'message' => 'Incoming scan is required to complete a partial return.',
+                ];
+            }
 
             DB::table('gatepass_logs')->insert([
                 'gatepass_no' => $gatepassNo,
@@ -155,24 +154,45 @@ class GuardGatepassLogController extends Controller
             ]);
 
             if ($nextLogType === 'INCOMING') {
-                DB::table('gatepass_items')
-                    ->where('gatepass_no', $gatepassNo)
-                    ->update([
-                        'item_status' => self::ITEM_PENDING_RETURN,
-                        'returned_at' => null,
-                        'last_inspected_by' => $guardUserId,
-                        'updated_at' => $now->toDateTimeString(),
-                    ]);
+                if ($isIncomingPartialStatus && $completePartial) {
+                    DB::table('gatepass_items')
+                        ->where('gatepass_no', $gatepassNo)
+                        ->update([
+                            'item_status' => self::ITEM_RETURNED,
+                            'returned_at' => $now->toDateTimeString(),
+                            'last_inspected_by' => $guardUserId,
+                            'updated_at' => $now->toDateTimeString(),
+                        ]);
 
-                DB::table('gatepass_requests')
-                    ->where('gatepass_no', $gatepassNo)
-                    ->update([
-                        'status' => self::STATUS_RETURNED,
-                        'incoming_inspection_remarks' => null,
-                        'incoming_inspected_at' => $now->toDateTimeString(),
-                        'incoming_inspected_by' => $guardUserId,
-                        'updated_at' => $now->toDateTimeString(),
-                    ]);
+                    DB::table('gatepass_requests')
+                        ->where('gatepass_no', $gatepassNo)
+                        ->update([
+                            'status' => self::STATUS_RETURNED,
+                            'incoming_inspection_remarks' => null,
+                            'incoming_inspected_at' => $now->toDateTimeString(),
+                            'incoming_inspected_by' => $guardUserId,
+                            'updated_at' => $now->toDateTimeString(),
+                        ]);
+                } else {
+                    DB::table('gatepass_items')
+                        ->where('gatepass_no', $gatepassNo)
+                        ->update([
+                            'item_status' => self::ITEM_PENDING_RETURN,
+                            'returned_at' => null,
+                            'last_inspected_by' => $guardUserId,
+                            'updated_at' => $now->toDateTimeString(),
+                        ]);
+
+                    DB::table('gatepass_requests')
+                        ->where('gatepass_no', $gatepassNo)
+                        ->update([
+                            'status' => self::STATUS_RETURNED,
+                            'incoming_inspection_remarks' => null,
+                            'incoming_inspected_at' => $now->toDateTimeString(),
+                            'incoming_inspected_by' => $guardUserId,
+                            'updated_at' => $now->toDateTimeString(),
+                        ]);
+                }
             } elseif ($nextLogType === 'OUTGOING') {
                 DB::table('gatepass_items')
                     ->where('gatepass_no', $gatepassNo)
@@ -189,31 +209,6 @@ class GuardGatepassLogController extends Controller
                         'status' => 'Approved',
                         'updated_at' => $now->toDateTimeString(),
                     ]);
-            } elseif ($nextLogType === self::LOG_PARTIAL) {
-                if ($completePartial) {
-                    DB::table('gatepass_items')
-                        ->where('gatepass_no', $gatepassNo)
-                        ->update([
-                            'item_status' => null,
-                            'returned_at' => null,
-                            'last_inspected_by' => null,
-                            'updated_at' => $now->toDateTimeString(),
-                        ]);
-
-                    DB::table('gatepass_requests')
-                        ->where('gatepass_no', $gatepassNo)
-                        ->update([
-                            'status' => 'Approved',
-                            'updated_at' => $now->toDateTimeString(),
-                        ]);
-                } else {
-                    DB::table('gatepass_requests')
-                        ->where('gatepass_no', $gatepassNo)
-                        ->update([
-                            'status' => self::STATUS_INCOMING_PARTIAL,
-                            'updated_at' => $now->toDateTimeString(),
-                        ]);
-                }
             }
 
             return [
@@ -228,7 +223,7 @@ class GuardGatepassLogController extends Controller
                     'message' => "{$nextLogType} recorded successfully",
                     'gatepass_status' => $nextLogType === 'INCOMING'
                         ? self::STATUS_RETURNED
-                        : ($nextLogType === self::LOG_PARTIAL ? self::STATUS_INCOMING_PARTIAL : null),
+                        : null,
                 ],
             ];
         });
@@ -320,23 +315,6 @@ class GuardGatepassLogController extends Controller
 
             if (strtolower((string) $gatepass->status) === 'rejected') {
                 return ['ok' => false, 'status' => 422, 'message' => 'This gatepass is rejected and cannot be updated.'];
-            }
-
-            $lastLogType = DB::table('gatepass_logs')
-                ->where('gatepass_no', $gatepass->gatepass_no)
-                ->orderByDesc('log_datetime')
-                ->orderByDesc('log_id')
-                ->lockForUpdate()
-                ->value('log_type');
-
-            $nextLogType = $this->resolveNextLogType($lastLogType);
-
-            if ($nextLogType !== 'INCOMING') {
-                return [
-                    'ok' => false,
-                    'status' => 422,
-                    'message' => 'Partial return is only available when the next expected scan is an incoming return.',
-                ];
             }
 
             $validItemIds = $gatepass->items->pluck('gatepass_item_id')->all();
