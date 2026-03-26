@@ -8,10 +8,12 @@ use App\Models\InventoryEndUserHistory;
 use App\Models\InventoryPropNoHistory;
 use App\Models\InventoryRemarksHistory;
 use App\Models\InventoryUnitCostHistory;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -52,6 +54,10 @@ class CoordinatorController extends Controller
         $employees = Employee::with('user')
             ->orderBy('employee_id')
             ->get();
+
+        $users = User::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
 
         $selectedEmployeeId = $request->query('employee_id');
 
@@ -105,6 +111,7 @@ class CoordinatorController extends Controller
             'dashboardAccountableItems' => $dashboardAccountableItems,
             'dashboardUnaccountableItems' => $dashboardUnaccountableItems,
             'dashboardTotalItems' => $dashboardTotalItems,
+            'users' => $users,
         ]);
     }
 
@@ -371,13 +378,59 @@ class CoordinatorController extends Controller
     public function storeEmployee(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
-            'employee_id' => ['required', 'string', 'max:50', 'unique:employees,employee_id'],
-            'employee_name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:6'],
+            'role' => ['required', 'string', 'max:255'],
             'center' => ['required', 'string', 'max:255'],
-            'empl_status' => ['required', 'string', 'max:255'],
+            'empl_status' => ['nullable', 'string', 'max:255'],
+        ], [
+            'name.required' => 'Employee name is required.',
+            'email.required' => 'Email is required.',
+            'email.unique' => 'This email is already registered.',
+            'password.required' => 'Password is required.',
+            'password.min' => 'Password must be at least 6 characters.',
+            'role.required' => 'Role is required.',
+            'center.required' => 'Center is required.',
         ]);
 
-        $employeeRecord = Employee::query()->create($validated);
+        $emplStatusRaw = $validated['empl_status'] ?? '';
+        $emplStatus = trim((string) $emplStatusRaw);
+        if ($emplStatus === '') {
+            $emplStatus = 'active';
+        }
+
+        $employeeRecord = DB::transaction(function () use ($validated, $emplStatus): Employee {
+            $user = User::query()->create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role' => $validated['role'],
+            ]);
+
+            $latestEmployeeId = Employee::query()
+                ->whereNotNull('employee_id')
+                ->where('employee_id', 'like', 'EMP%')
+                ->orderByRaw('CAST(SUBSTRING(employee_id, 4) AS UNSIGNED) DESC')
+                ->value('employee_id');
+
+            $nextNumber = 1;
+            if (is_string($latestEmployeeId) && $latestEmployeeId !== '') {
+                $numericPart = substr($latestEmployeeId, 3);
+                $numericPart = (int) preg_replace('/\D/', '', $numericPart);
+                $nextNumber = $numericPart + 1;
+            }
+
+            $nextEmployeeId = 'EMP'.str_pad((string) $nextNumber, 3, '0', STR_PAD_LEFT);
+
+            return Employee::query()->create([
+                'employee_id' => $nextEmployeeId,
+                'employee_name' => $user->name,
+                'center' => $validated['center'],
+                'empl_status' => $emplStatus,
+                'user_id' => $user->id,
+            ]);
+        });
 
         if ($request->wantsJson()) {
             return response()->json([

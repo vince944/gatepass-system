@@ -887,24 +887,107 @@
 
                         <form id="addEmployeeForm" method="POST" action="{{ route('admin.coordinator.employees.store') }}" class="px-6 py-6">
                             @csrf
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                                <div>
-                                    <label class="block text-[14px] font-semibold text-black mb-2">Employee ID</label>
-                                    <input id="addEmployeeIdField" type="text" name="employee_id" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
+                            <input type="hidden" name="employee_id" value="">
+
+                            <div class="space-y-6">
+                                <div class="rounded-2xl border border-gray-200 bg-[#f8f8f8] p-5">
+                                    <div class="mb-4">
+                                        <h4 class="text-[#003b95] text-[14px] font-bold leading-tight">User Information</h4>
+                                        <p class="text-gray-600 text-[13px] mt-1">Create a user account for this employee.</p>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                                        <div>
+                                            <label class="block text-[14px] font-semibold text-black mb-2">Name</label>
+                                            <input
+                                                id="addEmployeeNameField"
+                                                type="text"
+                                                name="name"
+                                                class="w-full h-[44px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20"
+                                                required
+                                            >
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-[14px] font-semibold text-black mb-2">Email</label>
+                                            <input
+                                                id="addEmployeeEmailField"
+                                                type="email"
+                                                name="email"
+                                                class="w-full h-[44px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20"
+                                                required
+                                            >
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-[14px] font-semibold text-black mb-2">Password</label>
+                                            <input
+                                                id="addEmployeePasswordField"
+                                                type="password"
+                                                name="password"
+                                                class="w-full h-[44px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20"
+                                                required
+                                            >
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-[14px] font-semibold text-black mb-2">Role</label>
+                                            <input
+                                                id="addEmployeeRoleField"
+                                                type="text"
+                                                name="role"
+                                                placeholder="e.g. employee"
+                                                class="w-full h-[44px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20"
+                                                required
+                                            >
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-[14px] font-semibold text-black mb-2">Employee Name</label>
-                                    <input id="addEmployeeNameField" type="text" name="employee_name" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
-                                </div>
-                                <div>
-                                    <label class="block text-[14px] font-semibold text-black mb-2">Center</label>
-                                    <input id="addEmployeeCenterField" type="text" name="center" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
-                                </div>
-                                <div>
-                                    <label class="block text-[14px] font-semibold text-black mb-2">Empl. Status</label>
-                                    <input id="addEmployeeStatusField" type="text" name="empl_status" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
+
+                                <div class="rounded-2xl border border-gray-200 bg-[#f8f8f8] p-5">
+                                    <div class="mb-4">
+                                        <h4 class="text-[#003b95] text-[14px] font-bold leading-tight">Employee Details</h4>
+                                        <p class="text-gray-600 text-[13px] mt-1">Provide employee metadata used for gatepass inventory.</p>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                                        <div>
+                                            <label class="block text-[14px] font-semibold text-black mb-2">Employee ID</label>
+                                            <input
+                                                id="addEmployeeIdField"
+                                                type="text"
+                                                value="Auto-generated on save"
+                                                readonly
+                                                class="w-full h-[44px] rounded-xl border border-gray-300 bg-gray-100 px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20"
+                                            >
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-[14px] font-semibold text-black mb-2">Center</label>
+                                            <input
+                                                id="addEmployeeCenterField"
+                                                type="text"
+                                                name="center"
+                                                class="w-full h-[44px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20"
+                                                required
+                                            >
+                                        </div>
+
+                                        <div class="md:col-span-2">
+                                            <label class="block text-[14px] font-semibold text-black mb-2">Employee Status</label>
+                                            <select
+                                                id="addEmployeeStatusField"
+                                                name="empl_status"
+                                                class="w-full h-[44px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20"
+                                            >
+                                                <option value="active" selected>Active</option>
+                                                <option value="inactive">Inactive</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
                             <div class="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200">
                                 <button id="cancelAddEmployeeModal" type="button" class="px-5 h-[42px] rounded-xl border border-gray-300 text-[14px] font-medium text-black hover:bg-gray-50 transition">
                                     Cancel
@@ -2245,12 +2328,14 @@
 
         event.preventDefault();
 
-        const employeeId = addEmployeeForm.querySelector('[name="employee_id"]')?.value;
-        const employeeName = addEmployeeForm.querySelector('[name="employee_name"]')?.value;
+        const name = addEmployeeForm.querySelector('[name="name"]')?.value;
+        const email = addEmployeeForm.querySelector('[name="email"]')?.value;
+        const password = addEmployeeForm.querySelector('[name="password"]')?.value;
+        const role = addEmployeeForm.querySelector('[name="role"]')?.value;
         const center = addEmployeeForm.querySelector('[name="center"]')?.value;
         const emplStatus = addEmployeeForm.querySelector('[name="empl_status"]')?.value;
 
-        if (isBlank(employeeId) || isBlank(employeeName) || isBlank(center) || isBlank(emplStatus)) {
+        if (isBlank(name) || isBlank(email) || isBlank(password) || isBlank(role) || isBlank(center) || isBlank(emplStatus)) {
             showFormErrorToast('Please complete all required fields before adding employee.');
             return;
         }
@@ -2269,11 +2354,24 @@
 
             if (!response.ok) {
                 const data = await response.json().catch(() => ({}));
-                showFormErrorToast(data?.message || 'Failed to add employee. Please try again.');
+                let message = data?.message || 'Failed to add employee. Please try again.';
+                if (response.status === 422) {
+                    const validationErrors = data?.errors
+                        ? Object.values(data.errors).flat().filter(Boolean)
+                        : [];
+                    if (validationErrors.length > 0) {
+                        message = validationErrors[0];
+                    }
+                }
+                showFormErrorToast(message);
                 return;
             }
 
             addEmployeeForm.reset();
+            const statusField = addEmployeeForm.querySelector('[name="empl_status"]');
+            if (statusField) {
+                statusField.value = 'active';
+            }
             closeAddEmployeeModal();
             await loadEmployees();
             showItemSuccessToast('Employee added successfully');

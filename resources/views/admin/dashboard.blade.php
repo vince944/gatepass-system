@@ -171,7 +171,37 @@
                                         };
                                     @endphp
 
-                                    @forelse (($requests ?? collect()) as $req)
+                                    @php
+                                        $gatepassRequestsCollection = $requests ?? collect();
+                                        $gatepassRequestsPerPage = 5;
+                                        $gatepassRequestsPageName = 'gatepass_requests_page';
+                                        $gatepassRequestsCurrentPage = (int) request()->query($gatepassRequestsPageName, 1);
+                                        if ($gatepassRequestsCurrentPage < 1) {
+                                            $gatepassRequestsCurrentPage = 1;
+                                        }
+
+                                        $gatepassRequestsTotal = $gatepassRequestsCollection->count();
+                                        $gatepassRequestsItems = $gatepassRequestsCollection
+                                            ->forPage($gatepassRequestsCurrentPage, $gatepassRequestsPerPage)
+                                            ->values();
+
+                                        $gatepassRequestsPaginator = new \Illuminate\Pagination\LengthAwarePaginator(
+                                            $gatepassRequestsItems,
+                                            $gatepassRequestsTotal,
+                                            $gatepassRequestsPerPage,
+                                            $gatepassRequestsCurrentPage,
+                                            [
+                                                'path' => request()->url(),
+                                                'pageName' => $gatepassRequestsPageName,
+                                            ]
+                                        );
+
+                                        $gatepassRequestsPaginator = $gatepassRequestsPaginator->appends(
+                                            request()->except($gatepassRequestsPageName)
+                                        );
+                                    @endphp
+
+                                    @forelse ($gatepassRequestsPaginator as $req)
                                         @php
                                             $employeeName = $req->requester?->employee_name ?? $req->requester?->user?->name ?? '—';
                                             $itemsText = $req->items
@@ -294,6 +324,54 @@
 
                                 </tbody>
                             </table>
+                        </div>
+
+                        <!-- Pagination Design -->
+                        <div id="gatepassRequestsPagination" class="flex items-center justify-between px-6 py-5 border-t border-gray-200">
+                            <p class="text-[16px] text-[#3e5573] whitespace-nowrap">
+                                @php
+                                    $gatepassFrom = $gatepassRequestsPaginator->firstItem();
+                                    $gatepassTo = $gatepassRequestsPaginator->lastItem();
+                                    $gatepassTotal = $gatepassRequestsPaginator->total();
+                                    $gatepassCurrentPage = $gatepassRequestsPaginator->currentPage();
+                                @endphp
+                                @if ($gatepassTotal > 0)
+                                    Showing {{ $gatepassFrom }}–{{ $gatepassTo }} of {{ $gatepassTotal }} results
+                                @else
+                                    Showing 0–0 of 0 results
+                                @endif
+                            </p>
+
+                            <div class="flex items-center gap-2">
+                                @php
+                                    $gatepassPrevUrl = $gatepassRequestsPaginator->previousPageUrl();
+                                    $gatepassNextUrl = $gatepassRequestsPaginator->nextPageUrl();
+                                @endphp
+
+                                @if ($gatepassPrevUrl)
+                                    <a href="{{ $gatepassPrevUrl }}" class="px-4 py-2 rounded-xl border border-gray-300 bg-white text-[16px] font-medium">
+                                        Previous
+                                    </a>
+                                @else
+                                    <span class="px-4 py-2 rounded-xl border border-gray-300 text-gray-400 bg-gray-50 text-[16px] font-medium cursor-not-allowed">
+                                        Previous
+                                    </span>
+                                @endif
+
+                                <span class="w-auto min-w-[40px] h-[40px] px-3 inline-flex items-center justify-center rounded-xl bg-[#020826] text-white text-[16px] font-semibold">
+                                    {{ $gatepassCurrentPage }}
+                                </span>
+
+                                @if ($gatepassNextUrl)
+                                    <a href="{{ $gatepassNextUrl }}" class="px-4 py-2 rounded-xl border border-gray-300 bg-white text-[16px] font-medium">
+                                        Next
+                                    </a>
+                                @else
+                                    <span class="px-4 py-2 rounded-xl border border-gray-300 text-gray-400 bg-gray-50 text-[16px] font-medium cursor-not-allowed">
+                                        Next
+                                    </span>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -947,6 +1025,53 @@
                         Save
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Confirmation Modal -->
+    <div id="rejectConfirmationModal" class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6">
+        <div class="w-full max-w-[560px] bg-white rounded-[18px] shadow-2xl overflow-hidden border border-gray-200">
+            <div class="flex items-center justify-between px-7 py-6 border-b border-gray-200">
+                <h2 class="text-[24px] font-bold text-[#003b95]">Reject Request</h2>
+                <button
+                    type="button"
+                    onclick="closeRejectConfirmationModal()"
+                    class="text-[#98a2b3] hover:text-black text-[28px] leading-none"
+                    aria-label="Close"
+                >
+                    ×
+                </button>
+            </div>
+
+            <div class="px-7 py-6">
+                <p class="text-[15px] text-gray-700">
+                    Are you sure you want to reject this gate pass request?
+                </p>
+
+                <div class="mt-5 rounded-2xl border border-gray-200 bg-white px-5 py-4">
+                    <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Gate Pass No.</p>
+                    <p id="rejectConfirmationGatepassNo" class="text-[16px] font-semibold text-gray-900">—</p>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 pt-6 mt-8 flex justify-end gap-4 px-7 pb-7">
+                <button
+                    type="button"
+                    onclick="closeRejectConfirmationModal()"
+                    class="px-6 sm:px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[15px] font-semibold text-black hover:bg-gray-50 transition"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    id="rejectConfirmationConfirmBtn"
+                    onclick="confirmRejectGatepass()"
+                    class="px-6 sm:px-10 h-[46px] rounded-xl bg-red-600 hover:bg-red-700 text-white text-[15px] font-semibold transition"
+                >
+                    Reject
+                </button>
             </div>
         </div>
     </div>
@@ -1625,15 +1750,89 @@
             }
         }
 
-        async function rejectGatepass(button) {
+        let rejectConfirmationContext = {
+            button: null,
+            url: '',
+            gatepassNo: '',
+        };
+
+        function openRejectConfirmationModal(button) {
             const url = button?.dataset?.url;
             const gatepassNo = button?.dataset?.gatepassNo;
             if (!url || !gatepassNo) return;
 
-            button.disabled = true;
+            rejectConfirmationContext = {
+                button: button || null,
+                url: url,
+                gatepassNo: gatepassNo,
+            };
+
+            const modal = document.getElementById('rejectConfirmationModal');
+            const gatepassNoEl = document.getElementById('rejectConfirmationGatepassNo');
+            const confirmBtn = document.getElementById('rejectConfirmationConfirmBtn');
+
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+            }
+
+            if (rejectConfirmationContext.button) {
+                rejectConfirmationContext.button.disabled = true;
+            }
+
+            if (gatepassNoEl) {
+                gatepassNoEl.textContent = gatepassNo || '—';
+            }
+
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeRejectConfirmationModal(restoreButton) {
+            if (restoreButton === undefined) {
+                restoreButton = true;
+            }
+
+            const modal = document.getElementById('rejectConfirmationModal');
+            if (!modal) return;
+
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.classList.remove('overflow-hidden');
+
+            if (restoreButton && rejectConfirmationContext.button) {
+                rejectConfirmationContext.button.disabled = false;
+            }
+
+            rejectConfirmationContext = {
+                button: null,
+                url: '',
+                gatepassNo: '',
+            };
+        }
+
+        async function confirmRejectGatepass() {
+            const modal = document.getElementById('rejectConfirmationModal');
+            const confirmBtn = document.getElementById('rejectConfirmationConfirmBtn');
+            const ctx = rejectConfirmationContext || {};
+
+            if (!ctx?.url || !ctx?.gatepassNo) {
+                if (modal) {
+                    closeRejectConfirmationModal(true);
+                }
+                return;
+            }
+
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+            }
+
+            const buttonToRestore = ctx.button || null;
+
             try {
-                const oldStatus = document.getElementById('statusBadge-' + gatepassNo)?.dataset?.status;
-                const res = await fetch(url, {
+                const oldStatus = document.getElementById('statusBadge-' + ctx.gatepassNo)?.dataset?.status;
+                const res = await fetch(ctx.url, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': getCsrfToken(),
@@ -1644,18 +1843,31 @@
 
                 if (!res.ok) {
                     showToast(payload?.message || 'Failed to reject request.', 'error');
-                    button.disabled = false;
+                    if (buttonToRestore) buttonToRestore.disabled = false;
                     return;
                 }
 
                 const newStatus = payload?.data?.status || 'Rejected';
-                updateRowStatus(gatepassNo, newStatus);
+                updateRowStatus(ctx.gatepassNo, newStatus);
                 updateCardsForStatusChange(oldStatus, newStatus);
                 showToast(payload?.message || 'Rejected successfully.', 'success');
+
+                // Status was updated successfully, so keep the original button disabled.
+                rejectConfirmationContext = {
+                    button: null,
+                    url: '',
+                    gatepassNo: '',
+                };
+                closeRejectConfirmationModal(false);
             } catch (e) {
                 showToast('Failed to reject request.', 'error');
-                button.disabled = false;
+                if (buttonToRestore) buttonToRestore.disabled = false;
+                closeRejectConfirmationModal(true);
             }
+        }
+
+        function rejectGatepass(button) {
+            openRejectConfirmationModal(button);
         }
 
         function openGatepassDetailsModal() {
