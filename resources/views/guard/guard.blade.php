@@ -36,6 +36,32 @@
         .modal-animate-in {
             animation: modal-scale-in 0.2s ease-out;
         }
+
+        /* QR scanner sizing fix: keep a centered square frame on mobile */
+        .reader-wrapper {
+            aspect-ratio: 1 / 1;
+        }
+
+        #reader {
+            height: 100%;
+            position: relative;
+        }
+
+        #reader video,
+        #reader canvas {
+            position: absolute;
+            inset: 0;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+        }
+
+        @media (min-width: 768px) {
+            .reader-wrapper {
+                aspect-ratio: auto;
+                height: 420px;
+            }
+        }
     </style>
 </head>
 <body class="bg-[#173a6b] min-h-screen">
@@ -83,10 +109,10 @@
 
             <!-- Camera View -->
             <div id="cameraView" class="hidden">
-                <div class="relative w-full">
-                    <div id="reader" class="w-full h-[320px] md:h-[420px] rounded-[20px] overflow-hidden bg-black border-4 border-[#173a6b]"></div>
+                <div class="reader-wrapper relative w-full">
+                    <div id="reader" class="w-full h-full rounded-[20px] overflow-hidden bg-black border-4 border-[#173a6b]"></div>
                     <!-- Success animation overlay -->
-                    <div id="successOverlay" class="absolute inset-0 w-full h-[320px] md:h-[420px] rounded-[20px] bg-green-500/90 flex items-center justify-center opacity-0 scale-95 pointer-events-none transition-all duration-300 z-20" aria-hidden="true">
+                    <div id="successOverlay" class="absolute inset-0 w-full rounded-[20px] bg-green-500/90 flex items-center justify-center opacity-0 scale-95 pointer-events-none transition-all duration-300 z-20" aria-hidden="true">
                         <div class="flex flex-col items-center gap-3 text-white">
                             <div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-white/30 flex items-center justify-center animate-success-pop">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 md:w-14 md:h-14 text-white drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -587,11 +613,18 @@
             hideError();
             try {
                 qrScanner = new Html5Qrcode("reader");
+
+                const readerEl = document.getElementById('reader');
+                const visibleSide = readerEl
+                    ? Math.min(readerEl.clientWidth || 0, readerEl.clientHeight || 0)
+                    : 250;
+                const qrSide = Math.max(150, Math.min(250, Math.floor(visibleSide * 0.62)));
+
                 await qrScanner.start(
                     cameraId,
                     {
                         fps: 10,
-                        qrbox: { width: 250, height: 250 }
+                        qrbox: { width: qrSide, height: qrSide }
                     },
                     async (decodedText) => {
                         if (decodedText === lastScannedText) return;
