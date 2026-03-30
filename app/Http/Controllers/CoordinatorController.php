@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Mail\EmployeeInvitationMail;
 use App\Models\Employee;
+use App\Models\GatepassRequest;
 use App\Models\Inventory;
 use App\Models\InventoryEndUserHistory;
 use App\Models\InventoryPropNoHistory;
 use App\Models\InventoryRemarksHistory;
 use App\Models\InventoryUnitCostHistory;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -516,7 +518,35 @@ class CoordinatorController extends Controller
     public function destroyEmployee(Request $request, string $employee): RedirectResponse|JsonResponse
     {
         $employeeRecord = Employee::query()->findOrFail($employee);
-        $employeeRecord->delete();
+
+        // Prevent FK constraint failures when the employee is referenced by gatepass_requests.
+        if (GatepassRequest::query()->where('requester_employee_id', $employeeRecord->employee_id)->exists()) {
+            $message = 'Cannot delete employee because they are referenced by existing gate pass requests.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $message], 409);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['delete' => $message]);
+        }
+
+        try {
+            $employeeRecord->delete();
+        } catch (QueryException $e) {
+            $message = 'Unable to delete employee. Please remove related records first.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $message], 409);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['delete' => $message]);
+        }
 
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Employee deleted successfully.']);

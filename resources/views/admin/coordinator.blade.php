@@ -198,12 +198,13 @@
                     </div>
 
                     <button
-                        id="openAddItemModal"
+                        id="openAdminProfileModalBtn"
                         type="button"
-                        class="hidden h-[42px] w-full sm:w-auto px-4 rounded-xl bg-[#f6b400] hover:bg-[#e5a900] text-[#003b95] font-semibold text-[14px] flex items-center justify-center gap-2 transition shrink-0 whitespace-nowrap"
+                        onclick="openAdminProfileModal()"
+                        class="h-[42px] w-[42px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white flex items-center justify-center transition shrink-0"
+                        aria-label="Open profile"
                     >
-                        <i class="fa-solid fa-plus"></i>
-                        <span>Add Item</span>
+                        <i class="fa-regular fa-user"></i>
                     </button>
                 </div>
             </header>
@@ -343,7 +344,17 @@
                 <div id="inventoryPortalSection" class="hidden">
                     <div class="bg-white border border-gray-200 rounded-[18px] overflow-hidden mb-6">
                         <div class="px-6 py-6">
-                            <h3 class="text-[18px] font-bold text-black uppercase mb-7">Asset Inventory Management</h3>
+                            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                                <h3 class="text-[18px] font-bold text-black uppercase mb-0">Asset Inventory Management</h3>
+                                <button
+                                    id="openAddItemModal"
+                                    type="button"
+                                    class="hidden h-[42px] w-full sm:w-auto px-4 rounded-xl bg-[#f6b400] hover:bg-[#e5a900] text-[#003b95] font-semibold text-[14px] flex items-center justify-center gap-2 transition shrink-0 whitespace-nowrap"
+                                >
+                                    <i class="fa-solid fa-plus"></i>
+                                    <span>Add Item</span>
+                                </button>
+                            </div>
 
                             <form method="GET" action="{{ route('admin.coordinator.index') }}">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5 mb-6">
@@ -1231,6 +1242,162 @@
         </div>
     </div>
 
+    <!-- Admin Profile Modal -->
+    <div id="adminProfileModal" class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6">
+        <div class="w-full max-w-[1150px] bg-white rounded-[18px] shadow-2xl overflow-hidden">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-7 py-6 border-b border-gray-200">
+                <h2 class="text-[26px] font-bold text-[#003b95]">Profile</h2>
+                <button type="button" onclick="closeAdminProfileModal()" class="text-[#98a2b3] hover:text-black text-[28px] leading-none">
+                    ×
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="px-7 py-6 max-h-[78vh] overflow-y-auto">
+                @php
+                    $adminUser = auth()->user();
+                    $adminEmployee = \App\Models\Employee::query()
+                        ->where('user_id', $adminUser?->id)
+                        ->first();
+                @endphp
+
+                <form id="adminProfileForm" class="space-y-8" method="POST" action="{{ route('employee.profile.update') }}">
+                    @csrf
+                    @method('PUT')
+
+                    <div id="adminProfileAlertSuccess" class="hidden rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[14px] text-emerald-800"></div>
+                    <div id="adminProfileAlertError" class="hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-800"></div>
+
+                    <!-- Profile Information -->
+                    <div>
+                        <h3 class="text-[18px] font-semibold text-[#003b95] mb-5">Profile Information</h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <div>
+                                <label for="profileEmployeeName" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Full Name
+                                </label>
+                                <input
+                                    id="profileEmployeeName"
+                                    name="employee_name"
+                                    type="text"
+                                    value="{{ old('employee_name', $adminEmployee?->employee_name ?? $adminUser?->name ?? '') }}"
+                                    required
+                                    autocomplete="name"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                                <p id="adminProfileErrorEmployeeName" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
+                            </div>
+
+                            <div>
+                                <label for="profileCenter" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Center/Office
+                                </label>
+                                <input
+                                    id="profileCenter"
+                                    name="center"
+                                    type="text"
+                                    value="{{ old('center', $adminEmployee?->center ?? '') }}"
+                                    required
+                                    autocomplete="organization"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                                <p id="adminProfileErrorCenter" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
+                            </div>
+
+                            <div>
+                                <label for="profileEmail" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Email Address
+                                </label>
+                                <input
+                                    id="profileEmail"
+                                    name="email"
+                                    type="email"
+                                    value="{{ old('email', $adminUser?->email ?? '') }}"
+                                    required
+                                    autocomplete="email"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                                <p id="adminProfileErrorEmail" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Change Password -->
+                    <div>
+                        <h3 class="text-[18px] font-semibold text-[#003b95] mb-5">Change Password</h3>
+                        <p class="text-[13px] text-[#667085] mb-4">Leave password fields empty to keep your current password.</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <div>
+                                <label for="profileCurrentPassword" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Current Password
+                                </label>
+                                <input
+                                    id="profileCurrentPassword"
+                                    name="current_password"
+                                    type="password"
+                                    placeholder="Enter current password"
+                                    autocomplete="current-password"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                                <p id="adminProfileErrorCurrentPassword" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
+                            </div>
+
+                            <div>
+                                <label for="profileNewPassword" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    New Password
+                                </label>
+                                <input
+                                    id="profileNewPassword"
+                                    name="password"
+                                    type="password"
+                                    placeholder="Enter new password"
+                                    autocomplete="new-password"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                                <p id="adminProfileErrorPassword" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
+                            </div>
+
+                            <div>
+                                <label for="profilePasswordConfirmation" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                    Confirm New Password
+                                </label>
+                                <input
+                                    id="profilePasswordConfirmation"
+                                    name="password_confirmation"
+                                    type="password"
+                                    placeholder="Confirm new password"
+                                    autocomplete="new-password"
+                                    class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                                <p id="adminProfileErrorPasswordConfirmation" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="border-t border-gray-200 pt-7 flex flex-col-reverse sm:flex-row sm:justify-end gap-4">
+                        <button
+                            type="button"
+                            onclick="closeAdminProfileModal()"
+                            class="px-6 sm:px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[16px] font-semibold text-black hover:bg-gray-50 transition whitespace-nowrap">
+                            Cancel
+                        </button>
+
+                        <button
+                            id="adminProfileSubmitBtn"
+                            type="submit"
+                            class="px-6 sm:px-10 h-[46px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed">
+                            Update Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
     const navDashboard = document.getElementById('navDashboard');
     const navInventoryPortal = document.getElementById('navInventoryPortal');
@@ -1493,6 +1660,216 @@
         void formErrorToast.offsetWidth;
         formErrorToast.classList.add('show-form-error-toast');
     }
+
+    function adminClearProfileFormMessages() {
+        const fieldErrorIds = [
+            'adminProfileErrorEmployeeName',
+            'adminProfileErrorCenter',
+            'adminProfileErrorEmail',
+            'adminProfileErrorCurrentPassword',
+            'adminProfileErrorPassword',
+            'adminProfileErrorPasswordConfirmation',
+        ];
+
+        for (const id of fieldErrorIds) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = '';
+                el.classList.add('hidden');
+            }
+        }
+
+        const successEl = document.getElementById('adminProfileAlertSuccess');
+        const errorEl = document.getElementById('adminProfileAlertError');
+
+        if (successEl) {
+            successEl.textContent = '';
+            successEl.classList.add('hidden');
+        }
+
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.classList.add('hidden');
+        }
+    }
+
+    function adminShowProfileTopError(message) {
+        const errorEl = document.getElementById('adminProfileAlertError');
+        const successEl = document.getElementById('adminProfileAlertSuccess');
+
+        if (successEl) {
+            successEl.classList.add('hidden');
+        }
+
+        if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+        }
+    }
+
+    function adminShowProfileSuccess(message) {
+        const successEl = document.getElementById('adminProfileAlertSuccess');
+        const errorEl = document.getElementById('adminProfileAlertError');
+
+        if (errorEl) {
+            errorEl.classList.add('hidden');
+        }
+
+        if (successEl) {
+            successEl.textContent = message;
+            successEl.classList.remove('hidden');
+        }
+    }
+
+    function adminShowProfileValidationErrors(errors) {
+        if (!errors || typeof errors !== 'object') {
+            return;
+        }
+
+        const map = {
+            employee_name: 'adminProfileErrorEmployeeName',
+            center: 'adminProfileErrorCenter',
+            email: 'adminProfileErrorEmail',
+            current_password: 'adminProfileErrorCurrentPassword',
+            password: 'adminProfileErrorPassword',
+            password_confirmation: 'adminProfileErrorPasswordConfirmation',
+        };
+
+        for (const [key, elId] of Object.entries(map)) {
+            const msgs = errors[key];
+            if (!Array.isArray(msgs) || msgs.length === 0) {
+                continue;
+            }
+
+            const el = document.getElementById(elId);
+            if (el) {
+                el.textContent = msgs[0];
+                el.classList.remove('hidden');
+            }
+        }
+    }
+
+    function adminWireProfileForm() {
+        const form = document.getElementById('adminProfileForm');
+        if (!form) {
+            return;
+        }
+
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            adminClearProfileFormMessages();
+
+            const submitBtn = document.getElementById('adminProfileSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+            }
+
+            const action = form.getAttribute('action') || '';
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch(action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    body: formData,
+                });
+
+                let data = {};
+                try {
+                    data = await response.json();
+                } catch (parseErr) {
+                    data = {};
+                }
+
+                if (response.status === 422 && data.errors) {
+                    adminShowProfileValidationErrors(data.errors);
+                    adminShowProfileTopError(data.message || 'Please correct the errors below.');
+                    return;
+                }
+
+                if (!response.ok) {
+                    adminShowProfileTopError(data.message || 'Unable to update profile. Please try again.');
+                    return;
+                }
+
+                adminShowProfileSuccess(data.message || 'Profile updated successfully.');
+                showItemSuccessToast(data.message || 'Profile updated successfully');
+
+                if (data.data) {
+                    const nameInput = document.getElementById('profileEmployeeName');
+                    const centerInput = document.getElementById('profileCenter');
+                    const emailInput = document.getElementById('profileEmail');
+
+                    if (nameInput) {
+                        nameInput.value = data.data.employee_name || '';
+                    }
+
+                    if (centerInput) {
+                        centerInput.value = data.data.center || '';
+                    }
+
+                    if (emailInput) {
+                        emailInput.value = data.data.email || '';
+                    }
+                }
+
+                const cur = document.getElementById('profileCurrentPassword');
+                const neu = document.getElementById('profileNewPassword');
+                const conf = document.getElementById('profilePasswordConfirmation');
+
+                if (cur) cur.value = '';
+                if (neu) neu.value = '';
+                if (conf) conf.value = '';
+            } catch (err) {
+                adminShowProfileTopError('Network error. Please try again.');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                }
+            }
+        });
+    }
+
+    function openAdminProfileModal() {
+        const modal = document.getElementById('adminProfileModal');
+        if (!modal) {
+            return;
+        }
+
+        adminClearProfileFormMessages();
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeAdminProfileModal() {
+        const modal = document.getElementById('adminProfileModal');
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    window.addEventListener('click', function (e) {
+        const modal = document.getElementById('adminProfileModal');
+        if (!modal || modal.classList.contains('hidden')) {
+            return;
+        }
+
+        if (e.target === modal) {
+            closeAdminProfileModal();
+        }
+    });
+
+    adminWireProfileForm();
 
     function isBlank(value) {
         return value === null || value === undefined || String(value).trim() === '';
@@ -2218,6 +2595,16 @@
             });
 
             if (!response.ok) {
+                let data = {};
+                try {
+                    data = await response.json();
+                } catch (parseErr) {
+                    data = {};
+                }
+
+                const message = data?.message || 'Failed to delete. Please try again.';
+                closeDeleteModal();
+                window.alert(message);
                 return;
             }
 

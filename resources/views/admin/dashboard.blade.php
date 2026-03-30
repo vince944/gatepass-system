@@ -752,7 +752,19 @@
 
             <!-- Body -->
             <div class="px-7 py-6 max-h-[78vh] overflow-y-auto">
-                <form class="space-y-8">
+                @php
+                    $adminUser = auth()->user();
+                    $adminEmployee = \App\Models\Employee::query()
+                        ->where('user_id', $adminUser?->id)
+                        ->first();
+                @endphp
+
+                <form id="adminProfileForm" class="space-y-8" method="POST" action="{{ route('employee.profile.update') }}">
+                    @csrf
+                    @method('PUT')
+
+                    <div id="adminProfileAlertSuccess" class="hidden rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[14px] text-emerald-800"></div>
+                    <div id="adminProfileAlertError" class="hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-800"></div>
 
                     <!-- Profile Information -->
                     <div>
@@ -760,66 +772,51 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             <div>
-                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                <label for="profileEmployeeName" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
                                     Full Name
                                 </label>
                                 <input
+                                    id="profileEmployeeName"
+                                    name="employee_name"
                                     type="text"
-                                    value="Admin User"
+                                    value="{{ old('employee_name', $adminEmployee?->employee_name ?? $adminUser?->name ?? '') }}"
+                                    required
+                                    autocomplete="name"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
+                                <p id="adminProfileErrorEmployeeName" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
                             </div>
 
                             <div>
-                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                <label for="profileCenter" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
                                     Center/Office
                                 </label>
                                 <input
+                                    id="profileCenter"
+                                    name="center"
                                     type="text"
-                                    value="Logistics Division"
+                                    value="{{ old('center', $adminEmployee?->center ?? '') }}"
+                                    required
+                                    autocomplete="organization"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
+                                <p id="adminProfileErrorCenter" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
                             </div>
 
                             <div>
-                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                <label for="profileEmail" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
                                     Email Address
                                 </label>
                                 <input
+                                    id="profileEmail"
+                                    name="email"
                                     type="email"
-                                    value="admin@dap.com"
+                                    value="{{ old('email', $adminUser?->email ?? '') }}"
+                                    required
+                                    autocomplete="email"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Upload Signature -->
-                    <div>
-                        <h3 class="text-[18px] font-semibold text-[#003b95] mb-5">Upload Signature</h3>
-
-                        <div class="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-6 items-start">
-                            <div>
-                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
-                                    Signature File
-                                </label>
-
-                                <label class="w-full min-h-[170px] rounded-2xl border-2 border-dashed border-gray-300 bg-[#fbfcfe] flex flex-col items-center justify-center text-center px-6 cursor-pointer hover:border-[#003b95] transition">
-                                    <i class="fa-solid fa-signature text-[32px] text-[#98a2b3] mb-4"></i>
-                                    <span class="text-[16px] font-semibold text-[#003b95]">Upload Signature</span>
-                                    <span class="text-[13px] text-[#667085] mt-2">PNG, JPG, JPEG</span>
-                                    <input type="file" class="hidden" accept=".png,.jpg,.jpeg">
-                                </label>
-                            </div>
-
-                            <div>
-                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
-                                    Signature Preview
-                                </label>
-
-                                <div class="w-full min-h-[170px] rounded-2xl border border-gray-200 bg-white flex items-center justify-center text-[#98a2b3] text-[15px]">
-                                    No signature uploaded yet.
-                                </div>
+                                <p id="adminProfileErrorEmail" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
                             </div>
                         </div>
                     </div>
@@ -827,45 +824,58 @@
                     <!-- Change Password -->
                     <div>
                         <h3 class="text-[18px] font-semibold text-[#003b95] mb-5">Change Password</h3>
+                        <p class="text-[13px] text-[#667085] mb-4">Leave password fields empty to keep your current password.</p>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             <div>
-                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                <label for="profileCurrentPassword" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
                                     Current Password
                                 </label>
                                 <input
+                                    id="profileCurrentPassword"
+                                    name="current_password"
                                     type="password"
                                     placeholder="Enter current password"
+                                    autocomplete="current-password"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
+                                <p id="adminProfileErrorCurrentPassword" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
                             </div>
 
                             <div>
-                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                <label for="profileNewPassword" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
                                     New Password
                                 </label>
                                 <input
+                                    id="profileNewPassword"
+                                    name="password"
                                     type="password"
                                     placeholder="Enter new password"
+                                    autocomplete="new-password"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
+                                <p id="adminProfileErrorPassword" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
                             </div>
 
                             <div>
-                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                <label for="profilePasswordConfirmation" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
                                     Confirm New Password
                                 </label>
                                 <input
+                                    id="profilePasswordConfirmation"
+                                    name="password_confirmation"
                                     type="password"
                                     placeholder="Confirm new password"
+                                    autocomplete="new-password"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
+                                <p id="adminProfileErrorPasswordConfirmation" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Footer -->
-                    <div class="border-t border-gray-200 pt-7 flex justify-end gap-4">
+                    <div class="border-t border-gray-200 pt-7 flex flex-col-reverse sm:flex-row sm:justify-end gap-4">
                         <button
                             type="button"
                             onclick="closeAdminProfileModal()"
@@ -874,8 +884,9 @@
                         </button>
 
                         <button
+                            id="adminProfileSubmitBtn"
                             type="submit"
-                            class="px-6 sm:px-10 h-[46px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition whitespace-nowrap">
+                            class="px-6 sm:px-10 h-[46px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed">
                             Update Profile
                         </button>
                     </div>
@@ -1469,8 +1480,176 @@
             return valid;
         }
 
+        function adminClearProfileFormMessages() {
+            const fieldErrorIds = [
+                'adminProfileErrorEmployeeName',
+                'adminProfileErrorCenter',
+                'adminProfileErrorEmail',
+                'adminProfileErrorCurrentPassword',
+                'adminProfileErrorPassword',
+                'adminProfileErrorPasswordConfirmation',
+            ];
+
+            for (const id of fieldErrorIds) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.textContent = '';
+                    el.classList.add('hidden');
+                }
+            }
+
+            const successEl = document.getElementById('adminProfileAlertSuccess');
+            const errorEl = document.getElementById('adminProfileAlertError');
+
+            if (successEl) {
+                successEl.textContent = '';
+                successEl.classList.add('hidden');
+            }
+
+            if (errorEl) {
+                errorEl.textContent = '';
+                errorEl.classList.add('hidden');
+            }
+        }
+
+        function adminShowProfileTopError(message) {
+            const errorEl = document.getElementById('adminProfileAlertError');
+            const successEl = document.getElementById('adminProfileAlertSuccess');
+
+            if (successEl) {
+                successEl.classList.add('hidden');
+            }
+
+            if (errorEl) {
+                errorEl.textContent = message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function adminShowProfileSuccess(message) {
+            const successEl = document.getElementById('adminProfileAlertSuccess');
+            const errorEl = document.getElementById('adminProfileAlertError');
+
+            if (errorEl) {
+                errorEl.classList.add('hidden');
+            }
+
+            if (successEl) {
+                successEl.textContent = message;
+                successEl.classList.remove('hidden');
+            }
+        }
+
+        function adminShowProfileValidationErrors(errors) {
+            if (!errors || typeof errors !== 'object') {
+                return;
+            }
+
+            const map = {
+                employee_name: 'adminProfileErrorEmployeeName',
+                center: 'adminProfileErrorCenter',
+                email: 'adminProfileErrorEmail',
+                current_password: 'adminProfileErrorCurrentPassword',
+                password: 'adminProfileErrorPassword',
+                password_confirmation: 'adminProfileErrorPasswordConfirmation',
+            };
+
+            for (const [key, elId] of Object.entries(map)) {
+                const msgs = errors[key];
+                if (!Array.isArray(msgs) || msgs.length === 0) {
+                    continue;
+                }
+
+                const el = document.getElementById(elId);
+                if (el) {
+                    el.textContent = msgs[0];
+                    el.classList.remove('hidden');
+                }
+            }
+        }
+
+        function adminWireProfileForm() {
+            const form = document.getElementById('adminProfileForm');
+            if (!form) {
+                return;
+            }
+
+            form.addEventListener('submit', async function (event) {
+                event.preventDefault();
+
+                adminClearProfileFormMessages();
+
+                const submitBtn = document.getElementById('adminProfileSubmitBtn');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                }
+
+                const action = form.getAttribute('action') || '';
+                const formData = new FormData(form);
+
+                try {
+                    const response = await fetch(action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            Accept: 'application/json',
+                        },
+                        body: formData,
+                    });
+
+                    let data = {};
+                    try {
+                        data = await response.json();
+                    } catch (parseErr) {
+                        data = {};
+                    }
+
+                    if (response.status === 422 && data.errors) {
+                        adminShowProfileValidationErrors(data.errors);
+                        adminShowProfileTopError(data.message || 'Please correct the errors below.');
+                        return;
+                    }
+
+                    if (!response.ok) {
+                        adminShowProfileTopError(data.message || 'Unable to update profile. Please try again.');
+                        return;
+                    }
+
+                    adminShowProfileSuccess(data.message || 'Profile updated successfully.');
+                    showToast(data.message || 'Profile updated successfully.', 'success');
+
+                    if (data.data) {
+                        const nameInput = document.getElementById('profileEmployeeName');
+                        const centerInput = document.getElementById('profileCenter');
+                        const emailInput = document.getElementById('profileEmail');
+
+                        if (nameInput) nameInput.value = data.data.employee_name || '';
+                        if (centerInput) centerInput.value = data.data.center || '';
+                        if (emailInput) emailInput.value = data.data.email || '';
+                    }
+
+                    const cur = document.getElementById('profileCurrentPassword');
+                    const neu = document.getElementById('profileNewPassword');
+                    const conf = document.getElementById('profilePasswordConfirmation');
+
+                    if (cur) cur.value = '';
+                    if (neu) neu.value = '';
+                    if (conf) conf.value = '';
+                } catch (err) {
+                    adminShowProfileTopError('Network error. Please try again.');
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                    }
+                }
+            });
+        }
+
+        adminWireProfileForm();
+
         function openAdminProfileModal() {
             const modal = document.getElementById('adminProfileModal');
+            adminClearProfileFormMessages();
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             document.body.classList.add('overflow-hidden');
