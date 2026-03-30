@@ -12,11 +12,24 @@ class CompleteRegistrationController extends Controller
 {
     public function show(User $user)
     {
+        // Prevent reuse of the signed "complete registration" link.
+        // Note: this app may create users with a placeholder password before completion,
+        // so we use `email_verified_at` (set in `store()`) as the completion marker.
+        if ($user->password !== null && $user->email_verified_at !== null) {
+            return view('auth.complete-registration', [
+                'invalidLink' => true,
+                'linkAlreadyUsed' => true,
+                'user' => null,
+                'employee' => null,
+            ]);
+        }
+
         $employee = Employee::query()->where('user_id', $user->id)->first();
 
         if (! $employee) {
             return view('auth.complete-registration', [
                 'invalidLink' => true,
+                'linkAlreadyUsed' => false,
                 'user' => null,
                 'employee' => null,
             ]);
@@ -31,6 +44,16 @@ class CompleteRegistrationController extends Controller
 
     public function store(CompleteRegistrationRequest $request, User $user)
     {
+        // If the user already completed registration, block any further submissions.
+        if ($user->password !== null && $user->email_verified_at !== null) {
+            return view('auth.complete-registration', [
+                'invalidLink' => true,
+                'linkAlreadyUsed' => true,
+                'user' => null,
+                'employee' => null,
+            ]);
+        }
+
         $employee = Employee::query()->where('user_id', $user->id)->first();
 
         if (! $employee) {

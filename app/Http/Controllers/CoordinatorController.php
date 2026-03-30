@@ -349,18 +349,44 @@ class CoordinatorController extends Controller
     {
         $employeeRecord = Employee::query()->findOrFail($employee);
 
-        $validated = $request->validate([
+        $rules = [
             'employee_name' => ['required', 'string', 'max:255'],
             'center' => ['required', 'string', 'max:255'],
             'empl_status' => ['required', 'string', 'max:255'],
-        ]);
+        ];
 
-        $employeeRecord->update($validated);
+        if ($employeeRecord->user_id) {
+            $rules['email'] = [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($employeeRecord->user_id),
+            ];
+        } else {
+            $rules['email'] = ['nullable', 'email', 'max:255'];
+        }
+
+        $validated = $request->validate($rules);
+
+        DB::transaction(function () use ($employeeRecord, $validated): void {
+            $employeeRecord->update([
+                'employee_name' => $validated['employee_name'],
+                'center' => $validated['center'],
+                'empl_status' => $validated['empl_status'],
+            ]);
+
+            if ($employeeRecord->user_id && array_key_exists('email', $validated) && $validated['email'] !== null) {
+                User::query()->whereKey($employeeRecord->user_id)->update([
+                    'email' => $validated['email'],
+                    'name' => $validated['employee_name'],
+                ]);
+            }
+        });
 
         if ($request->wantsJson()) {
             return response()->json([
                 'message' => 'Employee updated successfully.',
-                'employee' => $employeeRecord->fresh(),
+                'employee' => $employeeRecord->fresh('user'),
             ]);
         }
 
@@ -372,11 +398,23 @@ class CoordinatorController extends Controller
     public function listEmployees(): JsonResponse
     {
         $employees = Employee::query()
+            ->with('user:id,email,name')
             ->orderBy('employee_id')
-            ->get(['employee_id', 'employee_name', 'center', 'empl_status', 'created_at', 'updated_at']);
+            ->get(['employee_id', 'employee_name', 'center', 'empl_status', 'created_at', 'updated_at', 'user_id']);
 
         return response()->json([
-            'employees' => $employees,
+            'employees' => $employees->map(function (Employee $employee) {
+                return [
+                    'employee_id' => $employee->employee_id,
+                    'employee_name' => $employee->employee_name,
+                    'center' => $employee->center,
+                    'empl_status' => $employee->empl_status,
+                    'email' => $employee->user?->email ?? '',
+                    'user_id' => $employee->user_id,
+                    'created_at' => $employee->created_at,
+                    'updated_at' => $employee->updated_at,
+                ];
+            }),
         ]);
     }
 

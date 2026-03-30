@@ -606,6 +606,8 @@
                                                         class="employee-edit p-1.5 rounded-lg border border-gray-300 text-xs text-[#047857] hover:bg-gray-50 transition"
                                                         data-employee-id="{{ $employeeRecord->employee_id }}"
                                                         data-employee-name="{{ $employeeRecord->employee_name }}"
+                                                        data-email="{{ $employeeRecord->user?->email ?? '' }}"
+                                                        data-user-linked="{{ $employeeRecord->user_id ? '1' : '0' }}"
                                                         data-center="{{ $employeeRecord->center }}"
                                                         data-empl-status="{{ $employeeRecord->empl_status }}"
                                                         data-update-url="{{ route('admin.coordinator.employees.update', $employeeRecord->employee_id) }}"
@@ -826,7 +828,8 @@
                 </div>
 
                 <!-- Edit Employee Modal -->
-                <div id="editEmployeeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6">
+                <div id="editEmployeeModal" class="fixed inset-0 z-50 hidden bg-black/40 px-4 py-6 sm:px-6">
+                    <div class="flex min-h-full items-center justify-center">
                     <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden">
                         <div class="bg-[#003b95] px-6 py-4 flex items-start justify-between">
                             <div>
@@ -850,6 +853,11 @@
                                     <label class="block text-[14px] font-semibold text-black mb-2">Employee Name</label>
                                     <input id="editEmployeeNameField" type="text" name="employee_name" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
                                 </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-[14px] font-semibold text-black mb-2">Email</label>
+                                    <input id="editEmployeeEmailField" type="email" name="email" autocomplete="email" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600" placeholder="user@example.com">
+                                    <p id="editEmployeeEmailHint" class="mt-1 hidden text-[12px] text-gray-500">This employee has no linked user account. Email cannot be edited here.</p>
+                                </div>
                                 <div>
                                     <label class="block text-[14px] font-semibold text-black mb-2">Center</label>
                                     <input id="editEmployeeCenterField" type="text" name="center" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
@@ -869,6 +877,7 @@
                                 </button>
                             </div>
                         </form>
+                    </div>
                     </div>
                 </div>
 
@@ -1289,6 +1298,8 @@
     const cancelEditEmployeeModalBtn = document.getElementById('cancelEditEmployeeModal');
     const editEmployeeNumberField = document.getElementById('editEmployeeNumberField');
     const editEmployeeNameField = document.getElementById('editEmployeeNameField');
+    const editEmployeeEmailField = document.getElementById('editEmployeeEmailField');
+    const editEmployeeEmailHint = document.getElementById('editEmployeeEmailHint');
     const editEmployeeCenterField = document.getElementById('editEmployeeCenterField');
     const editEmployeeStatusField = document.getElementById('editEmployeeStatusField');
     const openAddEmployeeModalBtn = document.getElementById('openAddEmployeeModal');
@@ -1556,6 +1567,8 @@
                             class="employee-edit p-1.5 rounded-lg border border-gray-300 text-xs text-[#047857] hover:bg-gray-50 transition"
                             data-employee-id="${employeeRecord.employee_id ?? ''}"
                             data-employee-name="${employeeRecord.employee_name ?? ''}"
+                            data-email="${employeeRecord.email ?? ''}"
+                            data-user-linked="${employeeRecord.user_id ? '1' : '0'}"
                             data-center="${employeeRecord.center ?? ''}"
                             data-empl-status="${employeeRecord.empl_status ?? ''}"
                             data-update-url="/coordinator/employees/${employeeRecord.employee_id ?? ''}"
@@ -2257,6 +2270,15 @@
         if (editEmployeeNameField) {
             editEmployeeNameField.value = button.getAttribute('data-employee-name') || '';
         }
+        const userLinked = button.getAttribute('data-user-linked') === '1';
+        if (editEmployeeEmailField) {
+            editEmployeeEmailField.value = button.getAttribute('data-email') || '';
+            editEmployeeEmailField.disabled = !userLinked;
+            editEmployeeEmailField.required = userLinked;
+        }
+        if (editEmployeeEmailHint) {
+            editEmployeeEmailHint.classList.toggle('hidden', userLinked);
+        }
         if (editEmployeeCenterField) {
             editEmployeeCenterField.value = button.getAttribute('data-center') || '';
         }
@@ -2362,6 +2384,17 @@
                         : [];
                     if (validationErrors.length > 0) {
                         message = validationErrors[0];
+                    }
+
+                    const emailErrors = data?.errors?.email;
+                    if (emailErrors) {
+                        const emailMessage = Array.isArray(emailErrors) ? emailErrors[0] : emailErrors;
+                        const emailText = String(emailMessage ?? '');
+                        const isDuplicateEmail = emailText.length > 0 && /already\s+(been\s+)?(taken|registered)|email\s+has\s+already|already registered/i.test(emailText);
+                        if (isDuplicateEmail) {
+                            window.alert(emailText);
+                            return;
+                        }
                     }
                 }
                 showFormErrorToast(message);
