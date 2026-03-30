@@ -1,9 +1,13 @@
 <?php
 
 use App\Http\Controllers\AdminGatepassRequestController;
+use App\Http\Controllers\Auth\CompleteRegistrationController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\CoordinatorController;
 use App\Http\Controllers\EmployeeGatepassRequestController;
+use App\Http\Controllers\EmployeeProfileController;
 use App\Http\Controllers\GuardGatepassLogController;
 use App\Models\Employee;
 use App\Models\Inventory;
@@ -18,6 +22,22 @@ Route::get('/login', [LoginController::class, 'showLogin'])
     ->name('login');
 
 Route::post('/login', [LoginController::class, 'login']);
+
+Route::get('/forgot-password', [ForgotPasswordController::class, 'create'])
+    ->middleware('guest')
+    ->name('password.request');
+
+Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])
+    ->middleware('guest')
+    ->name('password.email');
+
+Route::get('/reset-password/{token}', [ResetPasswordController::class, 'show'])
+    ->middleware('guest')
+    ->name('password.reset');
+
+Route::post('/reset-password', [ResetPasswordController::class, 'update'])
+    ->middleware('guest')
+    ->name('password.update');
 
 Route::get('/dashboard', function () {
     $user = auth()->user();
@@ -66,6 +86,10 @@ Route::get('/employee/dashboard', function () {
         'equipment' => $equipment,
     ]);
 })->middleware('auth');
+
+Route::put('/employee/profile', [EmployeeProfileController::class, 'update'])
+    ->middleware('auth')
+    ->name('employee.profile.update');
 
 Route::post('/employee/gatepass-requests', [EmployeeGatepassRequestController::class, 'store'])
     ->middleware('auth')
@@ -182,3 +206,11 @@ Route::post('/guard/gatepass-partial-return', [GuardGatepassLogController::class
 Route::post('/guard/gatepass-reject', [GuardGatepassLogController::class, 'reject'])
     ->middleware('auth')
     ->name('guard.gatepass-reject');
+
+Route::get('/complete-registration/{user}', [CompleteRegistrationController::class, 'show'])
+    ->name('complete-registration.show')
+    ->middleware('signed');
+
+Route::post('/complete-registration/{user}', [CompleteRegistrationController::class, 'store'])
+    ->name('complete-registration.store')
+    ->middleware('signed');

@@ -6,44 +6,53 @@
     <title>Gate Pass Management - Login</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-cover bg-center bg-no-repeat"
+<body class="min-h-screen overflow-x-hidden bg-cover bg-center bg-no-repeat"
       style="background-image: linear-gradient(rgba(20,58,130,0.55), rgba(20,58,130,0.55)), url('/images/login_bg.png');">
 
-    <div class="min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-8 py-6">
-        <div class="w-full max-w-[92%] sm:max-w-[480px] md:max-w-[540px] lg:max-w-[560px]
-                    bg-white/95 rounded-[22px] sm:rounded-[26px] shadow-2xl
-                    px-5 py-6 sm:px-7 sm:py-7 md:px-8 md:py-8">
+    <div class="flex min-h-screen w-full items-center justify-center px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+        <div class="w-full max-w-md rounded-2xl bg-white/95 shadow-2xl sm:rounded-[22px]
+                    px-4 py-5 sm:px-6 sm:py-6 lg:px-7 lg:py-7">
 
-            <div class="flex justify-center mb-2 sm:mb-3">
-                <img src="/images/dap_logo.png" alt="DAP Logo" class="w-16 sm:w-20 md:w-24 h-auto">
+            <div class="flex justify-center">
+                <img src="/images/dap_logo.png" alt="DAP Logo" class="h-auto w-14 sm:w-16 md:w-20">
             </div>
 
-            <div class="text-center mb-5 sm:mb-6">
-                <h1 class="text-[24px] sm:text-[34px] md:text-[38px] font-bold text-blue-900 leading-tight">
+            <div class="mt-3 space-y-1.5 text-center sm:mt-4">
+                <h1 class="text-xl font-bold leading-tight text-blue-900 sm:text-2xl">
                     Gate Pass Management
                 </h1>
-                <p class="mt-2 text-gray-500 text-sm sm:text-base md:text-[18px]">
+                <p class="text-xs text-gray-500 sm:text-sm">
                     Sign in to access your dashboard
                 </p>
             </div>
 
-            @if(session('error'))
-                <div class="mb-4 rounded-lg border border-red-300 bg-red-100 px-4 py-3 text-sm text-red-700">
-                    {{ session('error') }}
+            @if(session('success') || session('error') || $errors->any())
+                <div class="mt-4 space-y-3 sm:mt-5">
+                    @if(session('success'))
+                        <div class="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800 sm:px-4 sm:py-3">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="rounded-lg border border-red-300 bg-red-100 px-3 py-2.5 text-sm text-red-700 sm:px-4 sm:py-3">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
+                    @if($errors->any())
+                        <div class="rounded-lg border border-red-300 bg-red-100 px-3 py-2.5 text-sm text-red-700 sm:px-4 sm:py-3">
+                            {{ $errors->first() }}
+                        </div>
+                    @endif
                 </div>
             @endif
 
-            @if($errors->any())
-                <div class="mb-4 rounded-lg border border-red-300 bg-red-100 px-4 py-3 text-sm text-red-700">
-                    {{ $errors->first() }}
-                </div>
-            @endif
-
-            <form action="{{ url('/login') }}" method="POST" class="space-y-4 sm:space-y-5">
+            <form action="{{ url('/login') }}" method="POST" class="mt-4 space-y-3.5 sm:mt-5 sm:space-y-4">
                 @csrf
 
-                <div>
-                    <label for="email" class="mb-2 block text-base sm:text-lg font-semibold text-black">
+                <div class="space-y-1.5">
+                    <label for="email" class="block text-sm font-semibold text-black sm:text-base">
                         Email
                     </label>
                     <input
@@ -53,15 +62,14 @@
                         value="{{ old('email') }}"
                         placeholder="user@dap.com"
                         required
-                        class="w-full rounded-2xl border border-gray-200 bg-gray-100
-                               px-4 py-3 sm:px-5 sm:py-3.5
-                               text-sm sm:text-base text-gray-700 placeholder-gray-400
-                               focus:outline-none focus:ring-2 focus:ring-blue-700"
+                        class="w-full rounded-xl border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-700
+                               placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-700
+                               sm:px-4 sm:py-3 sm:text-base"
                     >
                 </div>
 
-                <div>
-                    <label for="password" class="mb-2 block text-base sm:text-lg font-semibold text-black">
+                <div class="space-y-1.5">
+                    <label for="password" class="block text-sm font-semibold text-black sm:text-base">
                         Password
                     </label>
                     <input
@@ -69,42 +77,40 @@
                         id="password"
                         name="password"
                         required
-                        class="w-full rounded-2xl border border-gray-200 bg-gray-100
-                               px-4 py-3 sm:px-5 sm:py-3.5
-                               text-sm sm:text-base text-gray-700
-                               focus:outline-none focus:ring-2 focus:ring-blue-700"
+                        class="w-full rounded-xl border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-700
+                               focus:outline-none focus:ring-2 focus:ring-blue-700
+                               sm:px-4 sm:py-3 sm:text-base"
                     >
+                    <div class="text-right">
+                        <a href="{{ route('password.request') }}" class="text-sm text-blue-900 hover:underline">
+                            Forgot Password?
+                        </a>
+                    </div>
                 </div>
 
                 <button
                     type="submit"
-                    class="w-full rounded-2xl bg-amber-400 py-3 sm:py-3.5
-                           text-lg sm:text-2xl font-bold text-blue-900
-                           transition duration-200 hover:bg-amber-500">
+                    class="w-full rounded-xl bg-amber-400 py-2.5 text-base font-bold text-blue-900
+                           transition duration-200 hover:bg-amber-500 sm:py-3 sm:text-lg">
                     → Sign In
                 </button>
             </form>
 
-            <div class="relative my-5 sm:my-6">
-                <div class="border-t border-gray-300"></div>
-                <span class="absolute left-1/2 -translate-x-1/2 -top-3 bg-white px-3 text-[10px] sm:text-xs text-gray-500 uppercase whitespace-nowrap">
-                    Demo Accounts
-                </span>
-            </div>
-
-            <div class="rounded-2xl bg-gray-100 p-3 sm:p-4 text-xs sm:text-sm md:text-[15px] text-gray-800 space-y-2 break-words">
-                <p><span class="font-bold">Employee:</span> employee@dap.com / employee123</p>
-                <p><span class="font-bold">Admin:</span> admin@dap.com / admin123</p>
-                <p><span class="font-bold">Guard:</span> guard@dap.com / guard123</p>
-                <p><span class="font-bold">Admin Coordinator:</span> coordinator@dap.com / coordinator123</p>
-            </div>
-
-            <p class="mt-5 sm:mt-6 text-center text-xs sm:text-sm md:text-base text-gray-500">
+            <!--<p class="mt-4 text-center text-xs text-gray-500 sm:mt-5 sm:text-sm">
                 Don't have an account?
                 <a href="{{ url('/register') }}" class="font-semibold text-blue-900 hover:underline">
                     Sign up as Employee
                 </a>
-            </p>
+            </p>-->
+
+            <div class="mt-4 rounded-lg border border-blue-200 bg-blue-100/70 p-4">
+                <h2 class="text-sm font-semibold text-blue-800">
+                    Instructions
+                </h2>
+                <p class="mt-2 text-sm leading-relaxed text-blue-700 break-words">
+                    Don't have an account? Contact your administrator to request an account.
+                </p>
+            </div>
         </div>
     </div>
 

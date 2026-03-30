@@ -74,7 +74,7 @@
             <header class="bg-[#f3f3f3] border-b border-black/10 px-4 sm:px-6 lg:px-8 py-6 sm:py-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div class="min-w-0">
                     <h2 id="pageTitle" class="text-[30px] sm:text-[40px] font-bold text-black leading-none break-words">Dashboard</h2>
-                    <p class="text-[16px] sm:text-[20px] text-[#3e5573] mt-2 break-words">Welcome back, {{ $employeeFullName ?? auth()->user()?->name }}</p>
+                    <p id="employeeWelcomeLine" class="text-[16px] sm:text-[20px] text-[#3e5573] mt-2 break-words">Welcome back, <span id="employeeWelcomeName">{{ $employeeFullName ?? auth()->user()?->name }}</span></p>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-4 sm:justify-end">
@@ -249,6 +249,7 @@
                             </label>
                             <p class="text-[13px] text-[#667085] mb-2">(Current User)</p>
                             <input
+                                id="employeeGatepassDisplayName"
                                 type="text"
                                 value="{{ $employeeFullName ?? auth()->user()?->name }}"
                                 disabled
@@ -275,6 +276,7 @@
                             </label>
                             <p class="text-[13px] text-[#667085] mb-2">(Auto-filled)</p>
                             <input
+                                id="employeeGatepassDisplayCenter"
                                 type="text"
                                 value="{{ $employee?->center }}"
                                 disabled
@@ -409,7 +411,12 @@
 
             <!-- Body -->
             <div class="px-7 py-6 max-h-[78vh] overflow-y-auto">
-                <form class="space-y-8">
+                <form id="employeeProfileForm" class="space-y-8" method="POST" action="{{ route('employee.profile.update') }}">
+                    @csrf
+                    @method('PUT')
+
+                    <div id="employeeProfileAlertSuccess" class="hidden rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[14px] text-emerald-800"></div>
+                    <div id="employeeProfileAlertError" class="hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-800"></div>
 
                     <!-- Profile Information -->
                     <div>
@@ -417,36 +424,51 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             <div>
-                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                <label for="profileEmployeeName" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
                                     Full Name
                                 </label>
                                 <input
+                                    id="profileEmployeeName"
+                                    name="employee_name"
                                     type="text"
-                                    value="{{ $employeeFullName ?? auth()->user()?->name }}"
+                                    value="{{ old('employee_name', $employee?->employee_name ?? '') }}"
+                                    required
+                                    autocomplete="name"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
+                                <p id="profileErrorEmployeeName" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
                             </div>
 
                             <div>
-                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                <label for="profileCenter" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
                                     Center/Office
                                 </label>
                                 <input
+                                    id="profileCenter"
+                                    name="center"
                                     type="text"
-                                    value="{{ $employee?->center }}"
+                                    value="{{ old('center', $employee?->center ?? '') }}"
+                                    required
+                                    autocomplete="organization"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
+                                <p id="profileErrorCenter" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
                             </div>
 
                             <div>
-                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                <label for="profileEmail" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
                                     Email Address
                                 </label>
                                 <input
+                                    id="profileEmail"
+                                    name="email"
                                     type="email"
-                                    value="{{ auth()->user()?->email }}"
+                                    value="{{ old('email', auth()->user()?->email) }}"
+                                    required
+                                    autocomplete="email"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
+                                <p id="profileErrorEmail" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
                             </div>
                         </div>
                     </div>
@@ -454,45 +476,58 @@
                     <!-- Change Password -->
                     <div>
                         <h3 class="text-[18px] font-semibold text-[#003b95] mb-5">Change Password</h3>
+                        <p class="text-[13px] text-[#667085] mb-4">Leave password fields empty to keep your current password.</p>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             <div>
-                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                <label for="profileCurrentPassword" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
                                     Current Password
                                 </label>
                                 <input
+                                    id="profileCurrentPassword"
+                                    name="current_password"
                                     type="password"
                                     placeholder="Enter current password"
+                                    autocomplete="current-password"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
+                                <p id="profileErrorCurrentPassword" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
                             </div>
 
                             <div>
-                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                <label for="profileNewPassword" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
                                     New Password
                                 </label>
                                 <input
+                                    id="profileNewPassword"
+                                    name="password"
                                     type="password"
                                     placeholder="Enter new password"
+                                    autocomplete="new-password"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
+                                <p id="profileErrorPassword" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
                             </div>
 
                             <div>
-                                <label class="block text-[14px] font-semibold text-[#243b5a] mb-3">
+                                <label for="profilePasswordConfirmation" class="block text-[14px] font-semibold text-[#243b5a] mb-3">
                                     Confirm New Password
                                 </label>
                                 <input
+                                    id="profilePasswordConfirmation"
+                                    name="password_confirmation"
                                     type="password"
                                     placeholder="Confirm new password"
+                                    autocomplete="new-password"
                                     class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
+                                <p id="profileErrorPasswordConfirmation" class="mt-1.5 text-[13px] text-red-600 hidden"></p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Footer -->
-                    <div class="border-t border-gray-200 pt-7 flex justify-end gap-4">
+                    <div class="border-t border-gray-200 pt-7 flex flex-col-reverse sm:flex-row sm:justify-end gap-4">
                         <button
                             type="button"
                             onclick="closeProfileModal()"
@@ -501,8 +536,9 @@
                         </button>
 
                         <button
+                            id="employeeProfileSubmitBtn"
                             type="submit"
-                            class="px-6 sm:px-10 h-[46px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition whitespace-nowrap">
+                            class="px-6 sm:px-10 h-[46px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed">
                             Update Profile
                         </button>
                     </div>
@@ -835,6 +871,8 @@
                     employeeEquipmentSelect.value = '';
                 });
             }
+
+            employeeWireProfileForm();
 
             if (employeeGatepassForm) {
                 employeeGatepassForm.addEventListener('submit', async function (event) {
@@ -1611,9 +1649,205 @@
             }
         }
 
+        function employeeClearProfileFormMessages() {
+            const fieldErrorIds = [
+                'profileErrorEmployeeName',
+                'profileErrorCenter',
+                'profileErrorEmail',
+                'profileErrorCurrentPassword',
+                'profileErrorPassword',
+                'profileErrorPasswordConfirmation',
+            ];
+
+            for (const id of fieldErrorIds) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.textContent = '';
+                    el.classList.add('hidden');
+                }
+            }
+
+            const successEl = document.getElementById('employeeProfileAlertSuccess');
+            const errorEl = document.getElementById('employeeProfileAlertError');
+
+            if (successEl) {
+                successEl.textContent = '';
+                successEl.classList.add('hidden');
+            }
+
+            if (errorEl) {
+                errorEl.textContent = '';
+                errorEl.classList.add('hidden');
+            }
+        }
+
+        function employeeShowProfileTopError(message) {
+            const errorEl = document.getElementById('employeeProfileAlertError');
+            const successEl = document.getElementById('employeeProfileAlertSuccess');
+
+            if (successEl) {
+                successEl.classList.add('hidden');
+            }
+
+            if (errorEl) {
+                errorEl.textContent = message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function employeeShowProfileSuccess(message) {
+            const successEl = document.getElementById('employeeProfileAlertSuccess');
+            const errorEl = document.getElementById('employeeProfileAlertError');
+
+            if (errorEl) {
+                errorEl.classList.add('hidden');
+            }
+
+            if (successEl) {
+                successEl.textContent = message;
+                successEl.classList.remove('hidden');
+            }
+        }
+
+        function employeeShowProfileValidationErrors(errors) {
+            if (!errors || typeof errors !== 'object') {
+                return;
+            }
+
+            const map = {
+                employee_name: 'profileErrorEmployeeName',
+                center: 'profileErrorCenter',
+                email: 'profileErrorEmail',
+                current_password: 'profileErrorCurrentPassword',
+                password: 'profileErrorPassword',
+                password_confirmation: 'profileErrorPasswordConfirmation',
+            };
+
+            for (const [key, elId] of Object.entries(map)) {
+                const msgs = errors[key];
+                if (!Array.isArray(msgs) || msgs.length === 0) {
+                    continue;
+                }
+
+                const el = document.getElementById(elId);
+                if (el) {
+                    el.textContent = msgs[0];
+                    el.classList.remove('hidden');
+                }
+            }
+        }
+
+        function employeeWireProfileForm() {
+            const form = document.getElementById('employeeProfileForm');
+            if (!form) {
+                return;
+            }
+
+            form.addEventListener('submit', async function (event) {
+                event.preventDefault();
+
+                employeeClearProfileFormMessages();
+
+                const submitBtn = document.getElementById('employeeProfileSubmitBtn');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                }
+
+                const action = form.getAttribute('action') || '';
+                const formData = new FormData(form);
+
+                try {
+                    const response = await fetch(action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            Accept: 'application/json',
+                        },
+                        body: formData,
+                    });
+
+                    let data = {};
+                    try {
+                        data = await response.json();
+                    } catch (parseErr) {
+                        data = {};
+                    }
+
+                    if (response.status === 422 && data.errors) {
+                        employeeShowProfileValidationErrors(data.errors);
+                        employeeShowProfileTopError(data.message || 'Please correct the errors below.');
+                        return;
+                    }
+
+                    if (!response.ok) {
+                        employeeShowProfileTopError(
+                            data.message || 'Unable to update profile. Please try again.'
+                        );
+                        return;
+                    }
+
+                    employeeShowProfileSuccess(data.message || 'Profile updated successfully.');
+                    employeeShowToast(data.message || 'Profile updated successfully.', 'success');
+
+                    if (data.data) {
+                        const nameInput = document.getElementById('profileEmployeeName');
+                        const centerInput = document.getElementById('profileCenter');
+                        const emailInput = document.getElementById('profileEmail');
+
+                        if (nameInput) {
+                            nameInput.value = data.data.employee_name || '';
+                        }
+                        if (centerInput) {
+                            centerInput.value = data.data.center || '';
+                        }
+                        if (emailInput) {
+                            emailInput.value = data.data.email || '';
+                        }
+
+                        const welcomeName = document.getElementById('employeeWelcomeName');
+                        if (welcomeName && data.data.employee_name) {
+                            welcomeName.textContent = data.data.employee_name;
+                        }
+
+                        const gatepassName = document.getElementById('employeeGatepassDisplayName');
+                        const gatepassCenter = document.getElementById('employeeGatepassDisplayCenter');
+
+                        if (gatepassName && data.data.employee_name) {
+                            gatepassName.value = data.data.employee_name;
+                        }
+                        if (gatepassCenter && data.data.center != null) {
+                            gatepassCenter.value = data.data.center;
+                        }
+                    }
+
+                    const cur = document.getElementById('profileCurrentPassword');
+                    const neu = document.getElementById('profileNewPassword');
+                    const conf = document.getElementById('profilePasswordConfirmation');
+
+                    if (cur) {
+                        cur.value = '';
+                    }
+                    if (neu) {
+                        neu.value = '';
+                    }
+                    if (conf) {
+                        conf.value = '';
+                    }
+                } catch (err) {
+                    employeeShowProfileTopError('Network error. Please try again.');
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                    }
+                }
+            });
+        }
+
         function openProfileModal() {
             const modal = document.getElementById('profileModal');
             if (!modal) return;
+
+            employeeClearProfileFormMessages();
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');

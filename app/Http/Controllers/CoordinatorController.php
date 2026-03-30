@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\EmployeeInvitationMail;
 use App\Models\Employee;
 use App\Models\Inventory;
 use App\Models\InventoryEndUserHistory;
@@ -14,6 +15,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -380,7 +385,6 @@ class CoordinatorController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:6'],
             'role' => ['required', 'string', 'max:255'],
             'center' => ['required', 'string', 'max:255'],
             'empl_status' => ['nullable', 'string', 'max:255'],
@@ -388,8 +392,6 @@ class CoordinatorController extends Controller
             'name.required' => 'Employee name is required.',
             'email.required' => 'Email is required.',
             'email.unique' => 'This email is already registered.',
-            'password.required' => 'Password is required.',
-            'password.min' => 'Password must be at least 6 characters.',
             'role.required' => 'Role is required.',
             'center.required' => 'Center is required.',
         ]);
@@ -401,10 +403,12 @@ class CoordinatorController extends Controller
         }
 
         $employeeRecord = DB::transaction(function () use ($validated, $emplStatus): Employee {
+            $placeholderPassword = Hash::make(Str::random(64));
+
             $user = User::query()->create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
+                'password' => $placeholderPassword,
                 'role' => $validated['role'],
             ]);
 
@@ -432,16 +436,43 @@ class CoordinatorController extends Controller
             ]);
         });
 
+        $user = User::query()->findOrFail($employeeRecord->user_id);
+        $employeeRecord = $employeeRecord->fresh();
+
+        $registrationUrl = URL::temporarySignedRoute(
+            'complete-registration.show',
+            now()->addDays(3),
+            ['user' => $user->id],
+        );
+
+        $mailSent = false;
+        try {
+            Mail::to($user->email)->send(
+                new EmployeeInvitationMail($user, $employeeRecord, $registrationUrl),
+            );
+            $mailSent = true;
+        } catch (\Throwable $e) {
+            Log::warning('Failed to send employee invitation email.', [
+                'user_id' => $user->id,
+                'exception' => $e->getMessage(),
+            ]);
+        }
+
+        $statusMessage = $mailSent
+            ? 'Employee added successfully. Invitation email has been sent.'
+            : 'Employee added successfully. The invitation email could not be sent. Please contact support or resend the invitation.';
+
         if ($request->wantsJson()) {
             return response()->json([
-                'message' => 'Employee added successfully.',
-                'employee' => $employeeRecord->fresh(),
+                'message' => $statusMessage,
+                'employee' => $employeeRecord,
+                'invitation_mail_sent' => $mailSent,
             ]);
         }
 
         return redirect()
             ->route('admin.coordinator.index')
-            ->with('status', 'Employee added successfully.');
+            ->with('status', $statusMessage);
     }
 
     public function destroyEmployee(Request $request, string $employee): RedirectResponse|JsonResponse
