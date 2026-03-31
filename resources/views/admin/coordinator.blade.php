@@ -248,11 +248,6 @@
                                 <h3 id="tableTitle" class="text-[17px] font-semibold text-black">Accountable Equipment</h3>
                                 <p id="tableDescription" class="text-[14px] text-[#667085] mt-1">Showing 0 accountable items</p>
                             </div>
-                            <button id="addEquipmentFromDashboard" type="button"
-                                class="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2 rounded-xl bg-[#f6b400] hover:bg-[#e5a900] text-[#003b95] font-semibold text-[14px] transition whitespace-nowrap">
-                                <i class="fa-solid fa-plus"></i>
-                                <span>Add Equipment</span>
-                            </button>
                         </div>
 
                         <div class="px-6">
@@ -329,6 +324,29 @@
                                     </tbody>
                                 </table>
                             </div>
+
+                            @if($accountableCount > 0)
+                                <div id="accountablePagination"
+                                     class="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <button
+                                        id="accountablePrevBtn"
+                                        type="button"
+                                        class="h-[40px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] font-semibold text-black hover:bg-gray-50 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        Prev
+                                    </button>
+                                    <div id="accountablePageInfo" class="text-[14px] font-semibold text-[#556b86]">
+                                        Page 1
+                                    </div>
+                                    <button
+                                        id="accountableNextBtn"
+                                        type="button"
+                                        class="h-[40px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] font-semibold text-black hover:bg-gray-50 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            @endif
 
                             <div
                                 id="emptyState"
@@ -430,17 +448,7 @@
                                     </div>
                                 </div>
 
-                                <div class="w-full md:w-64">
-                                    <label class="block text-[14px] font-semibold text-black mb-2">Accountability Filter</label>
-                                    <select
-                                        id="accountabilityFilter"
-                                        class="w-full h-[42px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none"
-                                    >
-                                        <option value="all">All</option>
-                                        <option value="accountable" selected>Accountable</option>
-                                        <option value="unaccountable">Unaccountable</option>
-                                    </select>
-                                </div>
+
                             </div>
                         </div>
 
@@ -453,7 +461,6 @@
                                         <th class="w-24 px-3 py-2 text-xs font-semibold whitespace-nowrap">Account Code</th>
                                         <th class="w-28 px-3 py-2 text-xs font-semibold whitespace-nowrap">Serial Number</th>
                                         <th class="w-40 px-3 py-2 text-xs font-semibold whitespace-nowrap">Description / Specification</th>
-                                        <th class="w-36 px-3 py-2 text-xs font-semibold whitespace-nowrap">Assigned Employee</th>
                                         <th class="w-24 px-3 py-2 text-xs font-semibold whitespace-nowrap">Unit Price</th>
                                         <th class="w-20 px-3 py-2 text-xs font-semibold whitespace-nowrap">Status</th>
                                         <th class="w-32 min-w-[120px] px-3 py-2 text-xs font-semibold whitespace-nowrap">Action</th>
@@ -471,9 +478,6 @@
                                             <td class="px-3 py-2 align-top whitespace-nowrap truncate">{{ $item->acct_code }}</td>
                                             <td class="px-3 py-2 align-top whitespace-nowrap truncate">{{ $item->serial_no }}</td>
                                             <td class="px-3 py-2 align-top whitespace-nowrap truncate" title="{{ $item->description }}">{{ $item->description }}</td>
-                                            <td class="px-3 py-2 align-top whitespace-nowrap truncate" title="{{ $selectedEmployee?->employee_name ?? $selectedEmployeeId }}">
-                                                {{ $selectedEmployee?->employee_name ?? $selectedEmployeeId }}
-                                            </td>
                                             <td class="px-3 py-2 align-top whitespace-nowrap truncate">
                                                 {{ $item->unit_cost !== null ? number_format($item->unit_cost, 2) : '' }}
                                             </td>
@@ -537,7 +541,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="9" class="px-4 py-6 text-center text-[14px] text-[#98a2b3]">
+                                            <td colspan="8" class="px-4 py-6 text-center text-[14px] text-[#98a2b3]">
                                                 No inventory items available for the selected employee.
                                             </td>
                                         </tr>
@@ -574,7 +578,6 @@
                                         <th class="px-4 py-4 text-[14px] font-semibold">Center</th>
                                         <th class="px-4 py-4 text-[14px] font-semibold">Empl. Status</th>
                                         <th class="px-4 py-4 text-[14px] font-semibold">Created At</th>
-                                        <th class="px-4 py-4 text-[14px] font-semibold">Updated At</th>
                                         <th class="px-4 py-4 text-[14px] font-semibold">Action</th>
                                     </tr>
                                 </thead>
@@ -609,7 +612,6 @@
                                             <td class="px-4 py-3 align-top">{{ $employeeRecord->center }}</td>
                                             <td class="px-4 py-3 align-top">{{ $employeeRecord->empl_status }}</td>
                                             <td class="px-4 py-3 align-top">{{ $formatEmployeeTimestamp($employeeRecord->created_at) }}</td>
-                                            <td class="px-4 py-3 align-top">{{ $formatEmployeeTimestamp($employeeRecord->updated_at) }}</td>
                                             <td class="px-4 py-3 align-top">
                                                 <div class="flex items-center gap-2">
                                                     <button
@@ -642,7 +644,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="8" class="px-4 py-6 text-center text-[14px] text-[#98a2b3]">
+                                            <td colspan="7" class="px-4 py-6 text-center text-[14px] text-[#98a2b3]">
                                                 No employees available.
                                             </td>
                                         </tr>
@@ -1423,6 +1425,13 @@
     const tbodyUnaccountable = document.getElementById('tbodyUnaccountable');
     const tbodyTotal = document.getElementById('tbodyTotal');
 
+    const accountablePaginationEl = document.getElementById('accountablePagination');
+    const accountablePrevBtn = document.getElementById('accountablePrevBtn');
+    const accountableNextBtn = document.getElementById('accountableNextBtn');
+    const accountablePageInfo = document.getElementById('accountablePageInfo');
+    const accountablePageSize = 5;
+    let accountableCurrentPage = 1;
+
     const employeeSelect = document.getElementById('employeeSelect');
     const searchInput = document.querySelector('input[name="search"]');
     const employeeStatusField = document.getElementById('employeeStatusField');
@@ -1580,6 +1589,56 @@
         loadEmployees();
     }
 
+    function updateAccountablePagination() {
+        if (!tbodyAccountable) {
+            return;
+        }
+
+        const rows = Array.from(tbodyAccountable.querySelectorAll('tr'));
+        const totalRows = rows.length;
+        const totalPages = Math.ceil(totalRows / accountablePageSize) || 1;
+
+        accountableCurrentPage = Math.max(1, Math.min(accountableCurrentPage, totalPages));
+
+        const start = (accountableCurrentPage - 1) * accountablePageSize;
+        const end = start + accountablePageSize;
+
+        let visibleIndex = 0;
+        rows.forEach((tr, idx) => {
+            const isVisible = idx >= start && idx < end;
+            tr.classList.toggle('hidden', !isVisible);
+
+            if (isVisible) {
+                // Re-number the first column per page.
+                const firstTd = tr.querySelector('td:first-child');
+                if (firstTd) {
+                    firstTd.textContent = String(start + visibleIndex + 1);
+                }
+
+                // Keep alternating row colors per page.
+                tr.classList.remove('bg-white', 'bg-gray-50');
+                tr.classList.add(visibleIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50');
+                visibleIndex += 1;
+            }
+        });
+
+        if (accountablePaginationEl) {
+            accountablePaginationEl.classList.toggle('hidden', totalPages <= 1);
+        }
+
+        if (accountablePageInfo) {
+            accountablePageInfo.textContent = `Page ${accountableCurrentPage} of ${totalPages}`;
+        }
+
+        if (accountablePrevBtn) {
+            accountablePrevBtn.disabled = accountableCurrentPage <= 1;
+        }
+
+        if (accountableNextBtn) {
+            accountableNextBtn.disabled = accountableCurrentPage >= totalPages;
+        }
+    }
+
     function showAccountable() {
         resetCards();
         hideAllTables();
@@ -1591,6 +1650,9 @@
         tableTitle.textContent = 'Accountable Equipment';
         tableDescription.textContent = `Showing ${dashboardCounts.accountable} accountable item(s)`;
         setFooterText(`Showing ${dashboardCounts.accountable} item(s)`);
+
+        accountableCurrentPage = 1;
+        updateAccountablePagination();
 
         if (dashboardCounts.accountable > 0) {
             emptyState.classList.add('hidden');
@@ -1918,7 +1980,7 @@
         if (!employees || employees.length === 0) {
             employeeManagementTableBody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="px-4 py-6 text-center text-[14px] text-[#98a2b3]">
+                    <td colspan="7" class="px-4 py-6 text-center text-[14px] text-[#98a2b3]">
                         No employees available.
                     </td>
                 </tr>
@@ -1936,7 +1998,6 @@
                 <td class="px-4 py-3 align-top">${employeeRecord.center ?? ''}</td>
                 <td class="px-4 py-3 align-top">${employeeRecord.empl_status ?? ''}</td>
                 <td class="px-4 py-3 align-top">${formatEmployeeTimestamp(employeeRecord.created_at)}</td>
-                <td class="px-4 py-3 align-top">${formatEmployeeTimestamp(employeeRecord.updated_at)}</td>
                 <td class="px-4 py-3 align-top">
                     <div class="flex items-center gap-2">
                         <button
@@ -2046,7 +2107,7 @@
 
                 inventoryPortalTableBody.innerHTML = `
                     <tr>
-                        <td colspan="9" class="px-4 py-6 text-center text-[14px] text-[#98a2b3]">
+                        <td colspan="8" class="px-4 py-6 text-center text-[14px] text-[#98a2b3]">
                             ${hasSearch ? 'No records found.' : 'No inventory items available for the selected employee.'}
                         </td>
                     </tr>
@@ -2068,9 +2129,6 @@
                     <td class="px-4 py-3 align-top">${item.acct_code ?? ''}</td>
                     <td class="px-4 py-3 align-top">${item.serial_no ?? ''}</td>
                     <td class="px-4 py-3 align-top">${item.description ?? ''}</td>
-                    <td class="px-4 py-3 align-top">
-                        ${data.selectedEmployee?.employee_name ?? data.selectedEmployeeId ?? ''}
-                    </td>
                     <td class="px-4 py-3 align-top">
                         ${item.unit_cost !== null && item.unit_cost !== undefined ? Number(item.unit_cost).toFixed(2) : ''}
                     </td>
@@ -2376,17 +2434,22 @@
     cardUnaccountable.addEventListener('click', showUnaccountable);
     cardTotal.addEventListener('click', showTotal);
 
-    const addEquipmentFromDashboard = document.getElementById('addEquipmentFromDashboard');
+    if (accountablePrevBtn) {
+        accountablePrevBtn.addEventListener('click', function () {
+            accountableCurrentPage -= 1;
+            updateAccountablePagination();
+        });
+    }
+
+    if (accountableNextBtn) {
+        accountableNextBtn.addEventListener('click', function () {
+            accountableCurrentPage += 1;
+            updateAccountablePagination();
+        });
+    }
 
     if (openAddItemModal) {
         openAddItemModal.addEventListener('click', openModal);
-    }
-
-    if (addEquipmentFromDashboard) {
-        addEquipmentFromDashboard.addEventListener('click', function () {
-            showInventoryPortalSection();
-            openModal();
-        });
     }
 
     if (closeAddItemModal) {

@@ -7,12 +7,63 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-<body class="bg-[#f3f3f3] min-h-screen font-sans">
+<body class="bg-[#f3f3f3] min-h-screen font-sans overflow-x-hidden">
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="mobileSidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
+
+    <!-- Mobile Sidebar Drawer -->
+    <aside
+        id="mobileSidebar"
+        class="fixed inset-y-0 left-0 z-50 w-64 bg-[#173a6b] text-white transform -translate-x-full transition-transform duration-300 ease-in-out lg:hidden"
+        aria-hidden="true"
+    >
+        <div class="flex h-full flex-col">
+            <div class="px-4 py-6 border-b border-white/10 flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <img src="/images/dap_logo.png" alt="DAP Logo" class="w-12 h-12 object-contain rounded-md shrink-0">
+                    <div class="min-w-0">
+                        <h1 class="text-[16px] font-bold leading-tight truncate">Gate Pass Request</h1>
+                        <p class="text-[12px] text-white/80 mt-1 truncate">Employee</p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    id="mobileSidebarCloseBtn"
+                    class="text-white/90 hover:text-white text-[22px] leading-none px-2"
+                    aria-label="Close menu"
+                >
+                    ×
+                </button>
+            </div>
+
+            <nav class="px-3 py-6 space-y-2">
+                <button type="button" data-mobile-nav="dashboard" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white hover:bg-white/10 transition">
+                    <i class="fa-regular fa-file-lines text-[18px]"></i>
+                    <span>Gate Pass Request</span>
+                </button>
+                <button type="button" data-mobile-nav="history" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-clock-rotate-left text-[18px]"></i>
+                    <span>Request History</span>
+                </button>
+            </nav>
+
+            <div class="mt-auto px-6 py-6 border-t border-white/10">
+                <form method="POST" action="/logout">
+                    @csrf
+                    <button type="submit" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white/90 hover:text-white hover:bg-white/10 transition">
+                        <i class="fa-solid fa-right-from-bracket text-[18px]"></i>
+                        <span>Logout</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
 
     <div class="flex flex-col md:flex-row min-h-screen overflow-hidden">
 
         <!-- Sidebar -->
-        <aside class="w-full md:w-72 lg:w-80 bg-[#173a6b] text-white flex flex-col justify-between shrink-0 md:min-h-screen">
+        <aside class="hidden lg:flex w-full md:w-72 lg:w-80 bg-[#173a6b] text-white flex-col justify-between shrink-0 md:min-h-screen">
             <div>
                 <!-- Logo / System Name -->
                 <div class="px-6 py-10 border-b border-white/10">
@@ -71,23 +122,33 @@
         <main class="flex-1 min-w-0 flex flex-col">
 
             <!-- Top Header -->
-            <header class="bg-[#f3f3f3] border-b border-black/10 px-4 sm:px-6 lg:px-8 py-6 sm:py-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div class="min-w-0">
-                    <h2 id="pageTitle" class="text-[30px] sm:text-[40px] font-bold text-black leading-none break-words">Dashboard</h2>
-                    <p id="employeeWelcomeLine" class="text-[16px] sm:text-[20px] text-[#3e5573] mt-2 break-words">Welcome back, <span id="employeeWelcomeName">{{ $employeeFullName ?? auth()->user()?->name }}</span></p>
+            <header class="bg-[#f3f3f3] border-b border-black/10 px-4 sm:px-6 lg:px-8 py-4 sm:py-7 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <button
+                        type="button"
+                        id="mobileSidebarOpenBtn"
+                        class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white border border-gray-200 text-[#173a6b] hover:bg-gray-50 transition shrink-0"
+                        aria-label="Open menu"
+                    >
+                        <i class="fa-solid fa-bars text-[18px]"></i>
+                    </button>
+                    <div class="min-w-0">
+                        <h2 id="pageTitle" class="text-[20px] sm:text-[40px] font-bold text-black leading-none break-words">Dashboard</h2>
+                        <p id="employeeWelcomeLine" class="hidden sm:block text-[16px] sm:text-[20px] text-[#3e5573] mt-2 break-words">Welcome back, <span id="employeeWelcomeName">{{ $employeeFullName ?? auth()->user()?->name }}</span></p>
+                    </div>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-4 sm:justify-end">
+                <div class="flex items-center gap-3">
                     <button
                         id="newRequestBtn"
                         type="button"
                         onclick="openRequestModal()"
-                        class="bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] font-semibold text-[16px] px-6 sm:px-8 py-3 rounded-2xl flex items-center gap-3 transition whitespace-nowrap">
+                        class="bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] font-semibold text-[14px] sm:text-[16px] px-4 sm:px-8 py-2.5 sm:py-3 rounded-2xl flex items-center gap-3 transition whitespace-nowrap">
                         <i class="fa-solid fa-plus text-[18px]"></i>
                         <span>New Request</span>
                     </button>
 
-                    <button onclick="openProfileModal()" class="w-[50px] h-[50px] rounded-full bg-[#003b95] text-white flex items-center justify-center text-[24px]">
+                    <button onclick="openProfileModal()" class="w-11 h-11 sm:w-[50px] sm:h-[50px] rounded-xl sm:rounded-full bg-[#003b95] text-white flex items-center justify-center text-[20px] sm:text-[24px]">
                         <i class="fa-regular fa-user"></i>
                     </button>
                 </div>
@@ -96,34 +157,34 @@
             <!-- Content Area -->
             <section class="w-full max-w-full min-w-0 px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
             <!-- DASHBOARD SECTION -->
-            <div id="dashboardSection">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 mb-7">
-                    <div class="bg-white rounded-[22px] border border-black/10 p-6 relative overflow-hidden min-h-[120px] flex flex-col justify-between">
+            <div id="dashboardSection" class="flex flex-col">
+                <div class="order-3 md:order-1 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-7">
+                    <div class="bg-white rounded-[18px] sm:rounded-[22px] border border-black/10 p-4 sm:p-6 relative overflow-hidden min-h-[100px] sm:min-h-[120px] flex flex-col justify-between">
                         <div class="absolute top-0 left-0 w-[5px] h-full bg-[#003b95]"></div>
-                        <p class="text-[16px] text-[#556b86] mb-2">Total Requests</p>
-                        <h3 id="employeeTotalRequestsCount" class="text-[36px] font-bold text-[#003b95] leading-none">0</h3>
+                        <p class="text-[14px] sm:text-[16px] text-[#556b86] mb-2">Total Requests</p>
+                        <h3 id="employeeTotalRequestsCount" class="text-[28px] sm:text-[36px] font-bold text-[#003b95] leading-none">0</h3>
                     </div>
 
-                    <div class="bg-white rounded-[22px] border border-black/10 p-6 relative overflow-hidden min-h-[120px] flex flex-col justify-between">
+                    <div class="bg-white rounded-[18px] sm:rounded-[22px] border border-black/10 p-4 sm:p-6 relative overflow-hidden min-h-[100px] sm:min-h-[120px] flex flex-col justify-between">
                         <div class="absolute top-0 left-0 w-[5px] h-full bg-[#f5b000]"></div>
-                        <p class="text-[16px] text-[#556b86] mb-2">Pending</p>
-                        <h3 id="employeePendingRequestsCount" class="text-[36px] font-bold text-[#f5b000] leading-none">0</h3>
+                        <p class="text-[14px] sm:text-[16px] text-[#556b86] mb-2">Pending</p>
+                        <h3 id="employeePendingRequestsCount" class="text-[28px] sm:text-[36px] font-bold text-[#f5b000] leading-none">0</h3>
                     </div>
 
-                    <div class="bg-white rounded-[22px] border border-black/10 p-6 relative overflow-hidden min-h-[120px] flex flex-col justify-between">
+                    <div class="bg-white rounded-[18px] sm:rounded-[22px] border border-black/10 p-4 sm:p-6 relative overflow-hidden min-h-[100px] sm:min-h-[120px] flex flex-col justify-between">
                         <div class="absolute top-0 left-0 w-[5px] h-full bg-[#00b84f]"></div>
-                        <p class="text-[16px] text-[#556b86] mb-2">Approved</p>
-                        <h3 id="employeeApprovedRequestsCount" class="text-[36px] font-bold text-[#00b84f] leading-none">0</h3>
+                        <p class="text-[14px] sm:text-[16px] text-[#556b86] mb-2">Approved</p>
+                        <h3 id="employeeApprovedRequestsCount" class="text-[28px] sm:text-[36px] font-bold text-[#00b84f] leading-none">0</h3>
                     </div>
 
-                    <div class="bg-white rounded-[22px] border border-black/10 p-6 relative overflow-hidden min-h-[120px] flex flex-col justify-between">
+                    <div class="bg-white rounded-[18px] sm:rounded-[22px] border border-black/10 p-4 sm:p-6 relative overflow-hidden min-h-[100px] sm:min-h-[120px] flex flex-col justify-between">
                         <div class="absolute top-0 left-0 w-[5px] h-full bg-[#ff5a00]"></div>
-                        <p class="text-[16px] text-[#556b86] mb-2">Active Outside</p>
-                        <h3 id="employeeActiveOutsideCount" class="text-[36px] font-bold text-[#ff5a00] leading-none">0</h3>
+                        <p class="text-[14px] sm:text-[16px] text-[#556b86] mb-2">Active Outside</p>
+                        <h3 id="employeeActiveOutsideCount" class="text-[28px] sm:text-[36px] font-bold text-[#ff5a00] leading-none">0</h3>
                     </div>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-4 mb-7">
+                <div class="order-1 md:order-2 flex flex-wrap items-center gap-4 mb-7">
                     <div class="flex items-center gap-3 text-[#003b95] font-semibold text-[18px]">
                         <i class="fa-solid fa-filter text-[22px]"></i>
                         <span>Filter by Status:</span>
@@ -146,7 +207,7 @@
                     </button>
                 </div>
 
-                <div class="bg-white rounded-[22px] border border-black/10 min-h-[330px] px-5 sm:px-8 py-8">
+                <div class="order-2 md:order-3 bg-white rounded-[22px] border border-black/10 min-h-[330px] px-5 sm:px-8 py-8">
                     <h3 class="text-[22px] font-semibold text-[#003b95] mb-2">My Requests</h3>
                     <p id="employeeDashboardRequestsFound" class="text-[18px] text-[#6b7280] mb-10">0 requests found</p>
 
@@ -726,6 +787,60 @@
 
         navDashboard.addEventListener('click', showDashboardSection);
         navHistory.addEventListener('click', showHistorySection);
+
+        function openMobileSidebar() {
+            const sidebar = document.getElementById('mobileSidebar');
+            const overlay = document.getElementById('mobileSidebarOverlay');
+            if (!sidebar || !overlay) return;
+
+            sidebar.classList.remove('-translate-x-full');
+            sidebar.classList.add('translate-x-0');
+            overlay.classList.remove('hidden');
+            sidebar.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('mobileSidebar');
+            const overlay = document.getElementById('mobileSidebarOverlay');
+            if (!sidebar || !overlay) return;
+
+            sidebar.classList.add('-translate-x-full');
+            sidebar.classList.remove('translate-x-0');
+            overlay.classList.add('hidden');
+            sidebar.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
+            closeMobileSidebar();
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const openBtn = document.getElementById('mobileSidebarOpenBtn');
+            const closeBtn = document.getElementById('mobileSidebarCloseBtn');
+            const overlay = document.getElementById('mobileSidebarOverlay');
+            const sidebar = document.getElementById('mobileSidebar');
+
+            if (openBtn) openBtn.addEventListener('click', openMobileSidebar);
+            if (closeBtn) closeBtn.addEventListener('click', closeMobileSidebar);
+            if (overlay) overlay.addEventListener('click', closeMobileSidebar);
+
+            if (sidebar) {
+                sidebar.querySelectorAll('button[data-mobile-nav]').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        const kind = btn.getAttribute('data-mobile-nav');
+                        if (kind === 'dashboard') {
+                            showDashboardSection();
+                        } else if (kind === 'history') {
+                            showHistorySection();
+                        }
+                        closeMobileSidebar();
+                    });
+                });
+            }
+        });
 
 
         function openRequestModal() {

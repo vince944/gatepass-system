@@ -9,12 +9,69 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
-<body class="bg-[#f3f3f3] min-h-screen font-sans">
+<body class="bg-[#f3f3f3] min-h-screen font-sans overflow-x-hidden">
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="mobileSidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
+
+    <!-- Mobile Sidebar Drawer -->
+    <aside
+        id="mobileSidebar"
+        class="fixed inset-y-0 left-0 z-50 w-64 bg-[#173a6b] text-white transform -translate-x-full transition-transform duration-300 ease-in-out lg:hidden"
+        aria-hidden="true"
+    >
+        <div class="flex h-full flex-col">
+            <div class="px-4 py-6 border-b border-white/10 flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <img src="/images/dap_logo.png" alt="DAP Logo" class="w-12 h-12 object-contain rounded-md shrink-0">
+                    <div class="min-w-0">
+                        <h1 class="text-[16px] font-bold leading-tight truncate">DAP Equipment</h1>
+                        <p class="text-[12px] text-white/80 mt-1 truncate">
+                            {{ ucfirst((string) (auth()->user()?->role ?? 'User')) }}
+                        </p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    id="mobileSidebarCloseBtn"
+                    class="text-white/90 hover:text-white text-[22px] leading-none px-2"
+                    aria-label="Close menu"
+                >
+                    ×
+                </button>
+            </div>
+
+            <nav class="px-3 py-6 space-y-2">
+                <button type="button" data-mobile-nav="dashboard" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-border-all text-[18px]"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button type="button" data-mobile-nav="items" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-cubes-stacked text-[18px]"></i>
+                    <span>Item Tracking</span>
+                </button>
+                <button type="button" data-mobile-nav="reports" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-chart-pie text-[18px]" aria-hidden="true"></i>
+                    <span>Reports</span>
+                </button>
+            </nav>
+
+            <div class="mt-auto px-6 py-6 border-t border-white/10">
+                <form method="POST" action="/logout">
+                    @csrf
+                    <button type="submit" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white/90 hover:text-white hover:bg-white/10 transition">
+                        <i class="fa-solid fa-right-from-bracket text-[18px]"></i>
+                        <span>Logout</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
 
     <div class="flex flex-col md:flex-row min-h-screen overflow-hidden">
 
         <!-- Sidebar -->
-        <aside class="w-full md:w-72 lg:w-80 bg-[#173a6b] text-white flex flex-col justify-between shrink-0 md:min-h-screen">
+        <aside class="hidden lg:flex w-full md:w-72 lg:w-80 bg-[#173a6b] text-white flex-col justify-between shrink-0 md:min-h-screen">
             <div>
                 <!-- Logo / Title -->
                 <div class="px-4 py-8 border-b border-white/10">
@@ -63,13 +120,23 @@
         <main class="flex-1 min-w-0 flex flex-col">
 
             <!-- Header -->
-            <header class="bg-[#f3f3f3] border-b border-black/10 px-4 sm:px-6 lg:px-8 py-6 sm:py-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div class="min-w-0">
-                    <h2 id="pageTitle" class="text-[32px] sm:text-[42px] font-bold text-black leading-none break-words">Dashboard</h2>
-                    <p id="pageSubtitle" class="text-[16px] sm:text-[18px] text-[#3e5573] mt-2 break-words">Manage gate pass requests and approvals</p>
+            <header class="bg-[#f3f3f3] border-b border-black/10 px-4 sm:px-6 lg:px-8 py-4 sm:py-7 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <button
+                        type="button"
+                        id="mobileSidebarOpenBtn"
+                        class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white border border-gray-200 text-[#173a6b] hover:bg-gray-50 transition shrink-0"
+                        aria-label="Open menu"
+                    >
+                        <i class="fa-solid fa-bars text-[18px]"></i>
+                    </button>
+                    <div class="min-w-0">
+                        <h2 id="pageTitle" class="text-[20px] sm:text-[42px] font-bold text-black leading-none break-words">Dashboard</h2>
+                        <p id="pageSubtitle" class="hidden sm:block text-[16px] sm:text-[18px] text-[#3e5573] mt-2 break-words">Manage gate pass requests and approvals</p>
+                    </div>
                 </div>
 
-                <button onclick="openAdminProfileModal()" class="w-[52px] h-[52px] rounded-full bg-[#003b95] text-white flex items-center justify-center text-[24px] shrink-0 self-start sm:self-auto">
+                <button onclick="openAdminProfileModal()" class="w-11 h-11 sm:w-[52px] sm:h-[52px] rounded-xl sm:rounded-full bg-[#003b95] text-white flex items-center justify-center text-[20px] sm:text-[24px] shrink-0">
                     <i class="fa-regular fa-user"></i>
                 </button>
             </header>
@@ -409,7 +476,7 @@
                                         <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Item Description</th>
                                         <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Serial Number</th>
                                         <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Employee</th>
-                                        <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Office</th>
+                                        <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Division</th>
                                         <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Property Number</th>
                                         <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Status</th>
                                     </tr>
@@ -418,15 +485,8 @@
                                 <tbody id="itemTrackingTableBody">
                                     @forelse (($trackedItems ?? null) as $row)
                                         @php
-                                            $office = trim((string) ($row->destination ?? ''));
-                                            if ($office === '') {
-                                                $office = trim((string) ($row->center ?? ''));
-                                            } else {
-                                                $centerText = trim((string) ($row->center ?? ''));
-                                                if ($centerText !== '') {
-                                                    $office = $centerText.' / '.$office;
-                                                }
-                                            }
+                                            // Division column should show only the center/office value (no destination).
+                                            $office = trim((string) ($row->center ?? ''));
                                         @endphp
                                         <tr class="border-b border-gray-100">
                                             <td class="px-7 py-5 text-[15px] text-gray-800 whitespace-nowrap">{{ $row->gatepass_no }}</td>
@@ -1666,6 +1726,62 @@
             const modal = document.getElementById('adminProfileModal');
             if (e.target === modal) {
                 closeAdminProfileModal();
+            }
+        });
+
+        function openMobileSidebar() {
+            const sidebar = document.getElementById('mobileSidebar');
+            const overlay = document.getElementById('mobileSidebarOverlay');
+            if (!sidebar || !overlay) return;
+
+            sidebar.classList.remove('-translate-x-full');
+            sidebar.classList.add('translate-x-0');
+            overlay.classList.remove('hidden');
+            sidebar.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('mobileSidebar');
+            const overlay = document.getElementById('mobileSidebarOverlay');
+            if (!sidebar || !overlay) return;
+
+            sidebar.classList.add('-translate-x-full');
+            sidebar.classList.remove('translate-x-0');
+            overlay.classList.add('hidden');
+            sidebar.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
+            closeMobileSidebar();
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const openBtn = document.getElementById('mobileSidebarOpenBtn');
+            const closeBtn = document.getElementById('mobileSidebarCloseBtn');
+            const overlay = document.getElementById('mobileSidebarOverlay');
+            const sidebar = document.getElementById('mobileSidebar');
+
+            if (openBtn) openBtn.addEventListener('click', openMobileSidebar);
+            if (closeBtn) closeBtn.addEventListener('click', closeMobileSidebar);
+            if (overlay) overlay.addEventListener('click', closeMobileSidebar);
+
+            if (sidebar) {
+                sidebar.querySelectorAll('button[data-mobile-nav]').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        const kind = btn.getAttribute('data-mobile-nav');
+                        if (kind === 'dashboard') {
+                            showDashboardSection();
+                        } else if (kind === 'items') {
+                            showItemTrackingSection();
+                        } else if (kind === 'reports') {
+                            showReportsSection();
+                        }
+                        closeMobileSidebar();
+                    });
+                });
             }
         });
 
