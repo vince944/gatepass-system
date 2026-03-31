@@ -893,7 +893,7 @@
                 </div>
 
                 <!-- Add Employee Modal -->
-                <div id="addEmployeeModal" class="fixed inset-0 z-50 hidden bg-black/40 px-4 py-4 sm:px-6 sm:py-6">
+                <div id="addEmployeeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-4 sm:px-6 sm:py-6">
                     <div class="flex min-h-full items-center justify-center">
                         <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
                             <div class="flex items-start justify-between bg-[#003b95] px-5 py-4 sm:px-6">
@@ -2688,6 +2688,7 @@
             return;
         }
         addEmployeeModal.classList.remove('hidden');
+        addEmployeeModal.classList.add('flex');
     }
 
     function closeAddEmployeeModal() {
@@ -2695,6 +2696,7 @@
             return;
         }
         addEmployeeModal.classList.add('hidden');
+        addEmployeeModal.classList.remove('flex');
     }
 
     if (closeEditEmployeeModalBtn) {

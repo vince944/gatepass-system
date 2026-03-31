@@ -255,18 +255,20 @@ class EmployeeGatepassRequestController extends Controller
             abort(404, 'QR code not found.');
         }
 
-        $relativePath = ! empty($requestModel->qr_code_path)
-            ? (string) $requestModel->qr_code_path
-            : 'gatepass_qr/'.$requestModel->gatepass_no.'.png';
-
+        $relativePath = 'gatepass_qr/'.$requestModel->gatepass_no.'.png';
         $absolutePath = Storage::disk('public')->path($relativePath);
 
-        if (! empty($requestModel->qr_code_path) && is_file($absolutePath)) {
+        if (is_file($absolutePath)) {
             return response()->file($absolutePath, [
                 'Content-Type' => 'image/png',
                 'Cache-Control' => 'no-store, max-age=0',
             ]);
         }
+        
+
+        Log::info('QR missing, regenerating...',[
+            'gatepass_no' => $requestModel->gatepass_no,
+        ]);
 
         $qrPayload = [
             'gatepass_no' => $requestModel->gatepass_no,
