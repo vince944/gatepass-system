@@ -9,12 +9,13 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
-        Schema::table('gatepass_requests', function (Blueprint $table) {
-            $table->string('qr_code_path', 500)->nullable()->after('status');
-            $table->timestamp('qr_code_generated_at')->nullable()->after('qr_code_path');
-        });
+        if (!Schema::hasColumn('gatepass_requests', 'qr_code_path')) {
+            Schema::table('gatepass_requests', function (Blueprint $table) {
+                $table->string('qr_code_path', 500)->nullable()->after('status');
+            });
+        }
     }
 
     /**
