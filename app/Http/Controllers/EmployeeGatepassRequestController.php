@@ -210,97 +210,63 @@ class EmployeeGatepassRequestController extends Controller
         ]);
     }
 
-    public function qrCode(Request $request, string $gatepass_no)
+    public function qrCode(string $gatepassNo)
     {
-        $user = $request->user();
+        $user = auth()->user();
 
         if ($user === null) {
-            abort(401);
+            abort(401, 'Unauthorized.');
         }
 
-        /** @var Employee|null $employee */
         $employee = Employee::query()
             ->where('user_id', $user->id)
             ->first();
 
         if ($employee === null) {
-            abort(422, 'Employee record not found.');
+            abort(403, 'Employee record not found.');
         }
 
         $requestModel = GatepassRequest::query()
-            ->where('gatepass_no', $gatepass_no)
+            ->where('gatepass_no', $gatepassNo)
             ->where('requester_employee_id', $employee->employee_id)
-            ->with([
-                'requester:employee_id,user_id,employee_name,center',
-                'requester.user:id,name',
-                'items.inventory:id,current_prop_no,description,serial_no',
-            ])
-            ->first([
-                'gatepass_no',
-                'status',
-                'request_date',
-                'center',
-                'purpose',
-                'destination',
-                'remarks',
-                'qr_code_path',
-            ]);
+            ->first();
 
         if ($requestModel === null) {
-            abort(404, 'Request not found.');
+            abort(404, 'Gate pass request not found.');
         }
 
-        $statusLower = strtolower((string) $requestModel->status);
-        if (! in_array($statusLower, ['approved', 'incoming partial'], true)) {
-            abort(404, 'QR code not found.');
+        if (strtolower((string) $requestModel->status) !== 'approved') {
+            abort(403, 'QR code is only available for approved gate pass requests.');
         }
 
-        $relativePath = 'gatepass_qr/'.$requestModel->gatepass_no.'.png';
-        $absolutePath = Storage::disk('public')->path($relativePath);
-
-        if (is_file($absolutePath)) {
-            return response()->file($absolutePath, [
-                'Content-Type' => 'image/png',
-                'Cache-Control' => 'no-store, max-age=0',
-            ]);
-        }
-        
-
-        Log::info('QR missing, regenerating...',[
+        $qrText = route('employee.gatepass-requests.show', [
             'gatepass_no' => $requestModel->gatepass_no,
         ]);
 
-        $qrPayload = [
-            'gatepass_no' => $requestModel->gatepass_no,
-            'request_date' => optional($requestModel->request_date)->format('Y-m-d'),
-            'requester_name' => $requestModel->requester?->employee_name ?? $requestModel->requester?->user?->name ?? '—',
-            'center_office' => $requestModel->center,
-            'purpose' => $requestModel->purpose,
-            'destination' => $requestModel->destination,
-            'status' => $requestModel->status,
-            'remarks' => $requestModel->remarks,
-            'items' => $requestModel->items
-                ->values()
-                ->map(function (GatepassRequestItem $item, int $idx): array {
-                    return [
-                        'property_number' => $item->inventory?->current_prop_no,
-                        'item_description' => $item->inventory?->description,
-                        'serial_number' => $item->inventory?->serial_no,
-                        'item_remarks' => $item->item_remarks,
-                        'order' => $idx + 1,
-                        'inventory_id' => $item->inventory_id,
-                        'gatepass_item_id' => $item->gatepass_item_id,
-                    ];
-                })
-                ->all(),
-        ];
+        $existingRelativePath = !empty($requestModel->qr_code_path)
+            ? ltrim((string) $requestModel->qr_code_path, '/')
+            : null;
+
+        if ($existingRelativePath !== null) {
+            $existingAbsolutePath = Storage::disk('public')->path($existingRelativePath);
+
+            if (is_file($existingAbsolutePath)) {
+                $extension = strtolower(pathinfo($existingAbsolutePath, PATHINFO_EXTENSION));
+
+                $mime = match ($extension) {
+                    'svg' => 'image/svg+xml',
+                    'png' => 'image/png',
+                    default => mime_content_type($existingAbsolutePath) ?: 'application/octet-stream',
+                };
+
+                return response()->file($existingAbsolutePath, [
+                    'Content-Type' => $mime,
+                    'Cache-Control' => 'no-store, max-age=0',
+                ]);
+            }
+        }
 
         try {
-            $qrText = json_encode($qrPayload, JSON_UNESCAPED_UNICODE);
-            if ($qrText === false || $qrText === '') {
-                abort(500, 'Failed to generate QR payload.');
-            }
-
             $generated = $this->generateQrBinaryWithFallback($qrText, [
                 'gatepass_no' => $requestModel->gatepass_no,
                 'source' => 'employee.qrCode',
@@ -308,17 +274,22 @@ class EmployeeGatepassRequestController extends Controller
 
             Storage::disk('public')->makeDirectory('gatepass_qr');
 
-            $stored = Storage::disk('public')->put($relativePath, $generated['binary']);
+            $newRelativePath = 'gatepass_qr/' . $requestModel->gatepass_no . '.' . $generated['extension'];
+
+            $stored = Storage::disk('public')->put($newRelativePath, $generated['binary']);
+
             if ($stored !== true) {
                 Log::error('Failed to store gatepass QR code (employee)', [
                     'gatepass_no' => $requestModel->gatepass_no,
-                    'relative_path' => $relativePath,
+                    'relative_path' => $newRelativePath,
                     'disk' => 'public',
                 ]);
+
+                abort(500, 'Failed to save QR code.');
             }
 
             $requestModel->forceFill([
-                'qr_code_path' => $relativePath,
+                'qr_code_path' => $newRelativePath,
                 'qr_code_generated_at' => now(),
             ])->save();
 
@@ -327,9 +298,8 @@ class EmployeeGatepassRequestController extends Controller
                 ->header('Cache-Control', 'no-store, max-age=0');
         } catch (\Throwable $e) {
             Log::error('Failed to generate gatepass QR code (employee)', [
-                'gatepass_no' => $requestModel->gatepass_no ?? $gatepass_no,
+                'gatepass_no' => $requestModel->gatepass_no,
                 'error' => $e->getMessage(),
-                'exception' => $e,
             ]);
 
             abort(500, 'Unable to generate QR code right now. Please try again later.');
