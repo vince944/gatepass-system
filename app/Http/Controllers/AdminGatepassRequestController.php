@@ -7,6 +7,8 @@ use App\Models\GatepassRequestItem;
 use App\Models\Inventory;
 use Carbon\Carbon;
 use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Logo\Logo;
+use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Http\JsonResponse;
@@ -449,11 +451,16 @@ class AdminGatepassRequestController extends Controller
 
         $qrTextLength = strlen($qrText);
 
+        $logo = Logo::create(public_path('images/dap_logo.png'))
+            ->setResizeToWidth(70);
+
         try {
             $result = Builder::create()
                 ->writer(new PngWriter)
                 ->data($qrText)
                 ->size(320)
+                ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
+                ->logo($logo)
                 ->margin(10)
                 ->build();
 

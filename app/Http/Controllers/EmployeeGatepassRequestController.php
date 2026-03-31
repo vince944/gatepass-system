@@ -6,6 +6,8 @@ use App\Models\Employee;
 use App\Models\GatepassRequest;
 use App\Models\GatepassRequestItem;
 use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Logo\Logo;
+use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Http\JsonResponse;
@@ -342,12 +344,16 @@ class EmployeeGatepassRequestController extends Controller
         }
 
         $qrTextLength = strlen($qrText);
-
+        
+        $logo = Logo::create(public_path('images/dap_logo.png'))
+    		->setResizeToWidth(80);
         try {
             $result = Builder::create()
                 ->writer(new PngWriter)
                 ->data($qrText)
                 ->size(320)
+                ->logo($logo)
+                ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
                 ->margin(2)
                 ->build();
 
