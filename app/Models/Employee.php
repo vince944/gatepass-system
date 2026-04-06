@@ -22,6 +22,7 @@ class Employee extends Model
         'employee_name',
         'center',
         'empl_status',
+        'employee_type',
         'user_id',
     ];
 

@@ -7,7 +7,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-<body class="bg-[#f3f3f3] min-h-screen font-sans overflow-x-hidden">
+<body class="bg-[#f3f3f3] h-screen overflow-hidden font-sans overflow-x-hidden">
 
     <!-- Mobile Sidebar Overlay -->
     <div id="mobileSidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
@@ -18,8 +18,8 @@
         class="fixed inset-y-0 left-0 z-50 w-64 bg-[#173a6b] text-white transform -translate-x-full transition-transform duration-300 ease-in-out lg:hidden"
         aria-hidden="true"
     >
-        <div class="flex h-full flex-col">
-            <div class="px-4 py-6 border-b border-white/10 flex items-start justify-between gap-3">
+        <div class="flex h-full min-h-0 flex-col overflow-hidden">
+            <div class="shrink-0 px-4 py-6 border-b border-white/10 flex items-start justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
                     <img src="/images/dap_logo.png" alt="DAP Logo" class="w-12 h-12 object-contain rounded-md shrink-0">
                     <div class="min-w-0">
@@ -37,7 +37,7 @@
                 </button>
             </div>
 
-            <nav class="px-3 py-6 space-y-2">
+            <nav class="flex-1 min-h-0 overflow-hidden px-3 py-6 space-y-2">
                 <button type="button" data-mobile-nav="dashboard" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white hover:bg-white/10 transition">
                     <i class="fa-regular fa-file-lines text-[18px]"></i>
                     <span>Gate Pass Request</span>
@@ -48,7 +48,7 @@
                 </button>
             </nav>
 
-            <div class="mt-auto px-6 py-6 border-t border-white/10">
+            <div class="shrink-0 mt-auto px-6 py-6 border-t border-white/10">
                 <form method="POST" action="/logout">
                     @csrf
                     <button type="submit" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white/90 hover:text-white hover:bg-white/10 transition">
@@ -60,11 +60,11 @@
         </div>
     </aside>
 
-    <div class="flex flex-col md:flex-row min-h-screen overflow-hidden">
+    <div class="flex min-h-0 h-screen flex-col md:flex-row overflow-hidden">
 
         <!-- Sidebar -->
-        <aside class="hidden lg:flex w-full md:w-72 lg:w-80 bg-[#173a6b] text-white flex-col justify-between shrink-0 md:min-h-screen">
-            <div>
+        <aside class="hidden lg:flex h-screen max-h-screen w-full md:w-72 lg:w-80 bg-[#173a6b] text-white flex-col shrink-0 overflow-hidden">
+            <div class="shrink-0">
                 <!-- Logo / System Name -->
                 <div class="px-6 py-10 border-b border-white/10">
                     <div class="flex items-start gap-4">
@@ -107,7 +107,7 @@
             </div>
 
             <!-- Logout -->
-            <div class="px-8 py-10 border-t border-white/10">
+            <div class="mt-auto shrink-0 px-8 py-10 border-t border-white/10">
                 <form method="POST" action="/logout">
                     @csrf
                     <button type="submit" class="flex items-center gap-4 text-[18px] font-semibold text-white/90 hover:text-white transition">
@@ -119,10 +119,10 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 min-w-0 flex flex-col">
+        <main class="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
 
             <!-- Top Header -->
-            <header class="bg-[#f3f3f3] border-b border-black/10 px-4 sm:px-6 lg:px-8 py-4 sm:py-7 flex items-center justify-between gap-3">
+            <header class="shrink-0 bg-[#f3f3f3] border-b border-black/10 px-4 sm:px-6 lg:px-8 py-4 sm:py-7 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
                     <button
                         type="button"
@@ -155,7 +155,7 @@
             </header>
 
             <!-- Content Area -->
-            <section class="w-full max-w-full min-w-0 px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+            <section class="flex-1 min-h-0 w-full max-w-full min-w-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
             <!-- DASHBOARD SECTION -->
             <div id="dashboardSection" class="flex flex-col">
                 <div class="order-3 md:order-1 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-7">
@@ -355,7 +355,7 @@
                                 name="purpose"
                                 type="text"
                                 placeholder="Enter purpose..."
-                                class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                class="w-full h-[46px] rounded-xl border border-gray-200 bg-white-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                             >
                         </div>
 
@@ -368,8 +368,8 @@
                                 id="employeeRemarks"
                                 name="remarks"
                                 type="text"
-                                placeholder="Enter Remarks(Optional)..."
-                                class="w-full h-[46px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                placeholder="Enter Remarks (Optional)"
+                                class="w-full h-[46px] rounded-xl border border-gray-200 bg-white-100 px-4 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                             >
                         </div>
                     </div>
@@ -391,7 +391,7 @@
 
                         <div>
                             <label class="block text-[16px] font-semibold text-[#243b5a] mb-3">
-                                Selected Equipment ({{ ($equipment ?? collect())->count() }} items)
+                                Selected Equipment ({{ ($equipment ?? collect())->count() }} items) <span class="text-red-500">*</span>
                             </label>
                             <select
                                 id="employeeEquipmentSelect"

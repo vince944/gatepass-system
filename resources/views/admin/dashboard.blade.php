@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
-<body class="bg-[#f3f3f3] min-h-screen font-sans overflow-x-hidden">
+<body class="bg-[#f3f3f3] h-screen overflow-hidden font-sans overflow-x-hidden">
 
     <!-- Mobile Sidebar Overlay -->
     <div id="mobileSidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
@@ -20,8 +20,8 @@
         class="fixed inset-y-0 left-0 z-50 w-64 bg-[#173a6b] text-white transform -translate-x-full transition-transform duration-300 ease-in-out lg:hidden"
         aria-hidden="true"
     >
-        <div class="flex h-full flex-col">
-            <div class="px-4 py-6 border-b border-white/10 flex items-start justify-between gap-3">
+        <div class="flex h-full min-h-0 flex-col overflow-hidden">
+            <div class="shrink-0 px-4 py-6 border-b border-white/10 flex items-start justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
                     <img src="/images/dap_logo.png" alt="DAP Logo" class="w-12 h-12 object-contain rounded-md shrink-0">
                     <div class="min-w-0">
@@ -41,7 +41,7 @@
                 </button>
             </div>
 
-            <nav class="px-3 py-6 space-y-2">
+            <nav class="flex-1 min-h-0 overflow-hidden px-3 py-6 space-y-2">
                 <button type="button" data-mobile-nav="dashboard" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white hover:bg-white/10 transition">
                     <i class="fa-solid fa-border-all text-[18px]"></i>
                     <span>Dashboard</span>
@@ -56,7 +56,7 @@
                 </button>
             </nav>
 
-            <div class="mt-auto px-6 py-6 border-t border-white/10">
+            <div class="shrink-0 mt-auto px-6 py-6 border-t border-white/10">
                 <form method="POST" action="/logout">
                     @csrf
                     <button type="submit" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white/90 hover:text-white hover:bg-white/10 transition">
@@ -68,11 +68,11 @@
         </div>
     </aside>
 
-    <div class="flex flex-col md:flex-row min-h-screen overflow-hidden">
+    <div class="flex min-h-0 h-screen flex-col md:flex-row overflow-hidden">
 
         <!-- Sidebar -->
-        <aside class="hidden lg:flex w-full md:w-72 lg:w-80 bg-[#173a6b] text-white flex-col justify-between shrink-0 md:min-h-screen">
-            <div>
+        <aside class="hidden lg:flex h-screen max-h-screen w-full md:w-72 lg:w-80 bg-[#173a6b] text-white flex-col shrink-0 overflow-hidden">
+            <div class="shrink-0">
                 <!-- Logo / Title -->
                 <div class="px-4 py-8 border-b border-white/10">
                     <div class="flex items-center gap-4">
@@ -103,9 +103,8 @@
                 </nav>
             </div>
 
-            <div class="px-6 py-8"></div>
             <!-- Logout -->
-            <div class="px-8 py-10 border-t border-white/10">
+            <div class="mt-auto shrink-0 px-8 py-10 border-t border-white/10">
                 <form method="POST" action="/logout">
                     @csrf
                     <button type="submit" class="flex items-center gap-4 text-[18px] font-semibold text-white/90 hover:text-white transition">
@@ -117,10 +116,10 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 min-w-0 flex flex-col">
+        <main class="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
 
             <!-- Header -->
-            <header class="bg-[#f3f3f3] border-b border-black/10 px-4 sm:px-6 lg:px-8 py-4 sm:py-7 flex items-center justify-between gap-3">
+            <header class="shrink-0 bg-[#f3f3f3] border-b border-black/10 px-4 sm:px-6 lg:px-8 py-4 sm:py-7 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
                     <button
                         type="button"
@@ -142,7 +141,7 @@
             </header>
 
             <!-- Content -->
-            <section class="w-full max-w-full min-w-0 px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+            <section class="flex-1 min-h-0 w-full max-w-full min-w-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
 
                 <!-- DASHBOARD SECTION -->
                 <div id="dashboardSection">
@@ -409,10 +408,18 @@
                                 @endif
                             </p>
 
-                            <div class="flex items-center gap-2">
+                            <div class="flex flex-wrap items-center gap-2">
                                 @php
                                     $gatepassPrevUrl = $gatepassRequestsPaginator->previousPageUrl();
                                     $gatepassNextUrl = $gatepassRequestsPaginator->nextPageUrl();
+                                    $gatepassLastPage = $gatepassRequestsPaginator->lastPage();
+                                    if ($gatepassLastPage <= 3) {
+                                        $gatepassPageWindowStart = 1;
+                                        $gatepassPageWindowEnd = $gatepassLastPage;
+                                    } else {
+                                        $gatepassPageWindowStart = max(1, min($gatepassCurrentPage - 1, $gatepassLastPage - 2));
+                                        $gatepassPageWindowEnd = min($gatepassLastPage, $gatepassPageWindowStart + 2);
+                                    }
                                 @endphp
 
                                 @if ($gatepassPrevUrl)
@@ -420,21 +427,25 @@
                                         Previous
                                     </a>
                                 @else
-                                    <span class="px-4 py-2 rounded-xl border border-gray-300 text-gray-400 bg-gray-50 text-[16px] font-medium cursor-not-allowed">
+                                    <span class="px-4 py-2 rounded-xl border border-gray-300 text-gray-400 bg-gray-50 text-[16px] font-medium cursor-not-allowed" aria-disabled="true">
                                         Previous
                                     </span>
                                 @endif
 
-                                <span class="w-auto min-w-[40px] h-[40px] px-3 inline-flex items-center justify-center rounded-xl bg-[#020826] text-white text-[16px] font-semibold">
-                                    {{ $gatepassCurrentPage }}
-                                </span>
+                                @for ($page = $gatepassPageWindowStart; $page <= $gatepassPageWindowEnd; $page++)
+                                    @if ($page === $gatepassCurrentPage)
+                                        <span class="w-auto min-w-[40px] h-[40px] px-3 inline-flex items-center justify-center rounded-xl bg-[#020826] text-white text-[16px] font-semibold" aria-current="page">{{ $page }}</span>
+                                    @else
+                                        <a href="{{ $gatepassRequestsPaginator->url($page) }}" class="min-w-[40px] h-[40px] px-3 inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white text-[16px] font-medium">{{ $page }}</a>
+                                    @endif
+                                @endfor
 
                                 @if ($gatepassNextUrl)
                                     <a href="{{ $gatepassNextUrl }}" class="px-4 py-2 rounded-xl border border-gray-300 bg-white text-[16px] font-medium">
                                         Next
                                     </a>
                                 @else
-                                    <span class="px-4 py-2 rounded-xl border border-gray-300 text-gray-400 bg-gray-50 text-[16px] font-medium cursor-not-allowed">
+                                    <span class="px-4 py-2 rounded-xl border border-gray-300 text-gray-400 bg-gray-50 text-[16px] font-medium cursor-not-allowed" aria-disabled="true">
                                         Next
                                     </span>
                                 @endif
@@ -520,12 +531,20 @@
                                 Showing {{ $from }}–{{ $to }} of {{ $total }} results
                             </p>
 
-                            <div class="flex items-center gap-2">
+                            <div class="flex flex-wrap items-center gap-2">
                                 @php
-                                    $prevUrl = ($trackedItems ?? null)?->previousPageUrl();
-                                    $nextUrl = ($trackedItems ?? null)?->nextPageUrl();
-                                    $currentPage = ($trackedItems ?? null)?->currentPage() ?? 1;
-                                    $lastPage = ($trackedItems ?? null)?->lastPage() ?? 1;
+                                    $itemPaginator = $trackedItems ?? null;
+                                    $prevUrl = $itemPaginator?->previousPageUrl();
+                                    $nextUrl = $itemPaginator?->nextPageUrl();
+                                    $currentPage = $itemPaginator?->currentPage() ?? 1;
+                                    $itemLastPage = $itemPaginator?->lastPage() ?? 1;
+                                    if ($itemLastPage <= 3) {
+                                        $itemPageWindowStart = 1;
+                                        $itemPageWindowEnd = $itemLastPage;
+                                    } else {
+                                        $itemPageWindowStart = max(1, min($currentPage - 1, $itemLastPage - 2));
+                                        $itemPageWindowEnd = min($itemLastPage, $itemPageWindowStart + 2);
+                                    }
                                 @endphp
 
                                 @if ($prevUrl)
@@ -533,21 +552,27 @@
                                         Previous
                                     </a>
                                 @else
-                                    <span class="px-4 py-2 rounded-xl border border-gray-300 text-gray-400 bg-gray-50 text-[16px] font-medium cursor-not-allowed">
+                                    <span class="px-4 py-2 rounded-xl border border-gray-300 text-gray-400 bg-gray-50 text-[16px] font-medium cursor-not-allowed" aria-disabled="true">
                                         Previous
                                     </span>
                                 @endif
 
-                                <span class="w-auto min-w-[40px] h-[40px] px-3 inline-flex items-center justify-center rounded-xl bg-[#020826] text-white text-[16px] font-semibold">
-                                    {{ $currentPage }}
-                                </span>
+                                @if ($itemPaginator)
+                                    @for ($page = $itemPageWindowStart; $page <= $itemPageWindowEnd; $page++)
+                                        @if ($page === $currentPage)
+                                            <span class="w-auto min-w-[40px] h-[40px] px-3 inline-flex items-center justify-center rounded-xl bg-[#020826] text-white text-[16px] font-semibold" aria-current="page">{{ $page }}</span>
+                                        @else
+                                            <a href="{{ $itemPaginator->url($page) }}" class="min-w-[40px] h-[40px] px-3 inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white text-[16px] font-medium">{{ $page }}</a>
+                                        @endif
+                                    @endfor
+                                @endif
 
                                 @if ($nextUrl)
                                     <a href="{{ $nextUrl }}" class="px-4 py-2 rounded-xl border border-gray-300 bg-white text-[16px] font-medium">
                                         Next
                                     </a>
                                 @else
-                                    <span class="px-4 py-2 rounded-xl border border-gray-300 text-gray-400 bg-gray-50 text-[16px] font-medium cursor-not-allowed">
+                                    <span class="px-4 py-2 rounded-xl border border-gray-300 text-gray-400 bg-gray-50 text-[16px] font-medium cursor-not-allowed" aria-disabled="true">
                                         Next
                                     </span>
                                 @endif

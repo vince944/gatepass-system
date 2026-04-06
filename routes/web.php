@@ -149,6 +149,14 @@ Route::get('/coordinator/items', function () {
     ->middleware('auth')
     ->name('admin.coordinator.items.index');
 
+Route::get('/coordinator/items/check-duplicate', [CoordinatorController::class, 'checkItemDuplicate'])
+    ->middleware('auth')
+    ->name('admin.coordinator.items.duplicate-check');
+
+Route::get('/coordinator/items/{inventory}/check-field-duplicates', [CoordinatorController::class, 'checkEditItemFieldDuplicates'])
+    ->middleware('auth')
+    ->name('admin.coordinator.items.check-field-duplicates');
+
 Route::post('/coordinator/items', [CoordinatorController::class, 'storeItem'])
     ->middleware('auth')
     ->name('admin.coordinator.items.store');

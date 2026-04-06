@@ -60,6 +60,36 @@
             animation: formErrorToastAnim 2.6s ease-out forwards;
         }
 
+        @keyframes addEmployeeEmailExistsAnim {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -12px);
+            }
+
+            12% {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+
+            72% {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -8px);
+            }
+        }
+
+        #addEmployeeFormErrorAlert.show-add-employee-email-exists {
+            animation: addEmployeeEmailExistsAnim 2.8s ease-out forwards;
+        }
+
+        #editEmployeeFormErrorAlert.show-edit-employee-email-exists {
+            animation: addEmployeeEmailExistsAnim 2.8s ease-out forwards;
+        }
+
         @keyframes itemSuccessToastAnim {
             0% {
                 opacity: 0;
@@ -87,7 +117,7 @@
         }
     </style>
 </head>
-<body class="bg-[#f5f5f5] min-h-screen font-sans">
+<body class="bg-[#f5f5f5] h-screen overflow-hidden overflow-x-hidden font-sans">
 
     <!-- Login success toast (top-right) -->
     <div id="loginSuccessToast"
@@ -108,13 +138,13 @@
     </div>
 
 
-    <div class="flex flex-col md:flex-row min-h-screen overflow-hidden">
+    <div class="flex min-h-0 h-screen flex-col md:flex-row overflow-hidden">
 
         <!-- Sidebar -->
-        <aside class="w-full md:w-72 lg:w-80 bg-[#173a6b] text-white flex flex-col shrink-0 md:min-h-screen">
+        <aside class="flex h-auto min-h-0 shrink-0 flex-col w-full md:h-screen md:max-h-screen md:w-72 lg:w-80 bg-[#173a6b] text-white">
 
             <!-- Top Section -->
-            <div>
+            <div class="shrink-0">
                 <div class="px-4 py-8 border-b border-white/10">
                     <div class="flex items-start gap-3">
                         <img src="/images/dap_logo.png" alt="DAP Logo" class="w-[46px] h-[46px] object-contain rounded-md">
@@ -173,7 +203,7 @@
             </div>
 
             <!-- Logout Bottom -->
-            <div class="mt-auto px-8 py-10 border-t border-white/10">
+            <div class="mt-auto shrink-0 px-8 py-10 border-t border-white/10">
                 <form method="POST" action="/logout">
                     @csrf
                     <button type="submit"
@@ -187,10 +217,10 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 min-w-0 flex flex-col">
+        <main class="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
 
             <!-- Header -->
-            <header class="bg-[#f5f5f5] border-b border-black/10 px-4 sm:px-6 lg:px-8 py-6">
+            <header class="shrink-0 bg-[#f5f5f5] border-b border-black/10 px-4 sm:px-6 lg:px-8 py-6">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
                     <div class="min-w-0">
                         <h2 id="pageTitle" class="text-[22px] md:text-[24px] font-bold text-black leading-none break-words">Dashboard</h2>
@@ -210,7 +240,7 @@
             </header>
 
             <!-- Content -->
-            <section class="w-full max-w-full min-w-0 px-4 sm:px-6 lg:px-8 py-7">
+            <section class="flex-1 min-h-0 w-full max-w-full min-w-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-8 py-7">
 
                 <!-- DASHBOARD SECTION -->
                 <div id="dashboardSection">
@@ -392,11 +422,11 @@
                                     </div>
 
                                     <div>
-                                        <label class="block text-[14px] font-semibold text-black mb-2">Empl. Status</label>
+                                        <label class="block text-[14px] font-semibold text-black mb-2">Employee Type</label>
                                         <input
-                                            id="employeeStatusField"
+                                            id="employeeTypeField"
                                             type="text"
-                                            value="{{ $selectedEmployee?->empl_status ?? '' }}"
+                                            value="{{ $selectedEmployee?->employee_type ?? '' }}"
                                             class="w-full h-[42px] rounded-xl border border-gray-200 bg-gray-100 px-4 text-[14px] text-[#667085] focus:outline-none"
                                             readonly
                                         >
@@ -549,6 +579,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="inventoryPortalPagination" class="hidden flex flex-wrap items-center justify-center gap-2 border-t border-gray-200 px-6 py-4" aria-label="Inventory pagination"></div>
 
                 </div>
                 </div>
@@ -576,7 +607,7 @@
                                         <th class="px-4 py-4 text-[14px] font-semibold">Employee ID</th>
                                         <th class="px-4 py-4 text-[14px] font-semibold">Employee Name</th>
                                         <th class="px-4 py-4 text-[14px] font-semibold">Center</th>
-                                        <th class="px-4 py-4 text-[14px] font-semibold">Empl. Status</th>
+                                        <th class="px-4 py-4 text-[14px] font-semibold">Employee Type</th>
                                         <th class="px-4 py-4 text-[14px] font-semibold">Created At</th>
                                         <th class="px-4 py-4 text-[14px] font-semibold">Action</th>
                                     </tr>
@@ -605,12 +636,12 @@
                                         };
                                     @endphp
                                     @forelse($employeeRecords as $index => $employeeRecord)
-                                        <tr class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} text-[14px] text-[#111827]">
+                                        <tr data-employee-id="{{ $employeeRecord->employee_id }}" class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} text-[14px] text-[#111827]">
                                             <td class="px-4 py-3 align-top">{{ $index + 1 }}</td>
                                             <td class="px-4 py-3 align-top">{{ $employeeRecord->employee_id }}</td>
                                             <td class="px-4 py-3 align-top">{{ $employeeRecord->employee_name }}</td>
                                             <td class="px-4 py-3 align-top">{{ $employeeRecord->center }}</td>
-                                            <td class="px-4 py-3 align-top">{{ $employeeRecord->empl_status }}</td>
+                                            <td class="px-4 py-3 align-top">{{ $employeeRecord->employee_type ?? '—' }}</td>
                                             <td class="px-4 py-3 align-top">{{ $formatEmployeeTimestamp($employeeRecord->created_at) }}</td>
                                             <td class="px-4 py-3 align-top">
                                                 <div class="flex items-center gap-2">
@@ -622,7 +653,7 @@
                                                         data-email="{{ $employeeRecord->user?->email ?? '' }}"
                                                         data-user-linked="{{ $employeeRecord->user_id ? '1' : '0' }}"
                                                         data-center="{{ $employeeRecord->center }}"
-                                                        data-empl-status="{{ $employeeRecord->empl_status }}"
+                                                        data-employee-type="{{ $employeeRecord->employee_type ?? '' }}"
                                                         data-update-url="{{ route('admin.coordinator.employees.update', $employeeRecord->employee_id) }}"
                                                         title="Edit employee"
                                                     >
@@ -652,6 +683,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="employeeManagementPagination" class="hidden flex flex-wrap items-center justify-center gap-2 border-t border-gray-200 px-6 py-4" aria-label="Employee list pagination"></div>
                     </div>
                 </div>
 
@@ -722,11 +754,28 @@
                                         MRR
                                     </label>
                                     <input type="text" name="mrr" placeholder="Enter MRR"
-                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                        value="{{ old('mrr') }}"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-white-100 px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                    @error('mrr')
+                                        <p class="mt-1 text-[12px] text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <!-- Serial Number -->
+                                <div>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">
+                                        Serial Number
+                                    </label>
+                                    <input type="text" name="serialno" placeholder="Enter serial number"
+                                        value="{{ old('serialno') }}"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-white-100 px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                    @error('serialno')
+                                        <p class="mt-1 text-[12px] text-red-600">{{ $message }}</p>
+                                    @enderror
                                 </div>
 
                                 <!-- Description / Specification -->
-                                <div>
+                                <div class="md:col-span-2">
                                     <label class="block text-[14px] font-semibold text-black mb-2">
                                         Description / Specification <span class="text-red-500">*</span>
                                     </label>
@@ -794,7 +843,7 @@
                                         End User
                                     </label>
                                     <input type="text" name="end_user" placeholder="Enter end user name"
-                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-white-100 px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
                                 </div>
 
                                 <!-- Accountability -->
@@ -819,7 +868,7 @@
                                         Remarks
                                     </label>
                                     <input type="text" name="remarks" placeholder="Enter remarks"
-                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-white-100 px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
                                 </div>
 
                             </div>
@@ -843,7 +892,18 @@
                 <!-- Edit Employee Modal -->
                 <div id="editEmployeeModal" class="fixed inset-0 z-50 hidden bg-black/40 px-4 py-6 sm:px-6">
                     <div class="flex min-h-full items-center justify-center">
-                    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden">
+                    <div class="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+                        <div
+                            id="editEmployeeFormErrorAlert"
+                            class="pointer-events-none absolute left-1/2 top-3 z-20 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-3 rounded-xl border border-[#fee2e2] bg-white px-4 py-2 text-[13px] font-medium text-[#dc2626] opacity-0 shadow-lg sm:max-w-md"
+                            role="alert"
+                            aria-live="polite"
+                        >
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#dc2626]/10">
+                                <i class="fa-solid fa-triangle-exclamation text-[14px]" aria-hidden="true"></i>
+                            </span>
+                            <span id="editEmployeeFormErrorAlertMessage">This email already exists.</span>
+                        </div>
                         <div class="bg-[#003b95] px-6 py-4 flex items-start justify-between">
                             <div>
                                 <h3 class="text-white text-[22px] font-bold leading-tight">Edit Employee</h3>
@@ -876,8 +936,12 @@
                                     <input id="editEmployeeCenterField" type="text" name="center" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
                                 </div>
                                 <div>
-                                    <label class="block text-[14px] font-semibold text-black mb-2">Empl. Status</label>
-                                    <input id="editEmployeeStatusField" type="text" name="empl_status" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
+                                    <label class="block text-[14px] font-semibold text-black mb-2">Employee Type</label>
+                                    <select id="editEmployeeTypeField" name="employee_type" class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20" required>
+                                        <option value="" selected>Select type</option>
+                                        <option value="Plantilla">Plantilla</option>
+                                        <option value="Nonplantilla">Nonplantilla</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200">
@@ -897,7 +961,18 @@
                 <!-- Add Employee Modal -->
                 <div id="addEmployeeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-4 sm:px-6 sm:py-6">
                     <div class="flex min-h-full items-center justify-center">
-                        <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
+                        <div class="relative w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
+                            <div
+                                id="addEmployeeFormErrorAlert"
+                                class="pointer-events-none absolute left-1/2 top-3 z-20 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-3 rounded-xl border border-[#fee2e2] bg-white px-4 py-2 text-[13px] font-medium text-[#dc2626] opacity-0 shadow-lg sm:max-w-md"
+                                role="alert"
+                                aria-live="polite"
+                            >
+                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#dc2626]/10">
+                                    <i class="fa-solid fa-triangle-exclamation text-[14px]" aria-hidden="true"></i>
+                                </span>
+                                <span id="addEmployeeFormErrorAlertMessage">This email already exists.</span>
+                            </div>
                             <div class="flex items-start justify-between bg-[#003b95] px-5 py-4 sm:px-6">
                                 <div>
                                     <h3 class="text-xl font-bold leading-tight text-white sm:text-[22px]">Add Employee</h3>
@@ -990,14 +1065,15 @@
                                             </div>
 
                                             <div class="md:col-span-2">
-                                                <label class="mb-2 block text-sm font-semibold text-black">Employee Status</label>
+                                                <label class="mb-2 block text-sm font-semibold text-black">Employee Type</label>
                                                 <select
-                                                    id="addEmployeeStatusField"
-                                                    name="empl_status"
+                                                    id="addEmployeeTypeField"
+                                                    name="employee_type"
                                                     class="h-11 w-full rounded-xl border border-gray-300 bg-white px-4 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20"
+                                                    required
                                                 >
-                                                    <option value="active" selected>Active</option>
-                                                    <option value="inactive">Inactive</option>
+                                                    <option value="Plantilla" selected>Plantilla</option>
+                                                    <option value="Nonplantilla">Nonplantilla</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -1061,6 +1137,7 @@
                                     </label>
                                     <input type="text" name="property_number" id="editPropertyNumberField" placeholder="Enter property number"
                                         class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                    <p id="editPropertyNumberError" class="mt-1 text-[12px] text-red-600 hidden" role="alert"></p>
                                 </div>
 
                                 <!-- Account Code -->
@@ -1070,6 +1147,7 @@
                                     </label>
                                     <input type="text" name="rca_acctcode" id="editAccountCodeField" placeholder="Enter account code"
                                         class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                    <p id="editAccountCodeError" class="mt-1 text-[12px] text-red-600 hidden" role="alert"></p>
                                 </div>
 
                                 <!-- Serial Number -->
@@ -1079,6 +1157,7 @@
                                     </label>
                                     <input type="text" name="serialno" id="editSerialNumberField" placeholder="Enter serial number"
                                         class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
+                                    <p id="editSerialNumberError" class="mt-1 text-[12px] text-red-600 hidden" role="alert"></p>
                                 </div>
 
                                 <!-- MRR -->
@@ -1166,7 +1245,7 @@
                                 </div>
 
                                 <!-- Remarks -->
-                                <div class="md:col-span-2">
+                                <div>
                                     <label class="block text-[14px] font-semibold text-black mb-2">
                                         Remarks
                                     </label>
@@ -1434,11 +1513,18 @@
 
     const employeeSelect = document.getElementById('employeeSelect');
     const searchInput = document.querySelector('input[name="search"]');
-    const employeeStatusField = document.getElementById('employeeStatusField');
+    const employeeTypeField = document.getElementById('employeeTypeField');
     const employeeNumberField = document.getElementById('employeeNumberField');
     const employeeCenterField = document.getElementById('employeeCenterField');
     const inventoryPortalTableBody = document.getElementById('inventoryPortalTableBody');
+    const inventoryPortalPaginationEl = document.getElementById('inventoryPortalPagination');
+    const employeeManagementPaginationEl = document.getElementById('employeeManagementPagination');
     const accountabilityFilter = document.getElementById('accountabilityFilter');
+
+    const INVENTORY_PORTAL_PAGE_SIZE = 5;
+    const EMPLOYEE_MANAGEMENT_PAGE_SIZE = 5;
+    let inventoryPortalCurrentPage = 1;
+    let employeeManagementCurrentPage = 1;
 
     // Add Item Modal
     const openAddItemModal = document.getElementById('openAddItemModal');
@@ -1477,7 +1563,7 @@
     const editEmployeeEmailField = document.getElementById('editEmployeeEmailField');
     const editEmployeeEmailHint = document.getElementById('editEmployeeEmailHint');
     const editEmployeeCenterField = document.getElementById('editEmployeeCenterField');
-    const editEmployeeStatusField = document.getElementById('editEmployeeStatusField');
+    const editEmployeeTypeField = document.getElementById('editEmployeeTypeField');
     const openAddEmployeeModalBtn = document.getElementById('openAddEmployeeModal');
     const addEmployeeModal = document.getElementById('addEmployeeModal');
     const addEmployeeForm = document.getElementById('addEmployeeForm');
@@ -1485,6 +1571,7 @@
     const cancelAddEmployeeModalBtn = document.getElementById('cancelAddEmployeeModal');
 
     const csrfToken = '{{ csrf_token() }}';
+    const addItemDuplicateCheckUrl = @json(route('admin.coordinator.items.duplicate-check'));
 
     const dashboardCounts = {
         accountable: {{ $accountableCount }},
@@ -1721,6 +1808,73 @@
         formErrorToast.classList.remove('show-form-error-toast');
         void formErrorToast.offsetWidth;
         formErrorToast.classList.add('show-form-error-toast');
+    }
+
+    const addEmployeeFormErrorAlert = document.getElementById('addEmployeeFormErrorAlert');
+    const addEmployeeFormErrorAlertMessage = document.getElementById('addEmployeeFormErrorAlertMessage');
+    const addEmployeeEmailField = document.getElementById('addEmployeeEmailField');
+    const editEmployeeFormErrorAlert = document.getElementById('editEmployeeFormErrorAlert');
+    const editEmployeeFormErrorAlertMessage = document.getElementById('editEmployeeFormErrorAlertMessage');
+
+    function isDuplicateEmailServerError(emailErrors) {
+        if (!emailErrors) {
+            return false;
+        }
+
+        const emailMessage = Array.isArray(emailErrors) ? emailErrors[0] : emailErrors;
+        const emailText = String(emailMessage ?? '');
+
+        if (emailText.length === 0) {
+            return false;
+        }
+
+        return /already\s+(been\s+)?(taken|registered)|email\s+has\s+already|already registered|must\s+be\s+unique|has\s+already\s+been\s+taken/i.test(emailText);
+    }
+
+    function showAddEmployeeEmailExistsAlert(message) {
+        const text = message && String(message).trim() !== '' ? String(message).trim() : 'This email already exists.';
+
+        if (addEmployeeFormErrorAlertMessage) {
+            addEmployeeFormErrorAlertMessage.textContent = text;
+        }
+
+        if (addEmployeeFormErrorAlert) {
+            addEmployeeFormErrorAlert.classList.remove('show-add-employee-email-exists');
+            void addEmployeeFormErrorAlert.offsetWidth;
+            addEmployeeFormErrorAlert.classList.add('show-add-employee-email-exists');
+        }
+
+        if (addEmployeeEmailField) {
+            addEmployeeEmailField.classList.remove('ring-2', 'ring-red-500', 'ring-offset-2');
+            void addEmployeeEmailField.offsetWidth;
+            addEmployeeEmailField.classList.add('ring-2', 'ring-red-500', 'ring-offset-2');
+            window.setTimeout(function () {
+                addEmployeeEmailField.classList.remove('ring-2', 'ring-red-500', 'ring-offset-2');
+            }, 2800);
+        }
+    }
+
+    function showEditEmployeeEmailExistsAlert(message) {
+        const text = message && String(message).trim() !== '' ? String(message).trim() : 'This email already exists.';
+
+        if (editEmployeeFormErrorAlertMessage) {
+            editEmployeeFormErrorAlertMessage.textContent = text;
+        }
+
+        if (editEmployeeFormErrorAlert) {
+            editEmployeeFormErrorAlert.classList.remove('show-edit-employee-email-exists');
+            void editEmployeeFormErrorAlert.offsetWidth;
+            editEmployeeFormErrorAlert.classList.add('show-edit-employee-email-exists');
+        }
+
+        if (editEmployeeEmailField) {
+            editEmployeeEmailField.classList.remove('ring-2', 'ring-red-500', 'ring-offset-2');
+            void editEmployeeEmailField.offsetWidth;
+            editEmployeeEmailField.classList.add('ring-2', 'ring-red-500', 'ring-offset-2');
+            window.setTimeout(function () {
+                editEmployeeEmailField.classList.remove('ring-2', 'ring-red-500', 'ring-offset-2');
+            }, 2800);
+        }
     }
 
     function adminClearProfileFormMessages() {
@@ -1970,6 +2124,169 @@
         return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     }
 
+    function rowMatchesAccountabilityFilter(row, filter) {
+        const rowAccountability = row.getAttribute('data-accountability') || 'accountable';
+
+        if (filter === 'all') {
+            return true;
+        }
+        if (filter === 'accountable') {
+            return rowAccountability === 'accountable';
+        }
+        if (filter === 'unaccountable') {
+            return rowAccountability === 'unaccountable';
+        }
+
+        return true;
+    }
+
+    function renderNumberedPaginationUI(container, currentPage, totalPages, onPageSelect) {
+        if (!container) {
+            return;
+        }
+
+        if (totalPages <= 1) {
+            container.classList.add('hidden');
+            container.innerHTML = '';
+
+            return;
+        }
+
+        container.classList.remove('hidden');
+        container.innerHTML = '';
+
+        const baseBtn = 'min-w-[36px] h-9 rounded-lg text-[14px] font-medium transition px-2';
+        const activeClasses = 'bg-[#003b95] text-white shadow-sm';
+        const inactiveClasses = 'border border-gray-300 bg-white text-black hover:bg-gray-50';
+
+        for (let p = 1; p <= totalPages; p += 1) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `${baseBtn} ${p === currentPage ? activeClasses : inactiveClasses}`;
+            btn.textContent = String(p);
+            btn.setAttribute('aria-label', `Page ${p}`);
+            if (p === currentPage) {
+                btn.setAttribute('aria-current', 'page');
+            } else {
+                btn.removeAttribute('aria-current');
+            }
+            btn.addEventListener('click', () => onPageSelect(p));
+            container.appendChild(btn);
+        }
+    }
+
+    function refreshInventoryPortalTableView(requestedPage) {
+        if (!inventoryPortalTableBody) {
+            return;
+        }
+
+        const filter = accountabilityFilter?.value || 'all';
+        const dataRows = Array.from(inventoryPortalTableBody.querySelectorAll('tr[data-inventory-id]'));
+
+        if (dataRows.length === 0) {
+            inventoryPortalCurrentPage = 1;
+            if (inventoryPortalPaginationEl) {
+                inventoryPortalPaginationEl.classList.add('hidden');
+                inventoryPortalPaginationEl.innerHTML = '';
+            }
+
+            return;
+        }
+
+        const visibleFiltered = dataRows.filter((row) => rowMatchesAccountabilityFilter(row, filter));
+
+        if (visibleFiltered.length === 0) {
+            dataRows.forEach((row) => row.classList.add('hidden'));
+            inventoryPortalCurrentPage = 1;
+            if (inventoryPortalPaginationEl) {
+                inventoryPortalPaginationEl.classList.add('hidden');
+                inventoryPortalPaginationEl.innerHTML = '';
+            }
+
+            return;
+        }
+
+        const totalPages = Math.ceil(visibleFiltered.length / INVENTORY_PORTAL_PAGE_SIZE);
+        const nextPage = requestedPage !== undefined ? requestedPage : inventoryPortalCurrentPage;
+        inventoryPortalCurrentPage = Math.max(1, Math.min(nextPage, totalPages));
+
+        const start = (inventoryPortalCurrentPage - 1) * INVENTORY_PORTAL_PAGE_SIZE;
+
+        dataRows.forEach((row) => {
+            const fi = visibleFiltered.indexOf(row);
+
+            if (fi === -1) {
+                row.classList.add('hidden');
+
+                return;
+            }
+
+            const inPage = fi >= start && fi < start + INVENTORY_PORTAL_PAGE_SIZE;
+            row.classList.toggle('hidden', !inPage);
+
+            if (inPage) {
+                const firstTd = row.querySelector('td:first-child');
+                if (firstTd) {
+                    firstTd.textContent = String(fi + 1);
+                }
+                row.classList.remove('bg-white', 'bg-gray-50');
+                row.classList.add(fi % 2 === 0 ? 'bg-white' : 'bg-gray-50');
+            }
+        });
+
+        renderNumberedPaginationUI(
+            inventoryPortalPaginationEl,
+            inventoryPortalCurrentPage,
+            totalPages,
+            (p) => refreshInventoryPortalTableView(p),
+        );
+    }
+
+    function applyEmployeeManagementPagination(requestedPage) {
+        if (!employeeManagementTableBody) {
+            return;
+        }
+
+        const dataRows = Array.from(employeeManagementTableBody.querySelectorAll('tr[data-employee-id]'));
+
+        if (dataRows.length === 0) {
+            employeeManagementCurrentPage = 1;
+            if (employeeManagementPaginationEl) {
+                employeeManagementPaginationEl.classList.add('hidden');
+                employeeManagementPaginationEl.innerHTML = '';
+            }
+
+            return;
+        }
+
+        const totalPages = Math.ceil(dataRows.length / EMPLOYEE_MANAGEMENT_PAGE_SIZE);
+        const nextPage = requestedPage !== undefined ? requestedPage : employeeManagementCurrentPage;
+        employeeManagementCurrentPage = Math.max(1, Math.min(nextPage, totalPages));
+
+        const start = (employeeManagementCurrentPage - 1) * EMPLOYEE_MANAGEMENT_PAGE_SIZE;
+
+        dataRows.forEach((row, fi) => {
+            const inPage = fi >= start && fi < start + EMPLOYEE_MANAGEMENT_PAGE_SIZE;
+            row.classList.toggle('hidden', !inPage);
+
+            if (inPage) {
+                const firstTd = row.querySelector('td:first-child');
+                if (firstTd) {
+                    firstTd.textContent = String(fi + 1);
+                }
+                row.classList.remove('bg-white', 'bg-gray-50');
+                row.classList.add(fi % 2 === 0 ? 'bg-white' : 'bg-gray-50');
+            }
+        });
+
+        renderNumberedPaginationUI(
+            employeeManagementPaginationEl,
+            employeeManagementCurrentPage,
+            totalPages,
+            (p) => applyEmployeeManagementPagination(p),
+        );
+    }
+
     function renderEmployeeRows(employees) {
         if (!employeeManagementTableBody) {
             return;
@@ -1985,18 +2302,21 @@
                     </td>
                 </tr>
             `;
+            applyEmployeeManagementPagination(1);
+
             return;
         }
 
         employees.forEach((employeeRecord, index) => {
             const row = document.createElement('tr');
+            row.setAttribute('data-employee-id', (employeeRecord.employee_id ?? '').toString());
             row.className = `${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} text-[14px] text-[#111827]`;
             row.innerHTML = `
                 <td class="px-4 py-3 align-top">${index + 1}</td>
                 <td class="px-4 py-3 align-top">${employeeRecord.employee_id ?? ''}</td>
                 <td class="px-4 py-3 align-top">${employeeRecord.employee_name ?? ''}</td>
                 <td class="px-4 py-3 align-top">${employeeRecord.center ?? ''}</td>
-                <td class="px-4 py-3 align-top">${employeeRecord.empl_status ?? ''}</td>
+                <td class="px-4 py-3 align-top">${employeeRecord.employee_type ?? '—'}</td>
                 <td class="px-4 py-3 align-top">${formatEmployeeTimestamp(employeeRecord.created_at)}</td>
                 <td class="px-4 py-3 align-top">
                     <div class="flex items-center gap-2">
@@ -2008,7 +2328,7 @@
                             data-email="${employeeRecord.email ?? ''}"
                             data-user-linked="${employeeRecord.user_id ? '1' : '0'}"
                             data-center="${employeeRecord.center ?? ''}"
-                            data-empl-status="${employeeRecord.empl_status ?? ''}"
+                            data-employee-type="${employeeRecord.employee_type ?? ''}"
                             data-update-url="/coordinator/employees/${employeeRecord.employee_id ?? ''}"
                             title="Edit employee"
                         >
@@ -2030,6 +2350,8 @@
             `;
             employeeManagementTableBody.appendChild(row);
         });
+
+        applyEmployeeManagementPagination(1);
     }
 
     async function loadEmployees() {
@@ -2090,8 +2412,8 @@
 
             const data = await response.json();
 
-            if (employeeStatusField) {
-                employeeStatusField.value = data.selectedEmployee?.empl_status ?? '';
+            if (employeeTypeField) {
+                employeeTypeField.value = data.selectedEmployee?.employee_type ?? '';
             }
             if (employeeNumberField) {
                 employeeNumberField.value = data.selectedEmployeeId ?? '';
@@ -2112,6 +2434,8 @@
                         </td>
                     </tr>
                 `;
+                refreshInventoryPortalTableView(1);
+
                 return;
             }
 
@@ -2184,13 +2508,18 @@
                 `;
                 inventoryPortalTableBody.appendChild(row);
             });
+
+            refreshInventoryPortalTableView(1);
         } catch (e) {
             // fail silently for now
         }
     }
 
-    function openModal() {
+    function openModal(options = {}) {
         if (!addItemModal) return;
+        if (options.clearDuplicateState !== false) {
+            resetAddItemDuplicateState();
+        }
         addItemModal.classList.remove('hidden');
         addItemModal.classList.add('flex');
         setTodayDate();
@@ -2200,6 +2529,7 @@
         if (!addItemModal) return;
         addItemModal.classList.add('hidden');
         addItemModal.classList.remove('flex');
+        resetAddItemDuplicateState();
 
         if (formErrorToast) {
             formErrorToast.classList.remove('show-form-error-toast');
@@ -2288,6 +2618,8 @@
             editRemarksField.value = button.getAttribute('data-remarks') || '';
         }
 
+        resetEditItemDuplicateUi();
+
         editItemModal.classList.remove('hidden');
         editItemModal.classList.add('flex');
     }
@@ -2298,6 +2630,131 @@
         }
         editItemModal.classList.add('hidden');
         editItemModal.classList.remove('flex');
+        resetEditItemDuplicateUi();
+    }
+
+    let addItemDuplicateCheckTimer = null;
+    let addItemDuplicateCheckSeq = 0;
+    let lastAddItemDuplicateResult = false;
+
+    function applyAddItemDuplicateFieldStyles(isDuplicate) {
+        if (!addItemForm) {
+            return;
+        }
+        ['property_number', 'rca_acctcode', 'serialno'].forEach((name) => {
+            const el = addItemForm.querySelector(`[name="${name}"]`);
+            if (!el) {
+                return;
+            }
+            if (isDuplicate) {
+                el.classList.remove('border-gray-300', 'focus:ring-[#003b95]/20');
+                el.classList.add('border-red-500', 'ring-2', 'ring-red-500/40', 'focus:ring-red-500/30');
+            } else {
+                el.classList.add('border-gray-300', 'focus:ring-[#003b95]/20');
+                el.classList.remove('border-red-500', 'ring-2', 'ring-red-500/40', 'focus:ring-red-500/30');
+            }
+        });
+    }
+
+    function resetAddItemDuplicateState() {
+        if (addItemDuplicateCheckTimer) {
+            clearTimeout(addItemDuplicateCheckTimer);
+            addItemDuplicateCheckTimer = null;
+        }
+        addItemDuplicateCheckSeq += 1;
+        lastAddItemDuplicateResult = false;
+        applyAddItemDuplicateFieldStyles(false);
+    }
+
+    async function fetchAddItemDuplicateStatus(options = {}) {
+        const forLiveCheck = options.forLiveCheck !== false;
+
+        if (!addItemForm || !addItemDuplicateCheckUrl) {
+            return false;
+        }
+
+        const prop = (addItemForm.querySelector('[name="property_number"]')?.value ?? '').trim();
+        const acct = (addItemForm.querySelector('[name="rca_acctcode"]')?.value ?? '').trim();
+        const serial = (addItemForm.querySelector('[name="serialno"]')?.value ?? '').trim();
+
+        if (!prop || !acct) {
+            applyAddItemDuplicateFieldStyles(false);
+            lastAddItemDuplicateResult = false;
+            return false;
+        }
+
+        const seq = ++addItemDuplicateCheckSeq;
+
+        try {
+            const url = new URL(addItemDuplicateCheckUrl, window.location.origin);
+            url.searchParams.set('property_number', prop);
+            url.searchParams.set('rca_acctcode', acct);
+            url.searchParams.set('serialno', serial);
+
+            const res = await fetch(url.toString(), {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (seq !== addItemDuplicateCheckSeq) {
+                return lastAddItemDuplicateResult;
+            }
+
+            if (!res.ok) {
+                return lastAddItemDuplicateResult;
+            }
+
+            const data = await res.json();
+            const isDup = !!data.duplicate;
+
+            applyAddItemDuplicateFieldStyles(isDup);
+
+            if (forLiveCheck && isDup && !lastAddItemDuplicateResult) {
+                showFormErrorToast('This item already exists.');
+            }
+
+            lastAddItemDuplicateResult = isDup;
+
+            return isDup;
+        } catch (err) {
+            return lastAddItemDuplicateResult;
+        }
+    }
+
+    function scheduleAddItemDuplicateCheck(immediate) {
+        if (!addItemForm) {
+            return;
+        }
+        if (addItemDuplicateCheckTimer) {
+            clearTimeout(addItemDuplicateCheckTimer);
+            addItemDuplicateCheckTimer = null;
+        }
+        const run = () => {
+            addItemDuplicateCheckTimer = null;
+            void fetchAddItemDuplicateStatus({ forLiveCheck: true });
+        };
+        if (immediate) {
+            run();
+            return;
+        }
+        addItemDuplicateCheckTimer = setTimeout(run, 400);
+    }
+
+    function wireAddItemDuplicateFieldListeners() {
+        if (!addItemForm) {
+            return;
+        }
+        ['property_number', 'rca_acctcode', 'serialno'].forEach((name) => {
+            const el = addItemForm.querySelector(`[name="${name}"]`);
+            if (!el) {
+                return;
+            }
+            el.addEventListener('blur', () => scheduleAddItemDuplicateCheck(true));
+            el.addEventListener('input', () => scheduleAddItemDuplicateCheck(false));
+        });
     }
 
     async function submitAddItemForm(e) {
@@ -2328,6 +2785,13 @@
         }
 
         try {
+            const isDuplicate = await fetchAddItemDuplicateStatus({ forLiveCheck: false });
+            if (isDuplicate) {
+                openModal({ clearDuplicateState: false });
+                showFormErrorToast('This item already exists.');
+                return;
+            }
+
             const formData = new FormData(addItemForm);
 
             if (employeeSelect?.value) {
@@ -2344,14 +2808,26 @@
                 body: formData,
             });
 
+            const payload = await response.json().catch(() => ({}));
+
             if (!response.ok) {
                 if (response.status === 422) {
-                    showFormErrorToast('Please fix the highlighted fields and try again.');
+                    const errs = payload.errors || {};
+                    const dupFields = ['property_number', 'rca_acctcode', 'serialno'];
+                    const isDup422 = dupFields.some((f) => (errs[f] || []).some((m) => String(m).includes('already exists')));
+                    if (isDup422) {
+                        applyAddItemDuplicateFieldStyles(true);
+                        lastAddItemDuplicateResult = true;
+                        showFormErrorToast('This item already exists.');
+                    } else {
+                        showFormErrorToast('Please fix the highlighted fields and try again.');
+                    }
                 }
                 return;
             }
 
             addItemForm.reset();
+            resetAddItemDuplicateState();
             closeModal();
             await loadEmployeeInventory();
             showItemSuccessToast('Equipment added successfully');
@@ -2362,6 +2838,160 @@
 
     if (addItemForm) {
         addItemForm.addEventListener('submit', submitAddItemForm);
+        wireAddItemDuplicateFieldListeners();
+    }
+
+    let editItemFieldDupTimer = null;
+    let editItemFieldDupSeq = 0;
+
+    function getEditInventoryIdFromForm() {
+        if (!editItemForm?.action) {
+            return '';
+        }
+        const m = String(editItemForm.action).match(/\/coordinator\/items\/(\d+)/);
+        return m ? m[1] : '';
+    }
+
+    function setSingleEditItemFieldDuplicateState(fieldName, message) {
+        const errMap = {
+            property_number: { inputName: 'property_number', errId: 'editPropertyNumberError' },
+            rca_acctcode: { inputName: 'rca_acctcode', errId: 'editAccountCodeError' },
+            serialno: { inputName: 'serialno', errId: 'editSerialNumberError' },
+        };
+        const cfg = errMap[fieldName];
+        if (!cfg) {
+            return;
+        }
+        const input = editItemForm?.querySelector(`[name="${cfg.inputName}"]`);
+        const errEl = document.getElementById(cfg.errId);
+        if (message) {
+            if (input) {
+                input.classList.remove('border-gray-300', 'focus:ring-[#003b95]/20');
+                input.classList.add('border-red-500', 'ring-2', 'ring-red-500/40', 'focus:ring-red-500/30');
+            }
+            if (errEl) {
+                errEl.textContent = message;
+                errEl.classList.remove('hidden');
+            }
+        } else {
+            if (input) {
+                input.classList.add('border-gray-300', 'focus:ring-[#003b95]/20');
+                input.classList.remove('border-red-500', 'ring-2', 'ring-red-500/40', 'focus:ring-red-500/30');
+            }
+            if (errEl) {
+                errEl.textContent = '';
+                errEl.classList.add('hidden');
+            }
+        }
+    }
+
+    function applyEditItemDuplicateErrors(errors) {
+        const e = errors || {};
+        setSingleEditItemFieldDuplicateState('property_number', e.property_number || '');
+        setSingleEditItemFieldDuplicateState('rca_acctcode', e.rca_acctcode || '');
+        setSingleEditItemFieldDuplicateState('serialno', e.serialno || '');
+    }
+
+    function resetEditItemDuplicateUi() {
+        if (editItemFieldDupTimer) {
+            clearTimeout(editItemFieldDupTimer);
+            editItemFieldDupTimer = null;
+        }
+        editItemFieldDupSeq += 1;
+        applyEditItemDuplicateErrors({});
+    }
+
+    async function fetchEditItemFieldDuplicates() {
+        const inventoryId = getEditInventoryIdFromForm();
+        if (!editItemForm || !inventoryId) {
+            applyEditItemDuplicateErrors({});
+            return { valid: true, errors: {} };
+        }
+
+        const prop = (editItemForm.querySelector('[name="property_number"]')?.value ?? '').trim();
+        const acct = (editItemForm.querySelector('[name="rca_acctcode"]')?.value ?? '').trim();
+        const serial = (editItemForm.querySelector('[name="serialno"]')?.value ?? '').trim();
+
+        if (!prop || !acct) {
+            applyEditItemDuplicateErrors({});
+            return { valid: true, errors: {} };
+        }
+
+        const seq = ++editItemFieldDupSeq;
+
+        try {
+            const url = new URL(`${window.location.origin}/coordinator/items/${inventoryId}/check-field-duplicates`);
+            url.searchParams.set('property_number', prop);
+            url.searchParams.set('rca_acctcode', acct);
+            url.searchParams.set('serialno', serial);
+
+            const res = await fetch(url.toString(), {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (seq !== editItemFieldDupSeq) {
+                return { valid: true, errors: {} };
+            }
+
+            if (!res.ok) {
+                return { valid: true, errors: {} };
+            }
+
+            const data = await res.json();
+            const errs = data.errors || {};
+            applyEditItemDuplicateErrors(errs);
+
+            return { valid: data.valid !== false, errors: errs };
+        } catch (err) {
+            return { valid: true, errors: {} };
+        }
+    }
+
+    function scheduleEditItemFieldDuplicateCheck(immediate) {
+        if (!editItemForm) {
+            return;
+        }
+        if (editItemFieldDupTimer) {
+            clearTimeout(editItemFieldDupTimer);
+            editItemFieldDupTimer = null;
+        }
+        const run = () => {
+            editItemFieldDupTimer = null;
+            void fetchEditItemFieldDuplicates();
+        };
+        if (immediate) {
+            run();
+            return;
+        }
+        editItemFieldDupTimer = setTimeout(run, 400);
+    }
+
+    function wireEditItemDuplicateFieldListeners() {
+        if (!editItemForm) {
+            return;
+        }
+        ['property_number', 'rca_acctcode', 'serialno'].forEach((name) => {
+            const el = editItemForm.querySelector(`[name="${name}"]`);
+            if (!el) {
+                return;
+            }
+            el.addEventListener('blur', () => scheduleEditItemFieldDuplicateCheck(true));
+            el.addEventListener('input', () => scheduleEditItemFieldDuplicateCheck(false));
+        });
+    }
+
+    function applyEditItemValidationErrorsFrom422(payload) {
+        const raw = payload?.errors || {};
+        const flat = {
+            property_number: (raw.property_number && raw.property_number[0]) ? String(raw.property_number[0]) : '',
+            rca_acctcode: (raw.rca_acctcode && raw.rca_acctcode[0]) ? String(raw.rca_acctcode[0]) : '',
+            serialno: (raw.serialno && raw.serialno[0]) ? String(raw.serialno[0]) : '',
+        };
+        applyEditItemDuplicateErrors(flat);
     }
 
     async function submitEditItemForm(e) {
@@ -2390,6 +3020,16 @@
             return;
         }
 
+        const dupResult = await fetchEditItemFieldDuplicates();
+        if (!dupResult.valid) {
+            const firstMsg = dupResult.errors.property_number
+                || dupResult.errors.rca_acctcode
+                || dupResult.errors.serialno
+                || 'Please fix the duplicate field errors before updating.';
+            showFormErrorToast(firstMsg);
+            return;
+        }
+
         const formData = new FormData(editItemForm);
         formData.set('_method', 'PUT');
 
@@ -2404,11 +3044,20 @@
                 body: formData,
             });
 
-            const data = response.ok ? await response.json().catch(() => ({})) : await response.json().catch(() => ({}));
+            const data = await response.json().catch(() => ({}));
 
             if (!response.ok) {
-                const message = data?.message || (response.status === 422 ? 'Please fix the highlighted fields and try again.' : 'Update failed. Please try again.');
-                showFormErrorToast(message);
+                if (response.status === 422 && data.errors) {
+                    applyEditItemValidationErrorsFrom422(data);
+                    const first = data.errors.property_number?.[0]
+                        || data.errors.rca_acctcode?.[0]
+                        || data.errors.serialno?.[0]
+                        || 'Please fix the highlighted fields and try again.';
+                    showFormErrorToast(String(first));
+                } else {
+                    const message = data?.message || (response.status === 422 ? 'Please fix the highlighted fields and try again.' : 'Update failed. Please try again.');
+                    showFormErrorToast(message);
+                }
                 return;
             }
 
@@ -2422,6 +3071,7 @@
 
     if (editItemForm) {
         editItemForm.addEventListener('submit', submitEditItemForm);
+        wireEditItemDuplicateFieldListeners();
     }
 
     navDashboard.addEventListener('click', showDashboardSection);
@@ -2503,32 +3153,11 @@
     }
 
     function applyAccountabilityFilter() {
-        if (!inventoryPortalTableBody || !accountabilityFilter) {
+        if (!inventoryPortalTableBody) {
             return;
         }
 
-        const filter = accountabilityFilter.value;
-        const rows = inventoryPortalTableBody.querySelectorAll('tr');
-
-        rows.forEach((row) => {
-            const rowAccountability = row.getAttribute('data-accountability') || 'accountable';
-
-            if (filter === 'all') {
-                row.classList.remove('hidden');
-            } else if (filter === 'accountable') {
-                if (rowAccountability === 'accountable') {
-                    row.classList.remove('hidden');
-                } else {
-                    row.classList.add('hidden');
-                }
-            } else if (filter === 'unaccountable') {
-                if (rowAccountability === 'unaccountable') {
-                    row.classList.remove('hidden');
-                } else {
-                    row.classList.add('hidden');
-                }
-            }
-        });
+        refreshInventoryPortalTableView(1);
     }
 
     if (accountabilityFilter) {
@@ -2732,8 +3361,18 @@
         if (editEmployeeCenterField) {
             editEmployeeCenterField.value = button.getAttribute('data-center') || '';
         }
-        if (editEmployeeStatusField) {
-            editEmployeeStatusField.value = button.getAttribute('data-empl-status') || '';
+        if (editEmployeeTypeField) {
+            const typeValue = button.getAttribute('data-employee-type') || '';
+            editEmployeeTypeField.value = (typeValue === 'Plantilla' || typeValue === 'Nonplantilla')
+                ? typeValue
+                : '';
+        }
+
+        if (editEmployeeFormErrorAlert) {
+            editEmployeeFormErrorAlert.classList.remove('show-edit-employee-email-exists');
+        }
+        if (editEmployeeEmailField) {
+            editEmployeeEmailField.classList.remove('ring-2', 'ring-red-500', 'ring-offset-2');
         }
 
         editEmployeeModal.classList.remove('hidden');
@@ -2743,12 +3382,24 @@
         if (!editEmployeeModal) {
             return;
         }
+        if (editEmployeeFormErrorAlert) {
+            editEmployeeFormErrorAlert.classList.remove('show-edit-employee-email-exists');
+        }
+        if (editEmployeeEmailField) {
+            editEmployeeEmailField.classList.remove('ring-2', 'ring-red-500', 'ring-offset-2');
+        }
         editEmployeeModal.classList.add('hidden');
     }
 
     function openAddEmployeeModal() {
         if (!addEmployeeModal) {
             return;
+        }
+        if (addEmployeeFormErrorAlert) {
+            addEmployeeFormErrorAlert.classList.remove('show-add-employee-email-exists');
+        }
+        if (addEmployeeEmailField) {
+            addEmployeeEmailField.classList.remove('ring-2', 'ring-red-500', 'ring-offset-2');
         }
         addEmployeeModal.classList.remove('hidden');
         addEmployeeModal.classList.add('flex');
@@ -2757,6 +3408,12 @@
     function closeAddEmployeeModal() {
         if (!addEmployeeModal) {
             return;
+        }
+        if (addEmployeeFormErrorAlert) {
+            addEmployeeFormErrorAlert.classList.remove('show-add-employee-email-exists');
+        }
+        if (addEmployeeEmailField) {
+            addEmployeeEmailField.classList.remove('ring-2', 'ring-red-500', 'ring-offset-2');
         }
         addEmployeeModal.classList.add('hidden');
         addEmployeeModal.classList.remove('flex');
@@ -2807,10 +3464,18 @@
         const email = addEmployeeForm.querySelector('[name="email"]')?.value;
         const role = addEmployeeForm.querySelector('[name="role"]')?.value;
         const center = addEmployeeForm.querySelector('[name="center"]')?.value;
-        const emplStatus = addEmployeeForm.querySelector('[name="empl_status"]')?.value;
+        const employeeType = addEmployeeForm.querySelector('[name="employee_type"]')?.value;
 
-        if (isBlank(name) || isBlank(email) || isBlank(role) || isBlank(center) || isBlank(emplStatus)) {
+        if (isBlank(name) || isBlank(email) || isBlank(role) || isBlank(center) || isBlank(employeeType)) {
             showFormErrorToast('Please complete all required fields before adding employee.');
+            return;
+        }
+
+        const emailTrimmed = String(email).trim();
+        const atIndex = emailTrimmed.indexOf('@');
+        const domain = atIndex >= 0 ? emailTrimmed.slice(atIndex + 1).toLowerCase() : '';
+        if (atIndex < 1 || domain === '' || !domain.endsWith('.com')) {
+            window.alert('Use an email with any domain that ends with .com (e.g. you@example.com).');
             return;
         }
 
@@ -2839,14 +3504,9 @@
                     }
 
                     const emailErrors = data?.errors?.email;
-                    if (emailErrors) {
-                        const emailMessage = Array.isArray(emailErrors) ? emailErrors[0] : emailErrors;
-                        const emailText = String(emailMessage ?? '');
-                        const isDuplicateEmail = emailText.length > 0 && /already\s+(been\s+)?(taken|registered)|email\s+has\s+already|already registered/i.test(emailText);
-                        if (isDuplicateEmail) {
-                            window.alert(emailText);
-                            return;
-                        }
+                    if (isDuplicateEmailServerError(emailErrors)) {
+                        showAddEmployeeEmailExistsAlert('This email already exists.');
+                        return;
                     }
                 }
                 showFormErrorToast(message);
@@ -2854,9 +3514,9 @@
             }
 
             addEmployeeForm.reset();
-            const statusField = addEmployeeForm.querySelector('[name="empl_status"]');
-            if (statusField) {
-                statusField.value = 'active';
+            const typeField = addEmployeeForm.querySelector('[name="employee_type"]');
+            if (typeField) {
+                typeField.value = 'Plantilla';
             }
             closeAddEmployeeModal();
             await loadEmployees();
@@ -2877,6 +3537,16 @@
 
         event.preventDefault();
 
+        if (editEmployeeEmailField && !editEmployeeEmailField.disabled) {
+            const emailVal = String(editEmployeeEmailField.value || '').trim();
+            const atIndex = emailVal.indexOf('@');
+            const domain = atIndex >= 0 ? emailVal.slice(atIndex + 1).toLowerCase() : '';
+            if (atIndex < 1 || domain === '' || !domain.endsWith('.com')) {
+                showEditEmployeeEmailExistsAlert('Use an email with any domain that ends with .com (e.g. you@example.com).');
+                return;
+            }
+        }
+
         const formData = new FormData(editEmployeeForm);
         formData.set('_method', 'PUT');
 
@@ -2891,13 +3561,29 @@
                 body: formData,
             });
 
+            const data = await response.json().catch(() => ({}));
+
             if (!response.ok) {
+                if (response.status === 422) {
+                    const emailErrors = data?.errors?.email;
+                    if (isDuplicateEmailServerError(emailErrors)) {
+                        showEditEmployeeEmailExistsAlert('This email already exists.');
+                        return;
+                    }
+                    if (emailErrors) {
+                        const emailMsg = Array.isArray(emailErrors) ? emailErrors[0] : emailErrors;
+                        if (emailMsg) {
+                            showEditEmployeeEmailExistsAlert(String(emailMsg));
+                            return;
+                        }
+                    }
+                }
                 return;
             }
 
             closeEditEmployeeModal();
             await loadEmployees();
-            showItemSuccessToast('Employee updated successfully');
+            showItemSuccessToast(data?.message || 'Employee updated successfully');
         } catch (error) {
             // silent fail
         }
@@ -2957,6 +3643,9 @@
             showDashboardSection();
         }
         setTodayDate();
+
+        refreshInventoryPortalTableView(1);
+        applyEmployeeManagementPagination(1);
 
         const loginSuccessToast = document.getElementById('loginSuccessToast');
         if (loginSuccessToast) {

@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -122,9 +123,53 @@ class CoordinatorController extends Controller
         ]);
     }
 
-    public function storeItem(Request $request): RedirectResponse|JsonResponse
+    public function checkItemDuplicate(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'property_number' => ['required', 'string', 'max:8'],
+            'rca_acctcode' => ['required', 'string', 'max:10'],
+            'serialno' => ['nullable', 'string', 'max:30'],
+        ]);
+
+        $propertyNumber = trim($validated['property_number']);
+        $accountCode = trim($validated['rca_acctcode']);
+        $serialRaw = isset($validated['serialno']) ? trim((string) $validated['serialno']) : '';
+        $serialNormalized = $serialRaw === '' ? null : $serialRaw;
+
+        $duplicate = $this->inventoryItemDuplicateExists($propertyNumber, $accountCode, $serialNormalized);
+
+        return response()->json([
+            'duplicate' => $duplicate,
+            'message' => $duplicate ? 'This item already exists.' : null,
+        ]);
+    }
+
+    public function checkEditItemFieldDuplicates(Request $request, int $inventory): JsonResponse
+    {
+        $item = Inventory::query()->findOrFail($inventory);
+
+        $validated = $request->validate([
+            'property_number' => ['required', 'string', 'max:8'],
+            'rca_acctcode' => ['required', 'string', 'max:10'],
+            'serialno' => ['nullable', 'string', 'max:30'],
+        ]);
+
+        $errors = $this->collectEditItemDuplicateFieldErrors(
+            $item,
+            trim($validated['property_number']),
+            trim($validated['rca_acctcode']),
+            trim((string) ($validated['serialno'] ?? ''))
+        );
+
+        return response()->json([
+            'valid' => $errors === [],
+            'errors' => $errors,
+        ]);
+    }
+
+    public function storeItem(Request $request): RedirectResponse|JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
             'employee_id' => ['required', 'string'],
             'property_number' => ['required', 'string', 'max:8', 'unique:inventory_propno_history,prop_no'],
             'rca_acctcode' => ['required', 'string', 'max:10'],
@@ -140,6 +185,39 @@ class CoordinatorController extends Controller
             'end_user' => ['nullable', 'string', 'max:20'],
             'remarks' => ['nullable', 'string', 'max:500'],
         ]);
+
+        $validator->after(function (\Illuminate\Validation\Validator $validator) use ($request): void {
+            $propertyNumber = trim((string) $request->input('property_number', ''));
+            $accountCode = trim((string) $request->input('rca_acctcode', ''));
+
+            if ($propertyNumber === '' || $accountCode === '') {
+                return;
+            }
+
+            if (strlen($propertyNumber) > 8 || strlen($accountCode) > 10) {
+                return;
+            }
+
+            $serialRaw = trim((string) $request->input('serialno', ''));
+
+            if (strlen($serialRaw) > 30) {
+                return;
+            }
+
+            $serialNormalized = $serialRaw === '' ? null : $serialRaw;
+
+            if (! $this->inventoryItemDuplicateExists($propertyNumber, $accountCode, $serialNormalized)) {
+                return;
+            }
+
+            $message = 'This item already exists.';
+
+            foreach (['property_number', 'rca_acctcode', 'serialno'] as $field) {
+                $validator->errors()->add($field, $message);
+            }
+        });
+
+        $validated = $validator->validate();
 
         $employeeId = $validated['employee_id'];
         $employee = Employee::query()->find($employeeId);
@@ -225,16 +303,10 @@ class CoordinatorController extends Controller
             ->with(['currentPropNo', 'currentUnitCost', 'currentEndUser', 'currentRemarks'])
             ->findOrFail($inventory);
 
-        $currentPropNo = (string) ($item->prop_no ?? '');
-        $incomingPropNo = (string) trim($request->input('property_number', ''));
+        $currentPropNo = (string) trim((string) ($item->prop_no ?? ''));
 
-        $propNoRules = ['required', 'string', 'max:8'];
-        if ($incomingPropNo !== '' && $incomingPropNo !== $currentPropNo) {
-            $propNoRules[] = Rule::unique('inventory_propno_history', 'prop_no');
-        }
-
-        $validated = $request->validate([
-            'property_number' => $propNoRules,
+        $validator = Validator::make($request->all(), [
+            'property_number' => ['required', 'string', 'max:8'],
             'rca_acctcode' => ['required', 'string', 'max:10'],
             'description' => ['required', 'string', 'max:500'],
             'serialno' => ['nullable', 'string', 'max:30'],
@@ -247,9 +319,19 @@ class CoordinatorController extends Controller
             'center' => ['nullable', 'string', 'max:20'],
             'end_user' => ['nullable', 'string', 'max:20'],
             'remarks' => ['nullable', 'string', 'max:500'],
-        ], [
-            'property_number.unique' => 'The property number already exists. Please use a different number.',
         ]);
+
+        $validator->after(function (\Illuminate\Validation\Validator $validator) use ($item, $request): void {
+            $propertyNumber = trim((string) $request->input('property_number', ''));
+            $accountCode = trim((string) $request->input('rca_acctcode', ''));
+            $serialNo = trim((string) $request->input('serialno', ''));
+
+            foreach ($this->collectEditItemDuplicateFieldErrors($item, $propertyNumber, $accountCode, $serialNo) as $field => $message) {
+                $validator->errors()->add($field, $message);
+            }
+        });
+
+        $validated = $validator->validate();
 
         $statusCode = match (strtolower(trim($validated['status']))) {
             'in use' => 'I',
@@ -279,7 +361,7 @@ class CoordinatorController extends Controller
             DB::transaction(function () use ($item, $validated, $updatePayload, $currentPropNo) {
                 $item->update($updatePayload);
 
-                $incomingPropNo = (string) trim($validated['property_number'] ?? '');
+                $incomingPropNo = trim((string) ($validated['property_number'] ?? ''));
                 if ($incomingPropNo !== $currentPropNo && $incomingPropNo !== '') {
                     $item->propNoHistory()->where('is_current', true)->update(['is_current' => false]);
 
@@ -354,7 +436,7 @@ class CoordinatorController extends Controller
         $rules = [
             'employee_name' => ['required', 'string', 'max:255'],
             'center' => ['required', 'string', 'max:255'],
-            'empl_status' => ['required', 'string', 'max:255'],
+            'employee_type' => ['required', 'string', Rule::in(['Plantilla', 'Nonplantilla'])],
         ];
 
         if ($employeeRecord->user_id) {
@@ -363,6 +445,26 @@ class CoordinatorController extends Controller
                 'email',
                 'max:255',
                 Rule::unique('users', 'email')->ignore($employeeRecord->user_id),
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (! is_string($value)) {
+                        $fail('Email domain must end with .com (e.g. you@example.com).');
+
+                        return;
+                    }
+
+                    $normalized = strtolower(trim($value));
+                    $atPos = strpos($normalized, '@');
+                    if ($atPos === false || $atPos < 1 || $atPos === strlen($normalized) - 1) {
+                        $fail('Use a valid email with a domain ending in .com (e.g. you@example.com).');
+
+                        return;
+                    }
+
+                    $domain = substr($normalized, $atPos + 1);
+                    if (! str_ends_with($domain, '.com')) {
+                        $fail('Email domain must end with .com (e.g. you@example.com).');
+                    }
+                },
             ];
         } else {
             $rules['email'] = ['nullable', 'email', 'max:255'];
@@ -374,7 +476,7 @@ class CoordinatorController extends Controller
             $employeeRecord->update([
                 'employee_name' => $validated['employee_name'],
                 'center' => $validated['center'],
-                'empl_status' => $validated['empl_status'],
+                'employee_type' => $validated['employee_type'],
             ]);
 
             if ($employeeRecord->user_id && array_key_exists('email', $validated) && $validated['email'] !== null) {
@@ -402,7 +504,7 @@ class CoordinatorController extends Controller
         $employees = Employee::query()
             ->with('user:id,email,name')
             ->orderBy('employee_id')
-            ->get(['employee_id', 'employee_name', 'center', 'empl_status', 'created_at', 'updated_at', 'user_id']);
+            ->get(['employee_id', 'employee_name', 'center', 'empl_status', 'employee_type', 'created_at', 'updated_at', 'user_id']);
 
         return response()->json([
             'employees' => $employees->map(function (Employee $employee) {
@@ -411,6 +513,7 @@ class CoordinatorController extends Controller
                     'employee_name' => $employee->employee_name,
                     'center' => $employee->center,
                     'empl_status' => $employee->empl_status,
+                    'employee_type' => $employee->employee_type,
                     'email' => $employee->user?->email ?? '',
                     'user_id' => $employee->user_id,
                     'created_at' => $employee->created_at,
@@ -424,23 +527,45 @@ class CoordinatorController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                'unique:users,email',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (! is_string($value)) {
+                        $fail('Email domain must end with .com (e.g. you@example.com).');
+
+                        return;
+                    }
+
+                    $normalized = strtolower(trim($value));
+                    $atPos = strpos($normalized, '@');
+                    if ($atPos === false || $atPos < 1 || $atPos === strlen($normalized) - 1) {
+                        $fail('Use a valid email with a domain ending in .com (e.g. you@example.com).');
+
+                        return;
+                    }
+
+                    $domain = substr($normalized, $atPos + 1);
+                    if (! str_ends_with($domain, '.com')) {
+                        $fail('Email domain must end with .com (e.g. you@example.com).');
+                    }
+                },
+            ],
             'role' => ['required', 'string', 'max:255'],
             'center' => ['required', 'string', 'max:255'],
-            'empl_status' => ['nullable', 'string', 'max:255'],
+            'employee_type' => ['required', 'string', Rule::in(['Plantilla', 'Nonplantilla'])],
         ], [
             'name.required' => 'Employee name is required.',
             'email.required' => 'Email is required.',
             'email.unique' => 'This email is already registered.',
             'role.required' => 'Role is required.',
             'center.required' => 'Center is required.',
+            'employee_type.required' => 'Employee type is required.',
         ]);
 
-        $emplStatusRaw = $validated['empl_status'] ?? '';
-        $emplStatus = trim((string) $emplStatusRaw);
-        if ($emplStatus === '') {
-            $emplStatus = 'active';
-        }
+        $emplStatus = 'active';
 
         $employeeRecord = DB::transaction(function () use ($validated, $emplStatus): Employee {
             $placeholderPassword = Hash::make(Str::random(64));
@@ -472,6 +597,7 @@ class CoordinatorController extends Controller
                 'employee_name' => $user->name,
                 'center' => $validated['center'],
                 'empl_status' => $emplStatus,
+                'employee_type' => $validated['employee_type'],
                 'user_id' => $user->id,
             ]);
         });
@@ -555,5 +681,55 @@ class CoordinatorController extends Controller
         return redirect()
             ->route('admin.coordinator.index')
             ->with('status', 'Employee deleted successfully.');
+    }
+
+    private function inventoryItemDuplicateExists(string $propertyNumber, string $accountCode, ?string $serialNo): bool
+    {
+        return Inventory::query()
+            ->where('current_prop_no', $propertyNumber)
+            ->where('acct_code', $accountCode)
+            ->where(function ($query) use ($serialNo) {
+                if ($serialNo === null) {
+                    $query->whereNull('serial_no')->orWhere('serial_no', '');
+                } else {
+                    $query->where('serial_no', $serialNo);
+                }
+            })
+            ->exists();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function collectEditItemDuplicateFieldErrors(Inventory $item, string $propertyNumber, string $accountCode, string $serialNo): array
+    {
+        $errors = [];
+
+        $currentProp = trim((string) ($item->prop_no ?? $item->current_prop_no ?? ''));
+        $currentAcct = trim((string) ($item->acct_code ?? ''));
+        $currentSerial = trim((string) ($item->serial_no ?? ''));
+
+        if ($propertyNumber !== $currentProp && $propertyNumber !== '') {
+            if (InventoryPropNoHistory::query()
+                ->where('prop_no', $propertyNumber)
+                ->where('inventory_id', '!=', $item->id)
+                ->exists()) {
+                $errors['property_number'] = 'Property number already exists';
+            }
+        }
+
+        if ($serialNo !== $currentSerial && $serialNo !== '') {
+            if (Inventory::query()->whereKeyNot($item->id)->where('serial_no', $serialNo)->exists()) {
+                $errors['serialno'] = 'Serial number already exists';
+            }
+        }
+
+        if ($accountCode !== $currentAcct && $accountCode !== '') {
+            if (Inventory::query()->whereKeyNot($item->id)->where('acct_code', $accountCode)->exists()) {
+                $errors['rca_acctcode'] = 'Account code already exists';
+            }
+        }
+
+        return $errors;
     }
 }

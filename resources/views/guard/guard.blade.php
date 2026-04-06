@@ -112,7 +112,7 @@
                 <div class="reader-wrapper relative w-full">
                     <div id="reader" class="w-full h-full rounded-[20px] overflow-hidden bg-black border-4 border-[#173a6b]"></div>
                     <!-- Success animation overlay -->
-                    <div id="successOverlay" class="absolute inset-0 w-full rounded-[20px] bg-green-500/90 flex items-center justify-center opacity-0 scale-95 pointer-events-none transition-all duration-300 z-20" aria-hidden="true">
+                    <div id="successOverlay" class="absolute inset-0 w-full rounded-[20px] bg-green-500/90 flex items-center justify-center opacity-0 scale-95 pointer-events-none transition-all duration-150 z-20" aria-hidden="true">
                         <div class="flex flex-col items-center gap-3 text-white">
                             <div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-white/30 flex items-center justify-center animate-success-pop">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 md:w-14 md:h-14 text-white drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -458,6 +458,9 @@
         let qrScanner = null;
         let scanning = false;
         let lastScannedText = null;
+        /** True after a valid QR is accepted until the camera scan session is restarted or stopped. */
+        let scanPipelineBusy = false;
+        let successOverlayHideTimer = null;
 
         const defaultView = document.getElementById('defaultView');
         const cameraView = document.getElementById('cameraView');
@@ -556,7 +559,15 @@
             setTimeout(removeToast, duration);
         }
 
+        function clearSuccessOverlayTimer() {
+            if (successOverlayHideTimer !== null) {
+                clearTimeout(successOverlayHideTimer);
+                successOverlayHideTimer = null;
+            }
+        }
+
         function showSuccessAnimation() {
+            clearSuccessOverlayTimer();
             successOverlay.classList.remove('opacity-0', 'scale-95');
             successOverlay.classList.add('opacity-100', 'scale-100');
         }
@@ -564,6 +575,18 @@
         function hideSuccessOverlay() {
             successOverlay.classList.add('opacity-0', 'scale-95');
             successOverlay.classList.remove('opacity-100', 'scale-100');
+        }
+
+        function scheduleHideSuccessOverlay(delayMs) {
+            clearSuccessOverlayTimer();
+            successOverlayHideTimer = window.setTimeout(() => {
+                successOverlayHideTimer = null;
+                hideSuccessOverlay();
+            }, delayMs);
+        }
+
+        function releaseScanPipeline() {
+            scanPipelineBusy = false;
         }
 
         function openModal() {
@@ -586,6 +609,7 @@
             scanModal.classList.add('hidden');
             scanModal.classList.remove('flex');
             closeLogTypePicker();
+            clearSuccessOverlayTimer();
             hideSuccessOverlay();
             if (scanning) {
                 await restartScanner();
@@ -593,7 +617,11 @@
         }
 
         async function restartScanner() {
-            if (!qrScanner || !scanning) return;
+            if (!qrScanner || !scanning) {
+                releaseScanPipeline();
+                lastScannedText = null;
+                return;
+            }
             try {
                 await qrScanner.stop();
                 await qrScanner.clear();
@@ -604,9 +632,10 @@
             lastScannedText = null;
             qrScanner = null;
             if (savedCameraId) {
-                await new Promise(r => setTimeout(r, 300));
+                await new Promise(r => setTimeout(r, 80));
                 await startScannerWithCamera(savedCameraId);
             }
+            releaseScanPipeline();
         }
 
         async function startScannerWithCamera(cameraId) {
@@ -623,23 +652,34 @@
                 await qrScanner.start(
                     cameraId,
                     {
-                        fps: 10,
-                        qrbox: { width: qrSide, height: qrSide }
+                        fps: 15,
+                        qrbox: { width: qrSide, height: qrSide },
                     },
                     async (decodedText) => {
-                        if (decodedText === lastScannedText) return;
+                        if (scanPipelineBusy || decodedText === lastScannedText) {
+                            return;
+                        }
+
                         lastScannedText = decodedText;
 
                         try {
                             const parsedData = JSON.parse(decodedText);
+                            scanPipelineBusy = true;
+
+                            if (qrScanner && typeof qrScanner.pause === 'function') {
+                                try {
+                                    await qrScanner.pause(true);
+                                } catch (pauseErr) {
+                                    console.error(pauseErr);
+                                }
+                            }
+
+                            lastQrPayload = parsedData;
+                            currentGatepassNo = parsedData.gatepass_no || null;
+                            selectedLogType = null;
+                            openLogTypePicker(currentGatepassNo);
                             showSuccessAnimation();
-                            setTimeout(() => {
-                                hideSuccessOverlay();
-                                lastQrPayload = parsedData;
-                                currentGatepassNo = parsedData.gatepass_no || null;
-                                selectedLogType = null;
-                                openLogTypePicker(currentGatepassNo);
-                            }, 700);
+                            scheduleHideSuccessOverlay(200);
                         } catch (e) {
                             showError("Scanned QR code is not valid.");
                             lastScannedText = null;
@@ -651,6 +691,8 @@
                 scanning = true;
             } catch (error) {
                 console.error(error);
+                releaseScanPipeline();
+                lastScannedText = null;
                 showError("Camera failed to open. Please allow camera permission and use localhost or HTTPS.");
             }
         }
@@ -861,13 +903,21 @@
             renderGatepassItemsRows(mapped);
         }
 
-        async function refreshGatepassItemsFromServer(gatepassNo) {
+        /**
+         * @param {string} gatepassNo
+         * @param {Object} [options]
+         * @param {boolean} [options.showLoadingRow] defaults to true when omitted
+         */
+        async function refreshGatepassItemsFromServer(gatepassNo, options = {}) {
+            const showLoadingRow = options.showLoadingRow !== false;
             const itemsTable = document.getElementById('modalItemsTable');
-            itemsTable.innerHTML = `
+            if (showLoadingRow) {
+                itemsTable.innerHTML = `
                 <tr>
                     <td colspan="5" class="px-4 py-4 text-center text-gray-500">Loading items…</td>
                 </tr>
             `;
+            }
 
             try {
                 const res = await fetch(`/guard/gatepass-items?gatepass_no=${encodeURIComponent(gatepassNo)}`, {
@@ -897,7 +947,7 @@
             }
         }
 
-        async function fillModal(data) {
+        function fillModal(data) {
             lastQrPayload = data;
             currentGatepassNo = data.gatepass_no || null;
             document.getElementById('modalGatepassNo').textContent = data.gatepass_no || 'N/A';
@@ -913,7 +963,8 @@
 
             if (currentGatepassNo) {
                 refreshSelectedLogInfo();
-                await refreshGatepassItemsFromServer(currentGatepassNo);
+                renderQrFallbackItems(data);
+                void refreshGatepassItemsFromServer(currentGatepassNo, { showLoadingRow: false });
             }
         }
 
@@ -955,6 +1006,9 @@
         }
 
         async function stopScanner() {
+            clearSuccessOverlayTimer();
+            hideSuccessOverlay();
+            releaseScanPipeline();
             if (qrScanner && scanning) {
                 try {
                     await qrScanner.stop();
@@ -1052,7 +1106,7 @@
                 showToast(data?.message || 'Recorded successfully', 'success');
 
                 refreshSelectedLogInfo();
-                await refreshGatepassItemsFromServer(currentGatepassNo);
+                await refreshGatepassItemsFromServer(currentGatepassNo, { showLoadingRow: false });
                 closeModal();
             } catch (e) {
                 console.error(e);
@@ -1251,7 +1305,7 @@
             }
         });
 
-        pickOutgoingBtn.addEventListener('click', async () => {
+        pickOutgoingBtn.addEventListener('click', () => {
             if (!lastQrPayload) {
                 showToast('No scanned gatepass found.', 'error');
                 return;
@@ -1259,11 +1313,11 @@
 
             selectedLogType = 'OUTGOING';
             closeLogTypePicker();
-            await fillModal(lastQrPayload);
+            fillModal(lastQrPayload);
             openModal();
         });
 
-        pickIncomingBtn.addEventListener('click', async () => {
+        pickIncomingBtn.addEventListener('click', () => {
             if (!lastQrPayload) {
                 showToast('No scanned gatepass found.', 'error');
                 return;
@@ -1271,7 +1325,7 @@
 
             selectedLogType = 'INCOMING';
             closeLogTypePicker();
-            await fillModal(lastQrPayload);
+            fillModal(lastQrPayload);
             openModal();
         });
 
