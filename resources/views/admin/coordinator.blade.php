@@ -244,22 +244,17 @@
 
                 <!-- DASHBOARD SECTION -->
                 <div id="dashboardSection">
+                    @php
+                        $trackerCount = collect($dashboardTrackerMovements ?? [])->count();
+                    @endphp
                     <!-- Stat Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-                        <button id="cardAccountable" type="button"
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <button id="cardTracker" type="button"
                             class="stat-card text-left bg-white border-2 border-[#2f73ff] rounded-[18px] px-6 py-6 min-h-[200px] transition">
-                            <p class="text-[16px] text-[#556b86] mb-3">Accountable</p>
-                            <h3 class="text-[28px] font-semibold text-black leading-none mb-10">{{ $accountableCount }}</h3>
-                            <p class="text-[14px] text-[#556b86] mb-2">Equipment items</p>
-                            <p class="text-[14px] text-[#1f54ff] font-medium">Click to view →</p>
-                        </button>
-
-                        <button id="cardUnaccountable" type="button"
-                            class="stat-card text-left bg-white border border-gray-200 rounded-[18px] px-6 py-6 min-h-[200px] transition hover:border-[#2f73ff]">
-                            <p class="text-[16px] text-[#556b86] mb-3">Unaccountable</p>
-                            <h3 class="text-[28px] font-semibold text-black leading-none mb-10">{{ $unaccountableCount }}</h3>
-                            <p class="text-[14px] text-[#556b86] mb-2">Equipment items</p>
-                            <p class="text-[14px] text-[#ff5a00] font-medium">Click to view →</p>
+                            <p class="text-[16px] text-[#556b86] mb-3">Items Tracker</p>
+                            <h3 class="text-[28px] font-semibold text-black leading-none mb-10">{{ $trackerCount }}</h3>
+                            <p class="text-[14px] text-[#556b86] mb-2">Latest movements</p>
+                            <p class="text-[14px] text-[#2f73ff] font-medium">Click to view →</p>
                         </button>
 
                         <button id="cardTotal" type="button"
@@ -275,15 +270,23 @@
                     <div class="bg-white border border-gray-200 rounded-[18px] overflow-hidden">
                         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between px-6 py-6">
                             <div class="min-w-0">
-                                <h3 id="tableTitle" class="text-[17px] font-semibold text-black">Accountable Equipment</h3>
-                                <p id="tableDescription" class="text-[14px] text-[#667085] mt-1">Showing 0 accountable items</p>
+                                <h3 id="tableTitle" class="text-[17px] font-semibold text-black">Items Tracker</h3>
+                                <p id="tableDescription" class="text-[14px] text-[#667085] mt-1">Showing {{ $trackerCount }} movement record(s)</p>
                             </div>
                         </div>
 
                         <div class="px-6">
                             <div class="overflow-x-auto rounded-2xl">
                                 <table class="w-full min-w-[900px]">
-                                    <thead>
+                                    <thead id="tableHeadTracker">
+                                        <tr class="bg-[#003b95] text-white text-left">
+                                            <th class="px-4 py-4 text-[14px] font-semibold">#</th>
+                                            <th class="px-4 py-4 text-[14px] font-semibold">Property Number</th>
+                                            <th class="px-4 py-4 text-[14px] font-semibold">Description</th>
+                                            <th class="px-4 py-4 text-[14px] font-semibold">Latest Movement Date and Time</th>
+                                        </tr>
+                                    </thead>
+                                    <thead id="tableHeadTotal" class="hidden">
                                         <tr class="bg-[#003b95] text-white text-left">
                                             <th class="px-4 py-4 text-[14px] font-semibold">#</th>
                                             <th class="px-4 py-4 text-[14px] font-semibold">Property Number</th>
@@ -293,42 +296,19 @@
                                         </tr>
                                     </thead>
 
-                                    <tbody id="tbodyAccountable" class="hidden">
-                                        @foreach($dashboardAccountableItems as $index => $item)
-                                            <tr class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} text-[14px] text-[#111827]">
+                                    <tbody id="tbodyTracker" class="hidden">
+                                        @foreach($dashboardTrackerMovements as $index => $movement)
+                                            <tr
+                                                class="tracker-item-row {{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} text-[14px] text-[#111827] cursor-pointer hover:bg-blue-50 transition"
+                                                data-prop-no="{{ $movement['prop_no'] ?? '' }}"
+                                                data-description="{{ $movement['description'] ?? '' }}"
+                                                data-incoming-history="{{ e(json_encode($movement['incoming_history'] ?? [])) }}"
+                                                data-outgoing-history="{{ e(json_encode($movement['outgoing_history'] ?? [])) }}"
+                                            >
                                                 <td class="px-4 py-3 align-top">{{ $index + 1 }}</td>
-                                                <td class="px-4 py-3 align-top">{{ $item->prop_no }}</td>
-                                                <td class="px-4 py-3 align-top">{{ $item->description }}</td>
-                                                <td class="px-4 py-3 align-top">{{ $item->employee?->employee_name ?? '' }}</td>
-                                                @php
-                                                    $dashStatusLabel = match ($item->status) {
-                                                        'A' => 'Active',
-                                                        'I' => 'In Use',
-                                                        'D' => 'Defective/Disposed',
-                                                        default => $item->status,
-                                                    };
-                                                @endphp
-                                                <td class="px-4 py-3 align-top">{{ $dashStatusLabel }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-
-                                    <tbody id="tbodyUnaccountable" class="hidden">
-                                        @foreach($dashboardUnaccountableItems as $index => $item)
-                                            <tr class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} text-[14px] text-[#111827]">
-                                                <td class="px-4 py-3 align-top">{{ $index + 1 }}</td>
-                                                <td class="px-4 py-3 align-top">{{ $item->prop_no }}</td>
-                                                <td class="px-4 py-3 align-top">{{ $item->description }}</td>
-                                                <td class="px-4 py-3 align-top"></td>
-                                                @php
-                                                    $dashStatusLabel = match ($item->status) {
-                                                        'A' => 'Active',
-                                                        'I' => 'In Use',
-                                                        'D' => 'Defective/Disposed',
-                                                        default => $item->status,
-                                                    };
-                                                @endphp
-                                                <td class="px-4 py-3 align-top">{{ $dashStatusLabel }}</td>
+                                                <td class="px-4 py-3 align-top">{{ $movement['prop_no'] ?? '' }}</td>
+                                                <td class="px-4 py-3 align-top">{{ $movement['description'] ?? '' }}</td>
+                                                <td class="px-4 py-3 align-top">{{ $movement['latest_movement_datetime'] ?? 'N/A' }}</td>
                                             </tr>
                                         @endforeach
                                     </tbody>
@@ -355,35 +335,13 @@
                                 </table>
                             </div>
 
-                            @if($accountableCount > 0)
-                                <div id="accountablePagination"
-                                     class="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                    <button
-                                        id="accountablePrevBtn"
-                                        type="button"
-                                        class="h-[40px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] font-semibold text-black hover:bg-gray-50 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >
-                                        Prev
-                                    </button>
-                                    <div id="accountablePageInfo" class="text-[14px] font-semibold text-[#556b86]">
-                                        Page 1
-                                    </div>
-                                    <button
-                                        id="accountableNextBtn"
-                                        type="button"
-                                        class="h-[40px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] font-semibold text-black hover:bg-gray-50 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >
-                                        Next
-                                    </button>
-                                </div>
-                            @endif
-
                             <div
                                 id="emptyState"
-                                class="py-12 text-center text-[#98a2b3] text-[15px] border-b border-gray-200 {{ $accountableCount > 0 ? 'hidden' : '' }}"
+                                class="py-12 text-center text-[#98a2b3] text-[15px] border-b border-gray-200 {{ $trackerCount > 0 ? 'hidden' : '' }}"
                             >
                                 No inventory data available yet.
                             </div>
+
                         </div>
                     </div>
                 </div>
@@ -529,6 +487,9 @@
                                                         data-center="{{ $item->center ?? $selectedEmployee?->center ?? '' }}"
                                                         data-accountability="{{ $item->accountability ?? 'Accountable' }}"
                                                         data-end-user="{{ $item->end_user ?? '' }}"
+                                                        data-movement-type="{{ $item->latest_movement['type'] ?? '' }}"
+                                                        data-movement-requester="{{ $item->latest_movement['requester_name'] ?? '' }}"
+                                                        data-movement-datetime="{{ $item->latest_movement['datetime'] ?? '' }}"
                                                         title="See more details"
                                                     >
                                                         <i class="fa-solid fa-eye"></i>
@@ -1275,6 +1236,38 @@
         </main>
     </div>
 
+    <div id="trackerHistoryModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/45 px-4 py-6">
+        <div class="w-full max-w-3xl rounded-2xl bg-white shadow-2xl overflow-hidden">
+            <div class="bg-[#003b95] px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h3 id="trackerHistoryTitle" class="text-white text-[18px] font-bold">Item Movement History</h3>
+                    <p id="trackerHistorySubtitle" class="text-white/80 text-[13px] mt-1">Incoming and outgoing records</p>
+                </div>
+                <button id="closeTrackerHistoryModal" type="button" class="text-white text-[20px] hover:text-white/80 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="px-6 py-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                        <p class="text-[13px] font-semibold text-emerald-800 mb-3">Incoming History (Date and Time)</p>
+                        <ul id="incomingHistoryList" class="space-y-2 text-[13px] text-[#14532d]"></ul>
+                    </div>
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                        <p class="text-[13px] font-semibold text-amber-800 mb-3">Outgoing History (Date and Time)</p>
+                        <ul id="outgoingHistoryList" class="space-y-2 text-[13px] text-[#78350f]"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+                <button id="dismissTrackerHistoryModal" type="button"
+                    class="px-4 h-[38px] rounded-xl border border-gray-300 text-[13px] font-medium text-[#111827] hover:bg-gray-100 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- See More Modal -->
     <div id="seeMoreModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6">
         <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
@@ -1309,6 +1302,22 @@
                         <span class="font-semibold text-[#4b5563]">End User:</span>
                         <div class="min-h-[32px] rounded-lg bg-[#f3f4f6] px-3 py-1.5 flex items-center justify-between min-w-0">
                             <span id="seeMoreEndUser" class="text-[13px] text-[#111827] break-words min-w-0">N/A</span>
+                        </div>
+                    </div>
+                    <div class="pt-1">
+                        <p class="text-[12px] font-semibold text-[#4b5563] uppercase tracking-wide mb-2">Incoming / Outgoing Tracker</p>
+                        <div id="seeMoreMovementCard" class="rounded-xl border border-gray-200 bg-[#f8fafc] px-4 py-3 space-y-2">
+                            <p id="seeMoreMovementHeadline" class="text-[13px] font-semibold text-[#334155]">
+                                No incoming/outgoing history available
+                            </p>
+                            <p class="text-[12px] text-[#64748b]">
+                                <span id="seeMoreMovementActorLabel" class="font-medium">Released to / requested by:</span>
+                                <span id="seeMoreMovementActorValue" class="text-[#334155]">N/A</span>
+                            </p>
+                            <p class="text-[12px] text-[#64748b]">
+                                <span class="font-medium">Date and time:</span>
+                                <span id="seeMoreMovementDatetime" class="text-[#334155]">N/A</span>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1491,25 +1500,25 @@
     const pageTitle = document.getElementById('pageTitle');
     const pageSubtitle = document.getElementById('pageSubtitle');
 
-    const cardAccountable = document.getElementById('cardAccountable');
-    const cardUnaccountable = document.getElementById('cardUnaccountable');
+    const cardTracker = document.getElementById('cardTracker');
     const cardTotal = document.getElementById('cardTotal');
 
     const tableTitle = document.getElementById('tableTitle');
     const tableDescription = document.getElementById('tableDescription');
     const tableFooterText = document.getElementById('tableFooterText');
     const emptyState = document.getElementById('emptyState');
+    const tableHeadTracker = document.getElementById('tableHeadTracker');
+    const tableHeadTotal = document.getElementById('tableHeadTotal');
 
-    const tbodyAccountable = document.getElementById('tbodyAccountable');
-    const tbodyUnaccountable = document.getElementById('tbodyUnaccountable');
+    const tbodyTracker = document.getElementById('tbodyTracker');
     const tbodyTotal = document.getElementById('tbodyTotal');
-
-    const accountablePaginationEl = document.getElementById('accountablePagination');
-    const accountablePrevBtn = document.getElementById('accountablePrevBtn');
-    const accountableNextBtn = document.getElementById('accountableNextBtn');
-    const accountablePageInfo = document.getElementById('accountablePageInfo');
-    const accountablePageSize = 5;
-    let accountableCurrentPage = 1;
+    const trackerHistoryModal = document.getElementById('trackerHistoryModal');
+    const closeTrackerHistoryModal = document.getElementById('closeTrackerHistoryModal');
+    const dismissTrackerHistoryModal = document.getElementById('dismissTrackerHistoryModal');
+    const trackerHistoryTitle = document.getElementById('trackerHistoryTitle');
+    const trackerHistorySubtitle = document.getElementById('trackerHistorySubtitle');
+    const incomingHistoryList = document.getElementById('incomingHistoryList');
+    const outgoingHistoryList = document.getElementById('outgoingHistoryList');
 
     const employeeSelect = document.getElementById('employeeSelect');
     const searchInput = document.querySelector('input[name="search"]');
@@ -1574,8 +1583,7 @@
     const addItemDuplicateCheckUrl = @json(route('admin.coordinator.items.duplicate-check'));
 
     const dashboardCounts = {
-        accountable: {{ $accountableCount }},
-        unaccountable: {{ $unaccountableCount }},
+        tracker: {{ $trackerCount }},
         total: {{ $totalCount }},
     };
 
@@ -1596,16 +1604,88 @@
     }
 
     function resetCards() {
-        [cardAccountable, cardUnaccountable, cardTotal].forEach(card => {
+        [cardTracker, cardTotal].forEach(card => {
             card.classList.remove('border-2', 'border-[#2f73ff]');
             card.classList.add('border', 'border-gray-200');
         });
     }
 
     function hideAllTables() {
-        tbodyAccountable.classList.add('hidden');
-        tbodyUnaccountable.classList.add('hidden');
+        tbodyTracker.classList.add('hidden');
         tbodyTotal.classList.add('hidden');
+    }
+
+    function showTableHead(mode) {
+        if (mode === 'tracker') {
+            tableHeadTracker.classList.remove('hidden');
+            tableHeadTotal.classList.add('hidden');
+            return;
+        }
+
+        tableHeadTracker.classList.add('hidden');
+        tableHeadTotal.classList.remove('hidden');
+    }
+
+    function createHistoryListItem(value) {
+        const li = document.createElement('li');
+        li.className = 'rounded-lg bg-white/80 border border-white px-3 py-2';
+        li.textContent = value;
+
+        return li;
+    }
+
+    function renderHistoryList(container, values, emptyLabel) {
+        if (!container) {
+            return;
+        }
+
+        container.innerHTML = '';
+        if (!Array.isArray(values) || values.length === 0) {
+            const li = createHistoryListItem(emptyLabel);
+            container.appendChild(li);
+            return;
+        }
+
+        values.forEach((value) => {
+            const li = createHistoryListItem(String(value));
+            container.appendChild(li);
+        });
+    }
+
+    function closeTrackerHistoryModalDialog() {
+        if (trackerHistoryModal) {
+            trackerHistoryModal.classList.add('hidden');
+            trackerHistoryModal.classList.remove('flex');
+        }
+    }
+
+    function parseHistoryData(row, attributeName) {
+        try {
+            const parsed = JSON.parse(row.getAttribute(attributeName) || '[]');
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function showTrackerHistoryModalFromRow(row) {
+        if (!row || !trackerHistoryModal || !trackerHistoryTitle || !trackerHistorySubtitle) {
+            return;
+        }
+
+        const propNo = String(row.getAttribute('data-prop-no') || '').trim() || 'N/A';
+        const description = String(row.getAttribute('data-description') || '').trim() || 'N/A';
+        const incomingHistory = parseHistoryData(row, 'data-incoming-history');
+        const outgoingHistory = parseHistoryData(row, 'data-outgoing-history');
+
+        trackerHistoryTitle.textContent = `Item Movement History - ${propNo}`;
+        trackerHistorySubtitle.textContent = description;
+
+        renderHistoryList(incomingHistoryList, incomingHistory, 'No incoming history found.');
+        renderHistoryList(outgoingHistoryList, outgoingHistory, 'No outgoing history found.');
+
+        trackerHistoryModal.classList.remove('hidden');
+        trackerHistoryModal.classList.add('flex');
     }
 
     function showEmptyState(message = 'No inventory data available yet.') {
@@ -1632,7 +1712,7 @@
         }
 
         activateSidebar(navDashboard, [navDashboard, navInventoryPortal, navEmployeeManagement]);
-        showAccountable();
+        showTracker();
         if (window.location.hash !== '#dashboard') {
             window.history.replaceState(null, '', '#dashboard');
         }
@@ -1676,94 +1756,24 @@
         loadEmployees();
     }
 
-    function updateAccountablePagination() {
-        if (!tbodyAccountable) {
-            return;
-        }
-
-        const rows = Array.from(tbodyAccountable.querySelectorAll('tr'));
-        const totalRows = rows.length;
-        const totalPages = Math.ceil(totalRows / accountablePageSize) || 1;
-
-        accountableCurrentPage = Math.max(1, Math.min(accountableCurrentPage, totalPages));
-
-        const start = (accountableCurrentPage - 1) * accountablePageSize;
-        const end = start + accountablePageSize;
-
-        let visibleIndex = 0;
-        rows.forEach((tr, idx) => {
-            const isVisible = idx >= start && idx < end;
-            tr.classList.toggle('hidden', !isVisible);
-
-            if (isVisible) {
-                // Re-number the first column per page.
-                const firstTd = tr.querySelector('td:first-child');
-                if (firstTd) {
-                    firstTd.textContent = String(start + visibleIndex + 1);
-                }
-
-                // Keep alternating row colors per page.
-                tr.classList.remove('bg-white', 'bg-gray-50');
-                tr.classList.add(visibleIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50');
-                visibleIndex += 1;
-            }
-        });
-
-        if (accountablePaginationEl) {
-            accountablePaginationEl.classList.toggle('hidden', totalPages <= 1);
-        }
-
-        if (accountablePageInfo) {
-            accountablePageInfo.textContent = `Page ${accountableCurrentPage} of ${totalPages}`;
-        }
-
-        if (accountablePrevBtn) {
-            accountablePrevBtn.disabled = accountableCurrentPage <= 1;
-        }
-
-        if (accountableNextBtn) {
-            accountableNextBtn.disabled = accountableCurrentPage >= totalPages;
-        }
-    }
-
-    function showAccountable() {
+    function showTracker() {
         resetCards();
         hideAllTables();
 
-        cardAccountable.classList.remove('border', 'border-gray-200');
-        cardAccountable.classList.add('border-2', 'border-[#2f73ff]');
-        tbodyAccountable.classList.remove('hidden');
+        cardTracker.classList.remove('border', 'border-gray-200');
+        cardTracker.classList.add('border-2', 'border-[#2f73ff]');
+        tbodyTracker.classList.remove('hidden');
+        showTableHead('tracker');
 
-        tableTitle.textContent = 'Accountable Equipment';
-        tableDescription.textContent = `Showing ${dashboardCounts.accountable} accountable item(s)`;
-        setFooterText(`Showing ${dashboardCounts.accountable} item(s)`);
+        tableTitle.textContent = 'Items Tracker';
+        tableDescription.textContent = `Showing ${dashboardCounts.tracker} item(s) with movement history`;
+        setFooterText(`Showing ${dashboardCounts.tracker} item(s)`);
+        closeTrackerHistoryModalDialog();
 
-        accountableCurrentPage = 1;
-        updateAccountablePagination();
-
-        if (dashboardCounts.accountable > 0) {
+        if (dashboardCounts.tracker > 0) {
             emptyState.classList.add('hidden');
         } else {
-            showEmptyState('No accountable equipment available yet.');
-        }
-    }
-
-    function showUnaccountable() {
-        resetCards();
-        hideAllTables();
-
-        cardUnaccountable.classList.remove('border', 'border-gray-200');
-        cardUnaccountable.classList.add('border-2', 'border-[#2f73ff]');
-        tbodyUnaccountable.classList.remove('hidden');
-
-        tableTitle.textContent = 'Unaccountable Equipment';
-        tableDescription.textContent = `Showing ${dashboardCounts.unaccountable} unaccountable item(s)`;
-        setFooterText(`Showing ${dashboardCounts.unaccountable} item(s)`);
-
-        if (dashboardCounts.unaccountable > 0) {
-            emptyState.classList.add('hidden');
-        } else {
-            showEmptyState('No unaccountable equipment available yet.');
+            showEmptyState('No incoming/outgoing movement records available yet.');
         }
     }
 
@@ -1774,10 +1784,12 @@
         cardTotal.classList.remove('border', 'border-gray-200');
         cardTotal.classList.add('border-2', 'border-[#2f73ff]');
         tbodyTotal.classList.remove('hidden');
+        showTableHead('total');
 
         tableTitle.textContent = 'Total Inventory Items';
         tableDescription.textContent = `Showing ${dashboardCounts.total} total item(s)`;
         setFooterText(`Showing ${dashboardCounts.total} item(s)`);
+        closeTrackerHistoryModalDialog();
 
         if (dashboardCounts.total > 0) {
             emptyState.classList.add('hidden');
@@ -2551,6 +2563,9 @@
                                 data-center="${item.center ?? data.selectedEmployee?.center ?? ''}"
                                 data-accountability="${item.accountability ?? 'Accountable'}"
                                 data-end-user="${item.end_user ?? ''}"
+                                data-movement-type="${item.latest_movement?.type ?? ''}"
+                                data-movement-requester="${item.latest_movement?.requester_name ?? ''}"
+                                data-movement-datetime="${item.latest_movement?.datetime ?? ''}"
                                 title="See more details"
                             >
                                 <i class="fa-solid fa-eye"></i>
@@ -3165,21 +3180,38 @@
         navEmployeeManagement.addEventListener('click', showEmployeeManagementSection);
     }
 
-    cardAccountable.addEventListener('click', showAccountable);
-    cardUnaccountable.addEventListener('click', showUnaccountable);
+    cardTracker.addEventListener('click', showTracker);
     cardTotal.addEventListener('click', showTotal);
 
-    if (accountablePrevBtn) {
-        accountablePrevBtn.addEventListener('click', function () {
-            accountableCurrentPage -= 1;
-            updateAccountablePagination();
+    if (tbodyTracker) {
+        tbodyTracker.addEventListener('click', function (event) {
+            const row = event.target.closest('tr.tracker-item-row');
+            if (!row) {
+                return;
+            }
+
+            tbodyTracker.querySelectorAll('tr.tracker-item-row').forEach((trackerRow) => {
+                trackerRow.classList.remove('ring-2', 'ring-[#2f73ff]');
+            });
+
+            row.classList.add('ring-2', 'ring-[#2f73ff]');
+            showTrackerHistoryModalFromRow(row);
         });
     }
 
-    if (accountableNextBtn) {
-        accountableNextBtn.addEventListener('click', function () {
-            accountableCurrentPage += 1;
-            updateAccountablePagination();
+    if (closeTrackerHistoryModal) {
+        closeTrackerHistoryModal.addEventListener('click', closeTrackerHistoryModalDialog);
+    }
+
+    if (dismissTrackerHistoryModal) {
+        dismissTrackerHistoryModal.addEventListener('click', closeTrackerHistoryModalDialog);
+    }
+
+    if (trackerHistoryModal) {
+        trackerHistoryModal.addEventListener('click', function (event) {
+            if (event.target === trackerHistoryModal) {
+                closeTrackerHistoryModalDialog();
+            }
         });
     }
 
@@ -3256,6 +3288,47 @@
     const seeMoreCenter = document.getElementById('seeMoreCenter');
     const seeMoreAccountability = document.getElementById('seeMoreAccountability');
     const seeMoreEndUser = document.getElementById('seeMoreEndUser');
+    const seeMoreMovementCard = document.getElementById('seeMoreMovementCard');
+    const seeMoreMovementHeadline = document.getElementById('seeMoreMovementHeadline');
+    const seeMoreMovementActorLabel = document.getElementById('seeMoreMovementActorLabel');
+    const seeMoreMovementActorValue = document.getElementById('seeMoreMovementActorValue');
+    const seeMoreMovementDatetime = document.getElementById('seeMoreMovementDatetime');
+
+    function setMovementTrackerFromTarget(target) {
+        const movementType = String(target.getAttribute('data-movement-type') || '').trim().toUpperCase();
+        const movementRequester = formatDetail(target.getAttribute('data-movement-requester'));
+        const movementDatetime = formatDetail(target.getAttribute('data-movement-datetime'));
+
+        if (!seeMoreMovementCard || !seeMoreMovementHeadline || !seeMoreMovementActorLabel || !seeMoreMovementActorValue || !seeMoreMovementDatetime) {
+            return;
+        }
+
+        if (movementType === 'OUTGOING') {
+            seeMoreMovementCard.className = 'rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 space-y-2';
+            seeMoreMovementHeadline.textContent = 'This item is currently out';
+            seeMoreMovementActorLabel.textContent = 'Released to / requested by:';
+            seeMoreMovementActorValue.textContent = movementRequester;
+            seeMoreMovementDatetime.textContent = movementDatetime;
+
+            return;
+        }
+
+        if (movementType === 'INCOMING') {
+            seeMoreMovementCard.className = 'rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 space-y-2';
+            seeMoreMovementHeadline.textContent = 'This item is already back inside';
+            seeMoreMovementActorLabel.textContent = 'Returned by:';
+            seeMoreMovementActorValue.textContent = movementRequester;
+            seeMoreMovementDatetime.textContent = movementDatetime;
+
+            return;
+        }
+
+        seeMoreMovementCard.className = 'rounded-xl border border-gray-200 bg-[#f8fafc] px-4 py-3 space-y-2';
+        seeMoreMovementHeadline.textContent = 'No incoming/outgoing history available';
+        seeMoreMovementActorLabel.textContent = 'Released to / requested by:';
+        seeMoreMovementActorValue.textContent = 'N/A';
+        seeMoreMovementDatetime.textContent = 'N/A';
+    }
 
     if (inventoryPortalTableBody && seeMoreModal) {
         inventoryPortalTableBody.addEventListener('click', function (event) {
@@ -3276,6 +3349,7 @@
             if (seeMoreEndUser) {
                 seeMoreEndUser.textContent = formatDetail(target.getAttribute('data-end-user'));
             }
+            setMovementTrackerFromTarget(target);
 
             seeMoreModal.classList.remove('hidden');
             seeMoreModal.classList.add('flex');

@@ -11,10 +11,12 @@ use App\Models\InventoryPropNoHistory;
 use App\Models\InventoryRemarksHistory;
 use App\Models\InventoryUnitCostHistory;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -58,6 +60,7 @@ class CoordinatorController extends Controller
             ->get();
 
         $dashboardTotalItems = (clone $baseDashboardQuery)->get();
+        $dashboardTrackerMovements = $this->getDashboardTrackerMovements();
 
         $employees = Employee::with('user')
             ->orderBy('employee_id')
@@ -98,6 +101,8 @@ class CoordinatorController extends Controller
                 ->get();
         }
 
+        $items = $this->attachLatestMovementToItems($items);
+
         if ($request->wantsJson()) {
             return response()->json([
                 'selectedEmployee' => $selectedEmployee,
@@ -119,6 +124,7 @@ class CoordinatorController extends Controller
             'dashboardAccountableItems' => $dashboardAccountableItems,
             'dashboardUnaccountableItems' => $dashboardUnaccountableItems,
             'dashboardTotalItems' => $dashboardTotalItems,
+            'dashboardTrackerMovements' => $dashboardTrackerMovements,
             'users' => $users,
         ]);
     }
@@ -696,6 +702,128 @@ class CoordinatorController extends Controller
                 }
             })
             ->exists();
+    }
+
+    /**
+     * @param  Collection<int, Inventory>  $items
+     * @return Collection<int, Inventory>
+     */
+    private function attachLatestMovementToItems(Collection $items): Collection
+    {
+        if ($items->isEmpty()) {
+            return $items;
+        }
+
+        $inventoryIds = $items->pluck('id')->filter()->values()->all();
+        if ($inventoryIds === []) {
+            return $items;
+        }
+
+        $latestRows = DB::table('gatepass_items as gpi')
+            ->join('gatepass_logs as gl', 'gl.gatepass_no', '=', 'gpi.gatepass_no')
+            ->leftJoin('employees as requester', 'requester.employee_id', '=', 'gl.requester_employee_id')
+            ->whereIn('gpi.inventory_id', $inventoryIds)
+            ->whereIn('gl.log_type', ['INCOMING', 'OUTGOING'])
+            ->orderByDesc('gl.log_datetime')
+            ->orderByDesc('gl.log_id')
+            ->get([
+                'gpi.inventory_id',
+                'gl.log_type',
+                'gl.log_datetime',
+                'requester.employee_name as requester_name',
+            ])
+            ->groupBy('inventory_id')
+            ->map(static function ($rows) {
+                $row = $rows->first();
+                if ($row === null) {
+                    return null;
+                }
+
+                $formattedDateTime = null;
+                if (! empty($row->log_datetime)) {
+                    try {
+                        $formattedDateTime = Carbon::parse($row->log_datetime)->format('Y-m-d H:i:s');
+                    } catch (\Throwable) {
+                        $formattedDateTime = (string) $row->log_datetime;
+                    }
+                }
+
+                return [
+                    'type' => (string) ($row->log_type ?? ''),
+                    'datetime' => $formattedDateTime,
+                    'requester_name' => (string) ($row->requester_name ?? ''),
+                ];
+            });
+
+        return $items->map(function (Inventory $item) use ($latestRows): Inventory {
+            $movement = $latestRows->get($item->id);
+            $item->setAttribute('latest_movement', is_array($movement) ? $movement : null);
+
+            return $item;
+        });
+    }
+
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function getDashboardTrackerMovements(): Collection
+    {
+        $rows = DB::table('gatepass_logs as gl')
+            ->join('gatepass_items as gpi', 'gpi.gatepass_no', '=', 'gl.gatepass_no')
+            ->join('inventory as i', 'i.id', '=', 'gpi.inventory_id')
+            ->whereIn('gl.log_type', ['INCOMING', 'OUTGOING'])
+            ->orderByDesc('gl.log_datetime')
+            ->orderByDesc('gl.log_id')
+            ->get([
+                'i.id as inventory_id',
+                'i.current_prop_no as prop_no',
+                'i.description',
+                'gl.log_type',
+                'gl.log_datetime',
+            ]);
+
+        return $rows
+            ->groupBy('inventory_id')
+            ->map(static function (Collection $itemRows): array {
+                $firstRow = $itemRows->first();
+                $incomingHistory = [];
+                $outgoingHistory = [];
+                $latestMovementDatetime = null;
+
+                foreach ($itemRows as $row) {
+                    $formattedDateTime = null;
+                    if (! empty($row->log_datetime)) {
+                        try {
+                            $formattedDateTime = Carbon::parse($row->log_datetime)->format('Y-m-d H:i:s');
+                        } catch (\Throwable) {
+                            $formattedDateTime = (string) $row->log_datetime;
+                        }
+                    }
+
+                    if ($latestMovementDatetime === null && $formattedDateTime !== null) {
+                        $latestMovementDatetime = $formattedDateTime;
+                    }
+
+                    if ((string) $row->log_type === 'INCOMING') {
+                        $incomingHistory[] = $formattedDateTime;
+                    }
+
+                    if ((string) $row->log_type === 'OUTGOING') {
+                        $outgoingHistory[] = $formattedDateTime;
+                    }
+                }
+
+                return [
+                    'inventory_id' => (int) ($firstRow->inventory_id ?? 0),
+                    'prop_no' => (string) ($firstRow->prop_no ?? ''),
+                    'description' => (string) ($firstRow->description ?? ''),
+                    'latest_movement_datetime' => $latestMovementDatetime,
+                    'incoming_history' => array_values(array_filter($incomingHistory)),
+                    'outgoing_history' => array_values(array_filter($outgoingHistory)),
+                ];
+            })
+            ->sortByDesc('latest_movement_datetime')
+            ->values();
     }
 
     /**
