@@ -206,6 +206,46 @@
 
                     </div>
 
+                    <!-- Gate pass search & status filter (submits automatically while typing / on status change) -->
+                    <div class="mb-6 w-full min-w-0">
+                        <form
+                            id="gatepassDashboardFilterForm"
+                            method="GET"
+                            action="{{ route('admin.dashboard') }}"
+                            class="flex w-full min-w-0 flex-col items-stretch gap-3 sm:flex-row sm:flex-nowrap sm:items-center sm:gap-4 md:gap-5"
+                        >
+                            <div class="relative min-w-0 w-full sm:flex-1 sm:min-w-0">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-[18px] pointer-events-none" aria-hidden="true">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                </span>
+                                <label for="gp_q" class="sr-only">Search by gate pass number</label>
+                                <input
+                                    id="gp_q"
+                                    type="search"
+                                    name="gp_q"
+                                    value="{{ $gatepassListSearch ?? '' }}"
+                                    placeholder="Search gate pass number…"
+                                    autocomplete="off"
+                                    class="w-full h-[48px] rounded-2xl border border-gray-300 bg-white pl-12 pr-4 text-[16px] text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#003b95]/25 focus:border-[#003b95]"
+                                >
+                            </div>
+                            <div class="w-full shrink-0 sm:w-[200px] sm:max-w-[220px] sm:flex-none">
+                                <label for="gp_status" class="sr-only">Filter by status</label>
+                                <select
+                                    id="gp_status"
+                                    name="gp_status"
+                                    class="w-full h-[48px] rounded-2xl border border-gray-300 bg-white px-4 text-[16px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#003b95]/25 focus:border-[#003b95]"
+                                >
+                                    <option value="" @selected(($gatepassListStatus ?? '') === '')>Select status</option>
+                                    <option value="pending" @selected(strtolower((string) ($gatepassListStatus ?? '')) === 'pending')>Pending</option>
+                                    <option value="approved" @selected(strtolower((string) ($gatepassListStatus ?? '')) === 'approved')>Approved</option>
+                                    <option value="rejected" @selected(strtolower((string) ($gatepassListStatus ?? '')) === 'rejected')>Rejected</option>
+                                    <option value="returned" @selected(strtolower((string) ($gatepassListStatus ?? '')) === 'returned')>Returned</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+
                     <!-- Dashboard Table -->
                     <div class="bg-white border border-gray-200 overflow-hidden rounded-2xl">
                         <div class="overflow-x-auto rounded-2xl">
@@ -480,37 +520,39 @@
 
                         <!-- Table -->
                         <div class="overflow-x-auto rounded-2xl">
-                            <table class="w-full min-w-[1200px]">
+                            <table class="w-full min-w-[720px]">
                                 <thead>
                                     <tr class="border-b border-gray-200 text-left">
                                         <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Gate Pass No</th>
                                         <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Item Description</th>
-                                        <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Serial Number</th>
-                                        <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Employee</th>
-                                        <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Division</th>
-                                        <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Property Number</th>
-                                        <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Status</th>
+                                        <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Employees</th>
                                     </tr>
                                 </thead>
 
                                 <tbody id="itemTrackingTableBody">
                                     @forelse (($trackedItems ?? null) as $row)
                                         @php
-                                            // Division column should show only the center/office value (no destination).
                                             $office = trim((string) ($row->center ?? ''));
+                                            $divisionForModal = $office !== '' ? $office : '';
                                         @endphp
-                                        <tr class="border-b border-gray-100">
+                                        <tr
+                                            class="border-b border-gray-100 cursor-pointer select-none hover:bg-gray-50/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003b95] focus-visible:ring-inset"
+                                            tabindex="0"
+                                            role="button"
+                                            data-item-tracking-row
+                                            data-tracking-property="{{ e((string) ($row->property_number ?? '')) }}"
+                                            data-tracking-serial="{{ e((string) ($row->serial_no ?? '')) }}"
+                                            data-tracking-division="{{ e($divisionForModal) }}"
+                                            data-tracking-status="{{ e((string) ($row->request_status ?? '')) }}"
+                                            aria-label="View details for gate pass {{ $row->gatepass_no }}"
+                                        >
                                             <td class="px-7 py-5 text-[15px] text-gray-800 whitespace-nowrap">{{ $row->gatepass_no }}</td>
                                             <td class="px-7 py-5 text-[15px] text-gray-800">{{ $row->item_description ?? '—' }}</td>
-                                            <td class="px-7 py-5 text-[15px] text-gray-800 whitespace-nowrap">{{ $row->serial_no ?? '—' }}</td>
                                             <td class="px-7 py-5 text-[15px] text-gray-800">{{ $row->employee_full_name ?? '—' }}</td>
-                                            <td class="px-7 py-5 text-[15px] text-gray-800">{{ $office !== '' ? $office : '—' }}</td>
-                                            <td class="px-7 py-5 text-[15px] text-gray-800 whitespace-nowrap">{{ $row->property_number ?? '—' }}</td>
-                                            <td class="px-7 py-5 text-[15px] text-gray-800 whitespace-nowrap">{{ $row->request_status ?? '—' }}</td>
                                         </tr>
                                     @empty
                                         <tr class="border-b border-gray-200">
-                                            <td colspan="7" class="px-7 py-14 text-center text-gray-400 text-[16px]">
+                                            <td colspan="3" class="px-7 py-14 text-center text-gray-400 text-[16px]">
                                                 No tracked items yet.
                                             </td>
                                         </tr>
@@ -980,6 +1022,63 @@
         </div>
     </div>
 
+    <!-- Item Tracking row detail (property, serial, division, status) -->
+    <div
+        id="itemTrackingDetailModal"
+        class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="itemTrackingDetailTitle"
+    >
+        <div class="w-full max-w-[520px] bg-white rounded-[18px] shadow-2xl overflow-hidden border border-gray-200">
+            <div class="flex items-center justify-between px-7 py-6 border-b border-gray-200">
+                <h2 id="itemTrackingDetailTitle" class="text-[24px] font-bold text-[#003b95]">Item tracking details</h2>
+                <button
+                    type="button"
+                    onclick="closeItemTrackingDetailModal()"
+                    class="text-[#98a2b3] hover:text-black text-[28px] leading-none"
+                    aria-label="Close"
+                >
+                    ×
+                </button>
+            </div>
+
+            <div class="px-7 py-6 space-y-5">
+                <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
+                    <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Property number</p>
+                    <p id="itemTrackingModalProperty" class="mt-2 text-[16px] font-semibold text-gray-900">—</p>
+                </div>
+                <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
+                    <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Serial number</p>
+                    <p id="itemTrackingModalSerial" class="mt-2 text-[16px] font-semibold text-gray-900">—</p>
+                </div>
+                <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
+                    <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Division</p>
+                    <p id="itemTrackingModalDivision" class="mt-2 text-[16px] font-semibold text-gray-900">—</p>
+                </div>
+                <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
+                    <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Status</p>
+                    <div class="mt-2">
+                        <span
+                            id="itemTrackingModalStatus"
+                            class="inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold bg-gray-100 text-gray-800 border border-gray-200"
+                        >—</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 px-7 py-6 flex justify-end">
+                <button
+                    type="button"
+                    onclick="closeItemTrackingDetailModal()"
+                    class="px-6 sm:px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[15px] font-semibold text-black hover:bg-gray-50 transition"
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Gate Pass Details Modal -->
     <div id="gatepassDetailsModal" class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6">
         <div class="w-full max-w-[980px] bg-white rounded-[18px] shadow-2xl overflow-hidden border border-gray-200">
@@ -1276,6 +1375,44 @@
 
         const adminGatepassShowUrlTemplate = "{{ route('admin.gatepass-requests.show', ['gatepassNo' => '__GP__']) }}";
         const adminGatepassStoreQrUrlTemplate = "{{ route('admin.gatepass-requests.store-qr-code', ['gatepassNo' => '__GP__']) }}";
+
+        (function setupGatepassDashboardLiveFilter() {
+            const form = document.getElementById('gatepassDashboardFilterForm');
+            const qInput = document.getElementById('gp_q');
+            const statusSelect = document.getElementById('gp_status');
+
+            if (!form || !qInput || !statusSelect) {
+                return;
+            }
+
+            let debounceTimer = null;
+            const debounceMs = 350;
+
+            function clearDebounce() {
+                if (debounceTimer !== null) {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = null;
+                }
+            }
+
+            function submitFilterForm() {
+                clearDebounce();
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    form.submit();
+                }
+            }
+
+            qInput.addEventListener('input', function () {
+                clearDebounce();
+                debounceTimer = setTimeout(submitFilterForm, debounceMs);
+            });
+
+            statusSelect.addEventListener('change', function () {
+                submitFilterForm();
+            });
+        }());
 
         const navDashboard = document.getElementById('navDashboard');
         const navItemTracking = document.getElementById('navItemTracking');
@@ -1819,7 +1956,17 @@
             }
 
             setupItemTrackingRealtimePagination();
+            setupItemTrackingTableRowModal();
         });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
+            const modal = document.getElementById('itemTrackingDetailModal');
+            if (modal && modal.classList.contains('flex')) {
+                closeItemTrackingDetailModal();
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', function () {
             const form = document.getElementById('newGatePassForm');
             if (form) {
@@ -1846,6 +1993,71 @@
             if (s === 'returned') return 'bg-gray-100 text-gray-800 border border-gray-200';
             if (s === 'active outside') return 'bg-blue-100 text-blue-800 border border-blue-200';
             return 'bg-gray-100 text-gray-800 border border-gray-200';
+        }
+
+        function itemTrackingDetailDisplay(val) {
+            const s = String(val || '').trim();
+            return s === '' ? '—' : s;
+        }
+
+        function openItemTrackingDetailModal(tr) {
+            if (!tr || !tr.dataset) return;
+
+            const modal = document.getElementById('itemTrackingDetailModal');
+            if (!modal) return;
+
+            const propEl = document.getElementById('itemTrackingModalProperty');
+            const serialEl = document.getElementById('itemTrackingModalSerial');
+            const divEl = document.getElementById('itemTrackingModalDivision');
+            const statusEl = document.getElementById('itemTrackingModalStatus');
+
+            if (propEl) {
+                propEl.textContent = itemTrackingDetailDisplay(tr.dataset.trackingProperty);
+            }
+            if (serialEl) {
+                serialEl.textContent = itemTrackingDetailDisplay(tr.dataset.trackingSerial);
+            }
+            if (divEl) {
+                divEl.textContent = itemTrackingDetailDisplay(tr.dataset.trackingDivision);
+            }
+
+            const statusText = itemTrackingDetailDisplay(tr.dataset.trackingStatus);
+            if (statusEl) {
+                statusEl.textContent = statusText;
+                statusEl.className =
+                    'inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold border ' +
+                    statusBadgeClasses(statusText);
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeItemTrackingDetailModal() {
+            const modal = document.getElementById('itemTrackingDetailModal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function setupItemTrackingTableRowModal() {
+            const tbody = document.getElementById('itemTrackingTableBody');
+            if (!tbody || tbody.dataset.modalRowBound === 'true') return;
+            tbody.dataset.modalRowBound = 'true';
+
+            tbody.addEventListener('click', function (e) {
+                const tr = e.target.closest('tr[data-item-tracking-row]');
+                if (!tr) return;
+                openItemTrackingDetailModal(tr);
+            });
+
+            tbody.addEventListener('keydown', function (e) {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                const tr = e.target.closest('tr[data-item-tracking-row]');
+                if (!tr || e.target !== tr) return;
+                e.preventDefault();
+                openItemTrackingDetailModal(tr);
+            });
         }
 
         function showToast(message, type) {

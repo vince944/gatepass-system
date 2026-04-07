@@ -683,7 +683,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div id="employeeManagementPagination" class="hidden flex flex-wrap items-center justify-center gap-2 border-t border-gray-200 px-6 py-4" aria-label="Employee list pagination"></div>
+                        <div id="employeeManagementPagination" class="hidden flex flex-wrap items-center justify-end gap-2 border-t border-gray-200 px-6 py-4" aria-label="Employee list pagination"></div>
                     </div>
                 </div>
 
@@ -2175,6 +2175,91 @@
         }
     }
 
+    /**
+     * Employee Management: prev/next + at most three page number buttons, right-aligned in container.
+     *
+     * @param {number} currentPage
+     * @param {number} totalPages
+     * @param {number} [maxNumbers]
+     * @returns {number[]}
+     */
+    function getEmployeePaginationVisiblePages(currentPage, totalPages, maxNumbers) {
+        const max = maxNumbers ?? 3;
+
+        if (totalPages <= max) {
+            return Array.from({ length: totalPages }, (_, i) => i + 1);
+        }
+
+        const half = Math.floor(max / 2);
+        let start = currentPage - half;
+
+        if (start < 1) {
+            start = 1;
+        }
+
+        if (start + max - 1 > totalPages) {
+            start = totalPages - max + 1;
+        }
+
+        return Array.from({ length: max }, (_, i) => start + i);
+    }
+
+    function renderEmployeePaginationUI(container, currentPage, totalPages, onPageSelect) {
+        if (!container) {
+            return;
+        }
+
+        if (totalPages <= 1) {
+            container.classList.add('hidden');
+            container.innerHTML = '';
+
+            return;
+        }
+
+        container.classList.remove('hidden');
+        container.innerHTML = '';
+
+        const baseBtn = 'min-w-[36px] h-9 rounded-lg text-[14px] font-medium transition px-2 shrink-0';
+        const activeClasses = 'bg-[#003b95] text-white shadow-sm';
+        const inactiveClasses = 'border border-gray-300 bg-white text-black hover:bg-gray-50';
+        const navBtn = `${baseBtn} border border-gray-300 bg-white text-[#111827] hover:bg-gray-50 disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-white px-3`;
+
+        const prevBtn = document.createElement('button');
+        prevBtn.type = 'button';
+        prevBtn.className = navBtn;
+        prevBtn.textContent = 'Prev';
+        prevBtn.setAttribute('aria-label', 'Previous page');
+        prevBtn.disabled = currentPage <= 1;
+        prevBtn.addEventListener('click', () => onPageSelect(currentPage - 1));
+
+        const nextBtn = document.createElement('button');
+        nextBtn.type = 'button';
+        nextBtn.className = navBtn;
+        nextBtn.textContent = 'Next';
+        nextBtn.setAttribute('aria-label', 'Next page');
+        nextBtn.disabled = currentPage >= totalPages;
+        nextBtn.addEventListener('click', () => onPageSelect(currentPage + 1));
+
+        container.appendChild(prevBtn);
+
+        const visiblePages = getEmployeePaginationVisiblePages(currentPage, totalPages, 3);
+
+        visiblePages.forEach((p) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `${baseBtn} ${p === currentPage ? activeClasses : inactiveClasses}`;
+            btn.textContent = String(p);
+            btn.setAttribute('aria-label', `Page ${p}`);
+            if (p === currentPage) {
+                btn.setAttribute('aria-current', 'page');
+            }
+            btn.addEventListener('click', () => onPageSelect(p));
+            container.appendChild(btn);
+        });
+
+        container.appendChild(nextBtn);
+    }
+
     function refreshInventoryPortalTableView(requestedPage) {
         if (!inventoryPortalTableBody) {
             return;
@@ -2279,7 +2364,7 @@
             }
         });
 
-        renderNumberedPaginationUI(
+        renderEmployeePaginationUI(
             employeeManagementPaginationEl,
             employeeManagementCurrentPage,
             totalPages,

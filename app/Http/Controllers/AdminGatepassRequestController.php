@@ -7,8 +7,8 @@ use App\Models\GatepassRequestItem;
 use App\Models\Inventory;
 use Carbon\Carbon;
 use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Logo\Logo;
 use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
+use Endroid\QrCode\Logo\Logo;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Http\JsonResponse;
@@ -41,6 +41,10 @@ class AdminGatepassRequestController extends Controller
 
         $totalCount = GatepassRequest::query()->count();
 
+        $gatepassListSearch = trim((string) $request->query('gp_q', ''));
+        $gatepassListStatusRaw = trim((string) $request->query('gp_status', ''));
+        $gatepassListStatus = strtolower($gatepassListStatusRaw);
+
         $requests = GatepassRequest::query()
             ->with([
                 'requester:employee_id,user_id,employee_name,center',
@@ -50,6 +54,29 @@ class AdminGatepassRequestController extends Controller
             ->orderByDesc('request_date')
             ->orderByDesc('created_at')
             ->get();
+
+        $allowedGatepassDashboardStatuses = ['pending', 'approved', 'rejected', 'returned'];
+
+        $requests = $requests
+            ->filter(function (GatepassRequest $req) use ($gatepassListSearch, $gatepassListStatus, $allowedGatepassDashboardStatuses): bool {
+                if ($gatepassListSearch !== '') {
+                    $needle = strtolower($gatepassListSearch);
+                    $haystack = strtolower((string) $req->gatepass_no);
+
+                    if (! str_contains($haystack, $needle)) {
+                        return false;
+                    }
+                }
+
+                if ($gatepassListStatus !== '' && in_array($gatepassListStatus, $allowedGatepassDashboardStatuses, true)) {
+                    if (strtolower(trim((string) $req->status)) !== $gatepassListStatus) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            ->values();
 
         $search = trim((string) $request->query('q', ''));
         $perPage = 5;
@@ -96,9 +123,15 @@ class AdminGatepassRequestController extends Controller
         $movementTracking = $this->getMovementTrackingStats();
         $gatepassTrendsByFilter = $this->getGatepassTrendsByFilter();
 
+        $gatepassListStatusForForm = in_array($gatepassListStatus, $allowedGatepassDashboardStatuses, true)
+            ? $gatepassListStatus
+            : '';
+
         return view('admin.dashboard', [
             'equipment' => $equipment,
             'requests' => $requests,
+            'gatepassListSearch' => $gatepassListSearch,
+            'gatepassListStatus' => $gatepassListStatusForForm,
             'trackedItems' => $trackedItems,
             'trackedItemsSearch' => $search,
             'showItemTracking' => $request->query('tab') === 'items' || $search !== '',
@@ -459,7 +492,7 @@ class AdminGatepassRequestController extends Controller
                 ->writer(new PngWriter)
                 ->data($qrText)
                 ->size(320)
-                ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
+                ->errorCorrectionLevel(new ErrorCorrectionLevelHigh)
                 ->logo($logo)
                 ->margin(10)
                 ->build();
