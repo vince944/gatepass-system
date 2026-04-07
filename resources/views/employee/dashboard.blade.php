@@ -679,17 +679,17 @@
     </div>
 
     <!-- Gate Pass QR Code Modal -->
-    <div id="gatepassQrModal" class="fixed inset-0 bg-black/55 z-50 hidden items-center justify-center px-4 py-6">
-        <div class="w-full max-w-[560px] bg-white rounded-[18px] shadow-2xl overflow-hidden border border-gray-200">
-            <div class="flex items-center justify-center px-7 py-6 border-b border-gray-200">
-                <h2 class="text-[26px] font-bold text-[#003b95]">Gate Pass QR Code</h2>
+    <div id="gatepassQrModal" class="fixed inset-0 bg-black/55 z-50 hidden items-center justify-center p-3 sm:p-4">
+        <div class="w-full max-w-[520px] sm:max-w-[560px] lg:max-w-[620px] bg-white rounded-[18px] shadow-2xl overflow-hidden border border-gray-200 max-h-[calc(100svh-1.5rem)] sm:max-h-[calc(100svh-2rem)] flex flex-col">
+            <div class="flex items-center justify-center px-5 sm:px-7 py-4 sm:py-6 border-b border-gray-200 shrink-0">
+                <h2 class="text-[20px] sm:text-[24px] lg:text-[26px] font-bold text-[#003b95]">Gate Pass QR Code</h2>
             </div>
 
-            <div class="px-7 py-10">
-                <div class="flex flex-col items-center gap-8">
+            <div class="px-5 sm:px-7 py-6 sm:py-8 overflow-y-auto">
+                <div class="flex flex-col items-center gap-5 sm:gap-8">
                     <div
                         id="gatepassQrCodeContainer"
-                        class="w-full min-h-[280px] flex items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-[#fbfcfe] px-4 py-6"
+                        class="w-full min-h-[220px] sm:min-h-[260px] lg:min-h-[300px] flex items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-[#fbfcfe] px-4 py-6"
                     >
                         <!-- QR loaded/generate here -->
                     </div>
@@ -705,13 +705,13 @@
                 </div>
             </div>
 
-            <div class="border-t border-gray-200 px-7 py-6">
-                <div class="flex flex-col sm:flex-row gap-4 sm:items-stretch sm:justify-between">
+            <div class="border-t border-gray-200 px-5 sm:px-7 py-4 sm:py-6 shrink-0">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-stretch sm:justify-between">
                     <button
                         type="button"
                         id="gatepassQrDownloadBtn"
                         disabled
-                        class="w-full sm:flex-1 flex items-center justify-center h-[52px] rounded-xl bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] text-[16px] font-semibold transition whitespace-nowrap px-6 leading-none disabled:opacity-60 disabled:cursor-not-allowed"
+                        class="w-full sm:flex-1 flex items-center justify-center h-[48px] sm:h-[52px] rounded-xl bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] text-[15px] sm:text-[16px] font-semibold transition whitespace-nowrap px-5 sm:px-6 leading-none disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         Download QR Code
                     </button>
@@ -719,7 +719,7 @@
                     <button
                         type="button"
                         id="gatepassQrCloseBtnBottom"
-                        class="w-full sm:flex-1 flex items-center justify-center h-[52px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[16px] font-semibold transition whitespace-nowrap px-6 leading-none"
+                        class="w-full sm:flex-1 flex items-center justify-center h-[48px] sm:h-[52px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[15px] sm:text-[16px] font-semibold transition whitespace-nowrap px-5 sm:px-6 leading-none"
                     >
                         Close
                     </button>
@@ -1493,7 +1493,7 @@
                     + '<img '
                     + '  src="' + escapeHtml(savedQrUrl) + '" '
                     + '  alt="Gate Pass QR Code" '
-                    + '  class="max-w-[260px] w-full h-auto mx-auto" '
+                    + '  class="w-full h-auto mx-auto max-w-[220px] sm:max-w-[260px] lg:max-w-[320px]" '
                     + '  loading="eager"'
                     + '/>';
             } else {
@@ -1501,7 +1501,7 @@
                     + '<img '
                     + '  src="' + escapeHtml(savedQrUrl) + '" '
                     + '  alt="Gate Pass QR Code" '
-                    + '  class="max-w-[260px] w-full h-auto mx-auto" '
+                    + '  class="w-full h-auto mx-auto max-w-[220px] sm:max-w-[260px] lg:max-w-[320px]" '
                     + '  loading="eager"'
                     + '/>';
             }
