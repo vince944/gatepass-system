@@ -182,6 +182,28 @@
         </div>
 
                 <nav class="px-4 py-4 space-y-3">
+                    <button
+                        id="navGatepassRequest"
+                        type="button"
+                        class="w-full flex items-center gap-4 rounded-2xl px-5 py-4 text-[16px] font-semibold text-left text-white/90 hover:bg-white/10 transition"
+                    >
+                        <i class="fa-regular fa-file-lines text-[18px]"></i>
+                        <span>Gatepass Request</span>
+                    </button>
+
+                    <button
+                        id="navGatepassHistory"
+                        type="button"
+                        class="w-full flex items-center gap-4 rounded-2xl px-5 py-4 text-[16px] font-semibold text-left text-white/90 hover:bg-white/10 transition"
+                    >
+                        <i class="fa-solid fa-clock-rotate-left text-[18px]"></i>
+                        <span>Request History</span>
+                    </button>
+
+                    <div class="px-1 pt-2 pb-1">
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-white/55">Coordinator Control</p>
+                    </div>
+
                     <button id="navDashboard" type="button"
                         class="w-full flex items-center gap-4 bg-[#47698f] rounded-2xl px-5 py-4 text-[16px] font-semibold text-left text-white">
                         <i class="fa-solid fa-border-all text-[18px]"></i>
@@ -227,20 +249,34 @@
                         <p id="pageSubtitle" class="text-[14px] text-[#556b86] mt-2 break-words">List of Inventory</p>
                     </div>
 
-                    <button
-                        id="openAdminProfileModalBtn"
-                        type="button"
-                        onclick="openAdminProfileModal()"
-                        class="h-[42px] w-[42px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white flex items-center justify-center transition shrink-0"
-                        aria-label="Open profile"
-                    >
-                        <i class="fa-regular fa-user"></i>
-                    </button>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <button
+                            id="newRequestBtn"
+                            type="button"
+                            onclick="openRequestModal()"
+                            class="hidden bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] font-semibold text-[14px] px-5 py-2.5 rounded-2xl flex items-center gap-2 transition whitespace-nowrap"
+                        >
+                            <i class="fa-solid fa-plus text-[16px]"></i>
+                            <span>New Request</span>
+                        </button>
+
+                        <button
+                            id="openAdminProfileModalBtn"
+                            type="button"
+                            onclick="openAdminProfileModal()"
+                            class="h-[42px] w-[42px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white flex items-center justify-center transition shrink-0"
+                            aria-label="Open profile"
+                        >
+                            <i class="fa-regular fa-user"></i>
+                        </button>
+                    </div>
                 </div>
             </header>
 
             <!-- Content -->
             <section class="flex-1 min-h-0 w-full max-w-full min-w-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-8 py-7">
+
+                @include('partials.coordinator-employee-gatepass')
 
                 <!-- DASHBOARD SECTION -->
                 <div id="dashboardSection">
@@ -271,18 +307,36 @@
                         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between px-6 py-6">
                             <div class="min-w-0">
                                 <h3 id="tableTitle" class="text-[17px] font-semibold text-black">Items Tracker</h3>
-                                <p id="tableDescription" class="text-[14px] text-[#667085] mt-1">Showing {{ $trackerCount }} movement record(s)</p>
+                                <p id="tableDescription" class="text-[14px] text-[#667085] mt-1">Showing {{ $trackerCount }} item(s) with movement history</p>
+                            </div>
+                        </div>
+
+                        <div id="itemsTrackerSearchWrap" class="hidden px-6 pb-4">
+                            <label for="itemsTrackerSearchInput" class="sr-only">Search items by owner, property number, or description</label>
+                            <div class="relative">
+                                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[#667085]">
+                                    <i class="fa-solid fa-magnifying-glass text-[14px]"></i>
+                                </span>
+                                <input
+                                    type="search"
+                                    id="itemsTrackerSearchInput"
+                                    name="items_tracker_search"
+                                    autocomplete="off"
+                                    placeholder="Search by owner, property number, or description…"
+                                    class="h-[42px] w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 text-[14px] text-black placeholder:text-[#98a2b3] focus:border-[#2f73ff] focus:outline-none focus:ring-2 focus:ring-[#2f73ff]/30"
+                                />
                             </div>
                         </div>
 
                         <div class="px-6">
                             <div class="overflow-x-auto rounded-2xl">
-                                <table class="w-full min-w-[900px]">
+                                <table class="w-full min-w-[1100px]">
                                     <thead id="tableHeadTracker">
                                         <tr class="bg-[#003b95] text-white text-left">
                                             <th class="px-4 py-4 text-[14px] font-semibold">#</th>
                                             <th class="px-4 py-4 text-[14px] font-semibold">Property Number</th>
                                             <th class="px-4 py-4 text-[14px] font-semibold">Description</th>
+                                            <th class="px-4 py-4 text-[14px] font-semibold">Owner</th>
                                             <th class="px-4 py-4 text-[14px] font-semibold">Latest Movement Date and Time</th>
                                         </tr>
                                     </thead>
@@ -300,14 +354,17 @@
                                         @foreach($dashboardTrackerMovements as $index => $movement)
                                             <tr
                                                 class="tracker-item-row {{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} text-[14px] text-[#111827] cursor-pointer hover:bg-blue-50 transition"
+                                                data-row-original-index="{{ $index + 1 }}"
                                                 data-prop-no="{{ $movement['prop_no'] ?? '' }}"
                                                 data-description="{{ $movement['description'] ?? '' }}"
+                                                data-owner-name="{{ e($movement['owner_name'] ?? '—') }}"
                                                 data-incoming-history="{{ e(json_encode($movement['incoming_history'] ?? [])) }}"
                                                 data-outgoing-history="{{ e(json_encode($movement['outgoing_history'] ?? [])) }}"
                                             >
                                                 <td class="px-4 py-3 align-top">{{ $index + 1 }}</td>
                                                 <td class="px-4 py-3 align-top">{{ $movement['prop_no'] ?? '' }}</td>
                                                 <td class="px-4 py-3 align-top">{{ $movement['description'] ?? '' }}</td>
+                                                <td class="px-4 py-3 align-top">{{ $movement['owner_name'] ?? '—' }}</td>
                                                 <td class="px-4 py-3 align-top">{{ $movement['latest_movement_datetime'] ?? 'N/A' }}</td>
                                             </tr>
                                         @endforeach
@@ -333,6 +390,13 @@
                                         @endforeach
                                     </tbody>
                                 </table>
+                            </div>
+
+                            <div
+                                id="trackerSearchNoResults"
+                                class="hidden border-b border-gray-200 py-10 text-center text-[15px] text-[#667085] rounded-b-2xl"
+                            >
+                                No items match your search.
                             </div>
 
                             <div
@@ -615,6 +679,7 @@
                                                         data-user-linked="{{ $employeeRecord->user_id ? '1' : '0' }}"
                                                         data-center="{{ $employeeRecord->center }}"
                                                         data-employee-type="{{ $employeeRecord->employee_type ?? '' }}"
+                                                        data-role="{{ $employeeRecord->user?->role ?? '' }}"
                                                         data-update-url="{{ route('admin.coordinator.employees.update', $employeeRecord->employee_id) }}"
                                                         title="Edit employee"
                                                     >
@@ -903,6 +968,18 @@
                                         <option value="Plantilla">Plantilla</option>
                                         <option value="Nonplantilla">Nonplantilla</option>
                                     </select>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-[14px] font-semibold text-black mb-2">Role</label>
+                                    <input
+                                        id="editEmployeeRoleField"
+                                        type="text"
+                                        name="role"
+                                        autocomplete="off"
+                                        placeholder="e.g. employee"
+                                        class="w-full h-[44px] rounded-xl border border-gray-300 bg-[#f8f8f8] px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
+                                    >
+                                    <p id="editEmployeeRoleHint" class="mt-1 hidden text-[12px] text-gray-500">Role is only available when this employee has a linked user account.</p>
                                 </div>
                             </div>
                             <div class="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200">
@@ -1488,10 +1565,44 @@
         </div>
     </div>
 
+    @php
+        $coordinatorGatepassJs = file_get_contents(resource_path('views/partials/coordinator-gatepass-employee-snippet.js'));
+        $coordinatorGatepassJs = str_replace(
+            "{{ route('employee.gatepass-requests.dashboard') }}",
+            route('employee.gatepass-requests.dashboard'),
+            $coordinatorGatepassJs
+        );
+        $coordinatorGatepassJs = str_replace(
+            "{{ route('employee.gatepass-requests.history') }}",
+            route('employee.gatepass-requests.history'),
+            $coordinatorGatepassJs
+        );
+        $coordinatorGatepassJs = str_replace(
+            "{{ route('employee.gatepass-requests.show', ['gatepass_no' => '__GP__']) }}",
+            route('employee.gatepass-requests.show', ['gatepass_no' => '__GP__']),
+            $coordinatorGatepassJs
+        );
+        $coordinatorGatepassJs = str_replace(
+            "{{ asset('storage') }}",
+            asset('storage'),
+            $coordinatorGatepassJs
+        );
+    @endphp
     <script>
+        {!! $coordinatorGatepassJs !!}
+    </script>
+
+    <script>
+    const gatepassEmployeePanel = document.getElementById('gatepassEmployeePanel');
+    const navGatepassRequest = document.getElementById('navGatepassRequest');
+    const navGatepassHistory = document.getElementById('navGatepassHistory');
+    const newRequestBtn = document.getElementById('newRequestBtn');
+
     const navDashboard = document.getElementById('navDashboard');
     const navInventoryPortal = document.getElementById('navInventoryPortal');
     const navEmployeeManagement = document.getElementById('navEmployeeManagement');
+
+    const sidebarNavAll = [navGatepassRequest, navGatepassHistory, navDashboard, navInventoryPortal, navEmployeeManagement];
 
     const dashboardSection = document.getElementById('dashboardSection');
     const inventoryPortalSection = document.getElementById('inventoryPortalSection');
@@ -1509,6 +1620,10 @@
     const emptyState = document.getElementById('emptyState');
     const tableHeadTracker = document.getElementById('tableHeadTracker');
     const tableHeadTotal = document.getElementById('tableHeadTotal');
+
+    const itemsTrackerSearchWrap = document.getElementById('itemsTrackerSearchWrap');
+    const itemsTrackerSearchInput = document.getElementById('itemsTrackerSearchInput');
+    const trackerSearchNoResults = document.getElementById('trackerSearchNoResults');
 
     const tbodyTracker = document.getElementById('tbodyTracker');
     const tbodyTotal = document.getElementById('tbodyTotal');
@@ -1573,6 +1688,8 @@
     const editEmployeeEmailHint = document.getElementById('editEmployeeEmailHint');
     const editEmployeeCenterField = document.getElementById('editEmployeeCenterField');
     const editEmployeeTypeField = document.getElementById('editEmployeeTypeField');
+    const editEmployeeRoleField = document.getElementById('editEmployeeRoleField');
+    const editEmployeeRoleHint = document.getElementById('editEmployeeRoleHint');
     const openAddEmployeeModalBtn = document.getElementById('openAddEmployeeModal');
     const addEmployeeModal = document.getElementById('addEmployeeModal');
     const addEmployeeForm = document.getElementById('addEmployeeForm');
@@ -1699,7 +1816,172 @@
         }
     }
 
+    function resetTrackerTableRowsToServerOrder() {
+        if (!tbodyTracker) {
+            return;
+        }
+
+        tbodyTracker.querySelectorAll('tr.tracker-item-row').forEach((row) => {
+            row.classList.remove('hidden');
+            const orig = row.getAttribute('data-row-original-index');
+            const firstTd = row.querySelector('td:first-child');
+
+            if (firstTd && orig !== null) {
+                firstTd.textContent = orig;
+            }
+        });
+    }
+
+    function updateTrackerFilterCopy(visibleCount, totalCount, query) {
+        const q = (query || '').trim();
+
+        if (tableDescription) {
+            if (q === '') {
+                tableDescription.textContent = `Showing ${totalCount} item(s) with movement history`;
+            } else if (visibleCount === 0 && totalCount > 0) {
+                tableDescription.textContent = 'No items match your search';
+            } else {
+                tableDescription.textContent = `Showing ${visibleCount} of ${totalCount} item(s) matching your search`;
+            }
+        }
+
+        if (q === '') {
+            setFooterText(`Showing ${totalCount} item(s)`);
+        } else if (visibleCount === 0 && totalCount > 0) {
+            setFooterText('No matches');
+        } else {
+            setFooterText(`Showing ${visibleCount} of ${totalCount} item(s)`);
+        }
+    }
+
+    function applyItemsTrackerFilter() {
+        if (!tbodyTracker || !itemsTrackerSearchInput) {
+            return;
+        }
+
+        const totalCount = dashboardCounts.tracker;
+
+        if (totalCount === 0) {
+            return;
+        }
+
+        const q = (itemsTrackerSearchInput.value || '').trim().toLowerCase();
+        const rows = tbodyTracker.querySelectorAll('tr.tracker-item-row');
+
+        if (q === '') {
+            resetTrackerTableRowsToServerOrder();
+
+            if (trackerSearchNoResults) {
+                trackerSearchNoResults.classList.add('hidden');
+            }
+
+            updateTrackerFilterCopy(totalCount, totalCount, '');
+
+            return;
+        }
+
+        let visible = 0;
+
+        rows.forEach((row) => {
+            const prop = (row.getAttribute('data-prop-no') || '').toLowerCase();
+            const desc = (row.getAttribute('data-description') || '').toLowerCase();
+            const owner = (row.getAttribute('data-owner-name') || '').toLowerCase();
+            const match = prop.includes(q) || desc.includes(q) || owner.includes(q);
+
+            row.classList.toggle('hidden', !match);
+
+            if (match) {
+                visible++;
+            }
+        });
+
+        let n = 0;
+
+        rows.forEach((row) => {
+            if (row.classList.contains('hidden')) {
+                return;
+            }
+
+            n++;
+            const firstTd = row.querySelector('td:first-child');
+
+            if (firstTd) {
+                firstTd.textContent = String(n);
+            }
+        });
+
+        if (trackerSearchNoResults) {
+            trackerSearchNoResults.classList.toggle('hidden', visible !== 0);
+        }
+
+        updateTrackerFilterCopy(visible, totalCount, q);
+    }
+
+    function showCoordinatorGatepassRequestSection() {
+        if (gatepassEmployeePanel) {
+            gatepassEmployeePanel.classList.remove('hidden');
+        }
+
+        dashboardSection.classList.add('hidden');
+        inventoryPortalSection.classList.add('hidden');
+        employeeManagementSection.classList.add('hidden');
+
+        pageSubtitle.textContent = 'My gate pass requests';
+
+        if (openAddItemModal) {
+            openAddItemModal.classList.add('hidden');
+        }
+
+        if (typeof window.coordinatorGatepassLazyInit === 'function') {
+            window.coordinatorGatepassLazyInit();
+        }
+
+        if (typeof window.coordinatorGpShowMyRequestsPanel === 'function') {
+            window.coordinatorGpShowMyRequestsPanel();
+        }
+
+        activateSidebar(navGatepassRequest, sidebarNavAll);
+
+        if (window.location.hash !== '#gatepass-request') {
+            window.history.replaceState(null, '', '#gatepass-request');
+        }
+    }
+
+    function showCoordinatorGatepassHistorySection() {
+        if (gatepassEmployeePanel) {
+            gatepassEmployeePanel.classList.remove('hidden');
+        }
+
+        dashboardSection.classList.add('hidden');
+        inventoryPortalSection.classList.add('hidden');
+        employeeManagementSection.classList.add('hidden');
+
+        pageSubtitle.textContent = 'Request history';
+
+        if (openAddItemModal) {
+            openAddItemModal.classList.add('hidden');
+        }
+
+        if (typeof window.coordinatorGatepassLazyInit === 'function') {
+            window.coordinatorGatepassLazyInit();
+        }
+
+        if (typeof window.coordinatorGpShowHistoryPanel === 'function') {
+            window.coordinatorGpShowHistoryPanel();
+        }
+
+        activateSidebar(navGatepassHistory, sidebarNavAll);
+
+        if (window.location.hash !== '#gatepass-history') {
+            window.history.replaceState(null, '', '#gatepass-history');
+        }
+    }
+
     function showDashboardSection() {
+        if (gatepassEmployeePanel) {
+            gatepassEmployeePanel.classList.add('hidden');
+        }
+
         dashboardSection.classList.remove('hidden');
         inventoryPortalSection.classList.add('hidden');
         employeeManagementSection.classList.add('hidden');
@@ -1707,11 +1989,15 @@
         pageTitle.textContent = 'Dashboard';
         pageSubtitle.textContent = 'List of Inventory';
 
+        if (newRequestBtn) {
+            newRequestBtn.classList.add('hidden');
+        }
+
         if (openAddItemModal) {
             openAddItemModal.classList.add('hidden');
         }
 
-        activateSidebar(navDashboard, [navDashboard, navInventoryPortal, navEmployeeManagement]);
+        activateSidebar(navDashboard, sidebarNavAll);
         showTracker();
         if (window.location.hash !== '#dashboard') {
             window.history.replaceState(null, '', '#dashboard');
@@ -1719,6 +2005,10 @@
     }
 
     function showInventoryPortalSection() {
+        if (gatepassEmployeePanel) {
+            gatepassEmployeePanel.classList.add('hidden');
+        }
+
         dashboardSection.classList.add('hidden');
         inventoryPortalSection.classList.remove('hidden');
         employeeManagementSection.classList.add('hidden');
@@ -1726,17 +2016,25 @@
         pageTitle.textContent = 'Inventory Portal';
         pageSubtitle.textContent = 'Manage all equipment inventory';
 
+        if (newRequestBtn) {
+            newRequestBtn.classList.add('hidden');
+        }
+
         if (openAddItemModal) {
             openAddItemModal.classList.remove('hidden');
         }
 
-        activateSidebar(navInventoryPortal, [navDashboard, navInventoryPortal, navEmployeeManagement]);
+        activateSidebar(navInventoryPortal, sidebarNavAll);
         if (window.location.hash !== '#inventory-portal') {
             window.history.replaceState(null, '', '#inventory-portal');
         }
     }
 
     function showEmployeeManagementSection() {
+        if (gatepassEmployeePanel) {
+            gatepassEmployeePanel.classList.add('hidden');
+        }
+
         dashboardSection.classList.add('hidden');
         inventoryPortalSection.classList.add('hidden');
         employeeManagementSection.classList.remove('hidden');
@@ -1744,11 +2042,15 @@
         pageTitle.textContent = 'Employee Management';
         pageSubtitle.textContent = 'Manage employee records';
 
+        if (newRequestBtn) {
+            newRequestBtn.classList.add('hidden');
+        }
+
         if (openAddItemModal) {
             openAddItemModal.classList.add('hidden');
         }
 
-        activateSidebar(navEmployeeManagement, [navDashboard, navInventoryPortal, navEmployeeManagement]);
+        activateSidebar(navEmployeeManagement, sidebarNavAll);
         if (window.location.hash !== '#employee-management') {
             window.history.replaceState(null, '', '#employee-management');
         }
@@ -1766,15 +2068,29 @@
         showTableHead('tracker');
 
         tableTitle.textContent = 'Items Tracker';
-        tableDescription.textContent = `Showing ${dashboardCounts.tracker} item(s) with movement history`;
-        setFooterText(`Showing ${dashboardCounts.tracker} item(s)`);
         closeTrackerHistoryModalDialog();
+
+        if (itemsTrackerSearchWrap) {
+            itemsTrackerSearchWrap.classList.toggle('hidden', dashboardCounts.tracker === 0);
+        }
+
+        if (itemsTrackerSearchInput) {
+            itemsTrackerSearchInput.value = '';
+        }
+
+        if (trackerSearchNoResults) {
+            trackerSearchNoResults.classList.add('hidden');
+        }
+
+        resetTrackerTableRowsToServerOrder();
 
         if (dashboardCounts.tracker > 0) {
             emptyState.classList.add('hidden');
         } else {
             showEmptyState('No incoming/outgoing movement records available yet.');
         }
+
+        updateTrackerFilterCopy(dashboardCounts.tracker, dashboardCounts.tracker, '');
     }
 
     function showTotal() {
@@ -1790,6 +2106,20 @@
         tableDescription.textContent = `Showing ${dashboardCounts.total} total item(s)`;
         setFooterText(`Showing ${dashboardCounts.total} item(s)`);
         closeTrackerHistoryModalDialog();
+
+        if (itemsTrackerSearchWrap) {
+            itemsTrackerSearchWrap.classList.add('hidden');
+        }
+
+        if (itemsTrackerSearchInput) {
+            itemsTrackerSearchInput.value = '';
+        }
+
+        if (trackerSearchNoResults) {
+            trackerSearchNoResults.classList.add('hidden');
+        }
+
+        resetTrackerTableRowsToServerOrder();
 
         if (dashboardCounts.total > 0) {
             emptyState.classList.add('hidden');
@@ -2426,6 +2756,7 @@
                             data-user-linked="${employeeRecord.user_id ? '1' : '0'}"
                             data-center="${employeeRecord.center ?? ''}"
                             data-employee-type="${employeeRecord.employee_type ?? ''}"
+                            data-role="${employeeRecord.role ?? ''}"
                             data-update-url="/coordinator/employees/${employeeRecord.employee_id ?? ''}"
                             title="Edit employee"
                         >
@@ -3180,8 +3511,20 @@
         navEmployeeManagement.addEventListener('click', showEmployeeManagementSection);
     }
 
+    if (navGatepassRequest) {
+        navGatepassRequest.addEventListener('click', showCoordinatorGatepassRequestSection);
+    }
+
+    if (navGatepassHistory) {
+        navGatepassHistory.addEventListener('click', showCoordinatorGatepassHistorySection);
+    }
+
     cardTracker.addEventListener('click', showTracker);
     cardTotal.addEventListener('click', showTotal);
+
+    if (itemsTrackerSearchInput) {
+        itemsTrackerSearchInput.addEventListener('input', applyItemsTrackerFilter);
+    }
 
     if (tbodyTracker) {
         tbodyTracker.addEventListener('click', function (event) {
@@ -3526,6 +3869,14 @@
                 ? typeValue
                 : '';
         }
+        if (editEmployeeRoleField) {
+            editEmployeeRoleField.value = button.getAttribute('data-role') || '';
+            editEmployeeRoleField.disabled = !userLinked;
+            editEmployeeRoleField.required = userLinked;
+        }
+        if (editEmployeeRoleHint) {
+            editEmployeeRoleHint.classList.toggle('hidden', userLinked);
+        }
 
         if (editEmployeeFormErrorAlert) {
             editEmployeeFormErrorAlert.classList.remove('show-edit-employee-email-exists');
@@ -3706,6 +4057,14 @@
             }
         }
 
+        if (editEmployeeRoleField && !editEmployeeRoleField.disabled) {
+            const roleVal = String(editEmployeeRoleField.value || '').trim();
+            if (roleVal === '') {
+                showFormErrorToast('Role is required for employees with a linked user account.');
+                return;
+            }
+        }
+
         const formData = new FormData(editEmployeeForm);
         formData.set('_method', 'PUT');
 
@@ -3794,7 +4153,11 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        if (window.location.hash === '#employee-management') {
+        if (window.location.hash === '#gatepass-history') {
+            showCoordinatorGatepassHistorySection();
+        } else if (window.location.hash === '#gatepass-request') {
+            showCoordinatorGatepassRequestSection();
+        } else if (window.location.hash === '#employee-management') {
             showEmployeeManagementSection();
         } else if (window.location.hash === '#inventory-portal') {
             showInventoryPortalSection();

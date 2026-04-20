@@ -21,9 +21,7 @@ class EmployeeProfileController extends Controller
         }
 
         /** @var Employee|null $employee */
-        $employee = Employee::query()
-            ->where('user_id', $user->id)
-            ->first();
+        $employee = Employee::resolveForGatepassUser($user);
 
         if ($employee === null) {
             return response()->json([

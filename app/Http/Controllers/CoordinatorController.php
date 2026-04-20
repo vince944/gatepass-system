@@ -111,6 +111,15 @@ class CoordinatorController extends Controller
             ]);
         }
 
+        $authUser = $request->user();
+        $gatepassEmployee = Employee::resolveForGatepassUser($authUser);
+        $gatepassEquipment = $gatepassEmployee
+            ? Inventory::query()
+                ->where('employee_id', $gatepassEmployee->employee_id)
+                ->orderBy('current_prop_no')
+                ->get()
+            : collect();
+
         return view('admin.coordinator', [
             'employees' => $employees,
             'employeeRecords' => $employees,
@@ -126,6 +135,9 @@ class CoordinatorController extends Controller
             'dashboardTotalItems' => $dashboardTotalItems,
             'dashboardTrackerMovements' => $dashboardTrackerMovements,
             'users' => $users,
+            'gatepassEmployee' => $gatepassEmployee,
+            'gatepassEmployeeFullName' => $gatepassEmployee?->employee_name ?? $authUser?->name,
+            'gatepassEquipment' => $gatepassEquipment,
         ]);
     }
 
@@ -472,8 +484,10 @@ class CoordinatorController extends Controller
                     }
                 },
             ];
+            $rules['role'] = ['required', 'string', 'max:255'];
         } else {
             $rules['email'] = ['nullable', 'email', 'max:255'];
+            $rules['role'] = ['nullable', 'string', 'max:255'];
         }
 
         $validated = $request->validate($rules);
@@ -485,11 +499,17 @@ class CoordinatorController extends Controller
                 'employee_type' => $validated['employee_type'],
             ]);
 
-            if ($employeeRecord->user_id && array_key_exists('email', $validated) && $validated['email'] !== null) {
-                User::query()->whereKey($employeeRecord->user_id)->update([
-                    'email' => $validated['email'],
+            if ($employeeRecord->user_id) {
+                $userUpdates = [
                     'name' => $validated['employee_name'],
-                ]);
+                    'role' => $validated['role'],
+                ];
+
+                if (array_key_exists('email', $validated) && $validated['email'] !== null) {
+                    $userUpdates['email'] = $validated['email'];
+                }
+
+                User::query()->whereKey($employeeRecord->user_id)->update($userUpdates);
             }
         });
 
@@ -508,7 +528,7 @@ class CoordinatorController extends Controller
     public function listEmployees(): JsonResponse
     {
         $employees = Employee::query()
-            ->with('user:id,email,name')
+            ->with('user:id,email,name,role')
             ->orderBy('employee_id')
             ->get(['employee_id', 'employee_name', 'center', 'empl_status', 'employee_type', 'created_at', 'updated_at', 'user_id']);
 
@@ -521,6 +541,7 @@ class CoordinatorController extends Controller
                     'empl_status' => $employee->empl_status,
                     'employee_type' => $employee->employee_type,
                     'email' => $employee->user?->email ?? '',
+                    'role' => $employee->user?->role ?? '',
                     'user_id' => $employee->user_id,
                     'created_at' => $employee->created_at,
                     'updated_at' => $employee->updated_at,
@@ -782,7 +803,7 @@ class CoordinatorController extends Controller
                 'gl.log_datetime',
             ]);
 
-        return $rows
+        $movements = $rows
             ->groupBy('inventory_id')
             ->map(static function (Collection $itemRows): array {
                 $firstRow = $itemRows->first();
@@ -824,6 +845,32 @@ class CoordinatorController extends Controller
             })
             ->sortByDesc('latest_movement_datetime')
             ->values();
+
+        $inventoryIds = $movements->pluck('inventory_id')->unique()->filter()->values()->all();
+
+        $ownerNameByInventoryId = collect();
+        if ($inventoryIds !== []) {
+            $ownerNameByInventoryId = Inventory::query()
+                ->whereIn('id', $inventoryIds)
+                ->with(['employee' => static function ($query): void {
+                    $query->select(['employee_id', 'employee_name']);
+                }])
+                ->get()
+                ->mapWithKeys(static function (Inventory $inventory): array {
+                    $name = $inventory->employee?->employee_name;
+
+                    return [
+                        $inventory->id => ($name !== null && trim((string) $name) !== '') ? $name : '—',
+                    ];
+                });
+        }
+
+        return $movements->map(static function (array $row) use ($ownerNameByInventoryId): array {
+            $id = (int) ($row['inventory_id'] ?? 0);
+            $row['owner_name'] = $ownerNameByInventoryId->get($id, '—');
+
+            return $row;
+        });
     }
 
     /**

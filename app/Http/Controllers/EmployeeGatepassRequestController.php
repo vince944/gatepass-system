@@ -6,8 +6,8 @@ use App\Models\Employee;
 use App\Models\GatepassRequest;
 use App\Models\GatepassRequestItem;
 use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Logo\Logo;
 use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
+use Endroid\QrCode\Logo\Logo;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Http\JsonResponse;
@@ -29,14 +29,22 @@ class EmployeeGatepassRequestController extends Controller
         }
 
         /** @var Employee|null $employee */
-        $employee = Employee::query()
-            ->where('user_id', $user->id)
-            ->first();
+        $employee = Employee::resolveForGatepassUser($user);
 
         if ($employee === null) {
             return response()->json([
-                'message' => 'Employee record not found.',
-            ], 422);
+                'data' => [
+                    'counts' => [
+                        'total' => 0,
+                        'pending' => 0,
+                        'approved' => 0,
+                        'returned' => 0,
+                        'active_outside' => 0,
+                        'incoming_partial' => 0,
+                    ],
+                    'requests' => [],
+                ],
+            ]);
         }
 
         $status = (string) $request->query('status', 'All');
@@ -113,14 +121,12 @@ class EmployeeGatepassRequestController extends Controller
         }
 
         /** @var Employee|null $employee */
-        $employee = Employee::query()
-            ->where('user_id', $user->id)
-            ->first();
+        $employee = Employee::resolveForGatepassUser($user);
 
         if ($employee === null) {
             return response()->json([
-                'message' => 'Employee record not found.',
-            ], 422);
+                'data' => [],
+            ]);
         }
 
         $requests = GatepassRequest::query()
@@ -178,6 +184,15 @@ class EmployeeGatepassRequestController extends Controller
             ], 404);
         }
 
+        /** @var Employee|null $employee */
+        $employee = Employee::resolveForGatepassUser($request->user());
+
+        if ($employee === null || $gatepass->requester_employee_id !== $employee->employee_id) {
+            return response()->json([
+                'message' => 'Gate pass request not found.',
+            ], 404);
+        }
+
         return response()->json([
             'data' => [
                 'gatepass_no' => $gatepass->gatepass_no,
@@ -218,9 +233,7 @@ class EmployeeGatepassRequestController extends Controller
             abort(401, 'Unauthorized.');
         }
 
-        $employee = Employee::query()
-            ->where('user_id', $user->id)
-            ->first();
+        $employee = Employee::resolveForGatepassUser($user);
 
         if ($employee === null) {
             abort(403, 'Employee record not found.');
@@ -243,7 +256,7 @@ class EmployeeGatepassRequestController extends Controller
             'gatepass_no' => $requestModel->gatepass_no,
         ]);
 
-        $existingRelativePath = !empty($requestModel->qr_code_path)
+        $existingRelativePath = ! empty($requestModel->qr_code_path)
             ? ltrim((string) $requestModel->qr_code_path, '/')
             : null;
 
@@ -274,7 +287,7 @@ class EmployeeGatepassRequestController extends Controller
 
             Storage::disk('public')->makeDirectory('gatepass_qr');
 
-            $newRelativePath = 'gatepass_qr/' . $requestModel->gatepass_no . '.' . $generated['extension'];
+            $newRelativePath = 'gatepass_qr/'.$requestModel->gatepass_no.'.'.$generated['extension'];
 
             $stored = Storage::disk('public')->put($newRelativePath, $generated['binary']);
 
@@ -316,16 +329,16 @@ class EmployeeGatepassRequestController extends Controller
         }
 
         $qrTextLength = strlen($qrText);
-        
+
         $logo = Logo::create(public_path('images/dap_logo.png'))
-    		->setResizeToWidth(80);
+            ->setResizeToWidth(80);
         try {
             $result = Builder::create()
                 ->writer(new PngWriter)
                 ->data($qrText)
                 ->size(320)
                 ->logo($logo)
-                ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
+                ->errorCorrectionLevel(new ErrorCorrectionLevelHigh)
                 ->margin(2)
                 ->build();
 
@@ -379,9 +392,7 @@ class EmployeeGatepassRequestController extends Controller
         }
 
         /** @var Employee|null $employee */
-        $employee = Employee::query()
-            ->where('user_id', $user->id)
-            ->first();
+        $employee = Employee::resolveForGatepassUser($user);
 
         if ($employee === null) {
             return response()->json([
