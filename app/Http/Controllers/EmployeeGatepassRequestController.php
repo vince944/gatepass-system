@@ -140,7 +140,9 @@ class EmployeeGatepassRequestController extends Controller
                 'gatepass_no',
                 'request_date',
                 'status',
-            ]);
+            ])
+            ->unique('gatepass_no')
+            ->values();
 
         $payload = $requests->map(function (GatepassRequest $requestModel): array {
             return [

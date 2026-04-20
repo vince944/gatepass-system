@@ -88,7 +88,8 @@
 
     <!-- Main Card -->
     <div class="flex items-center justify-center px-4 py-10 md:py-16">
-        <div class="w-full max-w-[620px] bg-[#efefef] rounded-[28px] shadow-2xl px-8 md:px-12 py-10 text-center">
+        <div class="w-full max-w-[980px] flex flex-col gap-6">
+        <div class="w-full max-w-[620px] mx-auto bg-[#efefef] rounded-[28px] shadow-2xl px-8 md:px-12 py-10 text-center">
 
             <!-- Default View -->
             <div id="defaultView">
@@ -136,15 +137,90 @@
 
             <!-- Buttons -->
             <div class="mt-8 flex flex-col gap-4">
-                <button id="startScanBtn"
-                    class="w-full bg-[#f6bf1e] hover:bg-[#e0ac13] text-[#0f3b78] font-bold text-[22px] py-4 rounded-[18px] transition">
-                    Start Scanning
-                </button>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button id="startScanBtn"
+                        class="w-full bg-[#f6bf1e] hover:bg-[#e0ac13] text-[#0f3b78] font-bold text-[22px] py-4 rounded-[18px] transition">
+                        Start Scanning
+                    </button>
+                    <button id="viewHistoryBtn"
+                        class="w-full bg-[#173a6b] hover:bg-[#123154] text-white font-bold text-[20px] py-4 rounded-[18px] transition">
+                        Scanned History
+                    </button>
+                </div>
 
                 <button id="stopScanBtn"
                     class="hidden w-full bg-[#173a6b] hover:bg-[#123154] text-white font-bold text-[20px] py-4 rounded-[18px] transition">
                     Stop Camera
                 </button>
+            </div>
+        </div>
+
+        </div>
+    </div>
+
+    <div id="scannedHistoryModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/50 px-4">
+        <div class="w-full max-w-6xl bg-[#efefef] rounded-[28px] shadow-2xl px-6 md:px-8 py-6 max-h-[88vh] overflow-hidden flex flex-col">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+                <div>
+                    <h3 class="text-[#173a6b] text-2xl md:text-3xl font-bold">Scanned History</h3>
+                    <p class="text-[#173a6b]/80 text-sm md:text-base">Incoming and outgoing gatepass scan activity logs.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="refreshHistoryBtn" type="button"
+                        class="bg-[#f6bf1e] hover:bg-[#e0ac13] text-[#0f3b78] font-semibold text-sm px-4 py-2 rounded-xl transition">
+                        Refresh
+                    </button>
+                    <button id="closeHistoryModalBtn" type="button"
+                        class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl transition">
+                        Close
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-4 flex flex-col sm:flex-row gap-3">
+                <input id="historySearchInput" type="text"
+                    class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-[#173a6b] focus:border-[#173a6b]"
+                    placeholder="Search by gatepass number, employee name, or employee ID">
+                <button id="historySearchBtn" type="button"
+                    class="w-full sm:w-auto bg-[#173a6b] hover:bg-[#123154] text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition">
+                    Search
+                </button>
+            </div>
+
+            <div class="overflow-auto rounded-xl border border-gray-200 bg-white flex-1">
+                <table class="min-w-full text-sm text-left">
+                    <thead class="bg-[#173a6b] text-white">
+                        <tr>
+                            <th class="px-4 py-3 font-semibold">Gatepass No</th>
+                            <th class="px-4 py-3 font-semibold">Scan Date/Time</th>
+                            <th class="px-4 py-3 font-semibold">Status</th>
+                            <th class="px-4 py-3 font-semibold">Employee</th>
+                            <th class="px-4 py-3 font-semibold">Employee ID</th>
+                            <th class="px-4 py-3 font-semibold">Scanned By</th>
+                            <th class="px-4 py-3 font-semibold">Purpose</th>
+                            <th class="px-4 py-3 font-semibold">Destination</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody" class="divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="8" class="px-4 py-5 text-center text-gray-500">No scan records loaded yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <p id="historyPaginationInfo" class="text-sm text-[#173a6b]/80">Page 1 of 1</p>
+                <div class="flex items-center gap-2">
+                    <button id="historyPrevBtn" type="button"
+                        class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        Previous
+                    </button>
+                    <button id="historyNextBtn" type="button"
+                        class="bg-[#173a6b] hover:bg-[#123154] text-white font-semibold text-sm px-4 py-2 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -465,6 +541,16 @@
         const defaultView = document.getElementById('defaultView');
         const cameraView = document.getElementById('cameraView');
         const startBtn = document.getElementById('startScanBtn');
+        const viewHistoryBtn = document.getElementById('viewHistoryBtn');
+        const scannedHistoryModal = document.getElementById('scannedHistoryModal');
+        const historyTableBody = document.getElementById('historyTableBody');
+        const refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
+        const closeHistoryModalBtn = document.getElementById('closeHistoryModalBtn');
+        const historyPaginationInfo = document.getElementById('historyPaginationInfo');
+        const historyPrevBtn = document.getElementById('historyPrevBtn');
+        const historyNextBtn = document.getElementById('historyNextBtn');
+        const historySearchInput = document.getElementById('historySearchInput');
+        const historySearchBtn = document.getElementById('historySearchBtn');
         const stopBtn = document.getElementById('stopScanBtn');
         const errorBox = document.getElementById('errorBox');
         const errorText = document.getElementById('errorText');
@@ -521,6 +607,9 @@
         let lastQrPayload = null;
         let requiresMissingItemsConfirmation = false;
         let isCompletingPartialReturn = false;
+        let historyCurrentPage = 1;
+        let historyLastPage = 1;
+        let historySearchTerm = '';
 
         function showError(message) {
             errorBox.classList.remove('hidden');
@@ -1286,6 +1375,85 @@
             return div.innerHTML;
         }
 
+        function historyStatusBadgeHtml(logType) {
+            const upper = String(logType ?? '').toUpperCase();
+            if (upper === 'INCOMING') {
+                return '<span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-green-100 text-green-800">Incoming</span>';
+            }
+
+            if (upper === 'OUTGOING') {
+                return '<span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-100 text-blue-800">Outgoing</span>';
+            }
+
+            return '<span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700">N/A</span>';
+        }
+
+        function renderHistoryRecords(records) {
+            historyTableBody.innerHTML = '';
+
+            if (!Array.isArray(records) || records.length === 0) {
+                historyTableBody.innerHTML = '<tr><td colspan="8" class="px-4 py-5 text-center text-gray-500">No scanned logs found.</td></tr>';
+                return;
+            }
+
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 align-top';
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-[#173a6b] font-semibold whitespace-nowrap">${escapeHtml(String(record.gatepass_no ?? 'N/A'))}</td>
+                    <td class="px-4 py-3 text-[#173a6b] whitespace-nowrap">${escapeHtml(String(record.log_datetime ? new Date(record.log_datetime).toLocaleString() : 'N/A'))}</td>
+                    <td class="px-4 py-3">${historyStatusBadgeHtml(record.log_type)}</td>
+                    <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.requester_name ?? 'N/A'))}</td>
+                    <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.requester_employee_id ?? 'N/A'))}</td>
+                    <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.scanned_by_guard_name ?? 'N/A'))}</td>
+                    <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.purpose ?? 'N/A'))}</td>
+                    <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.destination ?? 'N/A'))}</td>
+                `;
+                historyTableBody.appendChild(row);
+            });
+        }
+
+        function setHistoryPagination(meta = {}) {
+            historyCurrentPage = Number(meta.current_page || 1);
+            historyLastPage = Number(meta.last_page || 1);
+            const total = Number(meta.total || 0);
+            historyPaginationInfo.textContent = `Page ${historyCurrentPage} of ${historyLastPage} • ${total} record(s)`;
+            historyPrevBtn.disabled = historyCurrentPage <= 1;
+            historyNextBtn.disabled = historyCurrentPage >= historyLastPage;
+        }
+
+        async function loadScannedHistory(page = 1) {
+            historyTableBody.innerHTML = '<tr><td colspan="8" class="px-4 py-5 text-center text-gray-500">Loading scanned history...</td></tr>';
+
+            try {
+                const params = new URLSearchParams({
+                    page: String(page),
+                    per_page: '5',
+                });
+                if (historySearchTerm.trim() !== '') {
+                    params.set('search', historySearchTerm.trim());
+                }
+
+                const res = await fetch(`/guard/gatepass-logs/history?${params.toString()}`, {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                });
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    throw new Error(data?.message || 'Failed to load scanned history.');
+                }
+
+                renderHistoryRecords(data.records || []);
+                setHistoryPagination(data.meta || {});
+            } catch (e) {
+                console.error(e);
+                historyTableBody.innerHTML = '<tr><td colspan="8" class="px-4 py-5 text-center text-red-500">Could not load scan records.</td></tr>';
+                setHistoryPagination({ current_page: 1, last_page: 1, total: 0 });
+                showToast(e?.message || 'Could not load scanned history.', 'error');
+            }
+        }
+
         partialReturnBtn.addEventListener('click', openPartialReturnModal);
         completeReturnBtn.addEventListener('click', openCompleteReturnModal);
         closePartialReturnModal.addEventListener('click', closePartialReturnModalFn);
@@ -1435,6 +1603,63 @@
                 showToast(e?.message || 'Something went wrong.', 'error');
             } finally {
                 rejectModalConfirmBtn.disabled = false;
+            }
+        });
+
+        viewHistoryBtn.addEventListener('click', async () => {
+            scannedHistoryModal.classList.remove('hidden');
+            scannedHistoryModal.classList.add('flex');
+            historyCurrentPage = 1;
+            await loadScannedHistory(historyCurrentPage);
+        });
+
+        refreshHistoryBtn.addEventListener('click', () => {
+            void loadScannedHistory(historyCurrentPage);
+        });
+
+        historySearchBtn.addEventListener('click', () => {
+            historySearchTerm = historySearchInput.value || '';
+            historyCurrentPage = 1;
+            void loadScannedHistory(historyCurrentPage);
+        });
+
+        historySearchInput.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') {
+                return;
+            }
+            event.preventDefault();
+            historySearchTerm = historySearchInput.value || '';
+            historyCurrentPage = 1;
+            void loadScannedHistory(historyCurrentPage);
+        });
+
+        historyPrevBtn.addEventListener('click', () => {
+            if (historyCurrentPage <= 1) {
+                return;
+            }
+            void loadScannedHistory(historyCurrentPage - 1);
+        });
+
+        historyNextBtn.addEventListener('click', () => {
+            if (historyCurrentPage >= historyLastPage) {
+                return;
+            }
+            void loadScannedHistory(historyCurrentPage + 1);
+        });
+
+        closeHistoryModalBtn.addEventListener('click', () => {
+            scannedHistoryModal.classList.add('hidden');
+            scannedHistoryModal.classList.remove('flex');
+            historySearchInput.value = '';
+            historySearchTerm = '';
+        });
+
+        scannedHistoryModal.addEventListener('click', function (e) {
+            if (e.target === scannedHistoryModal) {
+                scannedHistoryModal.classList.add('hidden');
+                scannedHistoryModal.classList.remove('flex');
+                historySearchInput.value = '';
+                historySearchTerm = '';
             }
         });
     </script>

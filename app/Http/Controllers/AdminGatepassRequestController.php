@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Employee;
 use App\Models\GatepassRequest;
 use App\Models\GatepassRequestItem;
 use App\Models\Inventory;
@@ -21,7 +22,7 @@ use Illuminate\View\View;
 
 class AdminGatepassRequestController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse
     {
         $equipment = Inventory::query()
             ->orderBy('current_prop_no')
@@ -89,6 +90,7 @@ class AdminGatepassRequestController extends Controller
             ->leftJoin('users as usr', 'usr.id', '=', 'emp.user_id')
             ->select([
                 'gpi.gatepass_item_id as gatepass_item_id',
+                'inv.id as inventory_id',
                 'gpr.gatepass_no as gatepass_no',
                 'inv.description as item_description',
                 'inv.serial_no as serial_no',
@@ -127,7 +129,26 @@ class AdminGatepassRequestController extends Controller
             ? $gatepassListStatus
             : '';
 
-        return view('admin.dashboard', [
+        $authUser = $request->user();
+        $gatepassEmployee = Employee::resolveForGatepassUser($authUser);
+        $gatepassEquipment = $gatepassEmployee
+            ? Inventory::query()
+                ->where('employee_id', $gatepassEmployee->employee_id)
+                ->orderBy('current_prop_no')
+                ->get()
+            : collect();
+
+        $workspace = app(CoordinatorController::class)->coordinatorWorkspaceViewData($request, 'search');
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'selectedEmployee' => $workspace['selectedEmployee'],
+                'selectedEmployeeId' => $workspace['selectedEmployeeId'],
+                'items' => $workspace['items'],
+            ]);
+        }
+
+        return view('admin.dashboard', array_merge($workspace, [
             'equipment' => $equipment,
             'requests' => $requests,
             'gatepassListSearch' => $gatepassListSearch,
@@ -143,7 +164,15 @@ class AdminGatepassRequestController extends Controller
             ],
             'movementTracking' => $movementTracking,
             'gatepassTrendsByFilter' => $gatepassTrendsByFilter,
-        ]);
+            'gatepassEmployee' => $gatepassEmployee,
+            'gatepassEmployeeFullName' => $gatepassEmployee?->employee_name ?? $authUser?->name,
+            'gatepassEquipment' => $gatepassEquipment,
+            'coordinatorWorkspaceEmbedMode' => 'admin',
+            'coordinatorWorkspaceJsonUrl' => route('admin.dashboard'),
+            'coordinatorWorkspaceSearchParam' => 'search',
+            'inventoryPortalFormAction' => route('admin.dashboard'),
+            'inventorySearchInputName' => 'search',
+        ]));
     }
 
     public function show(Request $request, string $gatepassNo): JsonResponse
@@ -354,6 +383,142 @@ class AdminGatepassRequestController extends Controller
                         ];
                     })
                     ->all(),
+            ],
+        ]);
+    }
+
+    public function itemMovementHistory(Request $request, int $inventoryId): JsonResponse
+    {
+        $inventoryId = (int) $inventoryId;
+
+        if ($inventoryId <= 0) {
+            return response()->json([
+                'message' => 'Invalid inventory id.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'type' => ['nullable', 'string', 'in:INCOMING,OUTGOING'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
+            'q' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $type = isset($validated['type']) ? strtoupper((string) $validated['type']) : null;
+        $page = (int) ($validated['page'] ?? 1);
+        $perPage = (int) ($validated['per_page'] ?? 5);
+        $q = trim((string) ($validated['q'] ?? ''));
+
+        // Retention default: keep recent records easily accessible.
+        // Users can expand via from/to filters.
+        $fromDate = isset($validated['from'])
+            ? Carbon::parse((string) $validated['from'])->startOfDay()
+            : now()->subMonths(6)->startOfDay();
+        $toDate = isset($validated['to'])
+            ? Carbon::parse((string) $validated['to'])->endOfDay()
+            : now()->endOfDay();
+
+        $gatepassNos = DB::table('gatepass_items')
+            ->where('inventory_id', $inventoryId)
+            ->pluck('gatepass_no')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($gatepassNos)) {
+            return response()->json([
+                'data' => [
+                    'inventory_id' => $inventoryId,
+                    'logs' => [],
+                ],
+            ]);
+        }
+
+        $baseQuery = DB::table('gatepass_logs as gl')
+            ->leftJoin('employees as guardEmp', 'guardEmp.user_id', '=', 'gl.scanned_by_guard_id')
+            ->leftJoin('employees as reqEmp', 'reqEmp.employee_id', '=', 'gl.requester_employee_id')
+            ->whereIn('gl.gatepass_no', $gatepassNos)
+            ->whereIn('gl.log_type', ['INCOMING', 'OUTGOING'])
+            ->whereBetween('gl.log_datetime', [$fromDate->toDateTimeString(), $toDate->toDateTimeString()]);
+
+        if ($type !== null) {
+            $baseQuery->where('gl.log_type', $type);
+        }
+
+        if ($q !== '') {
+            $like = '%'.$q.'%';
+            $baseQuery->where(function ($query) use ($like): void {
+                $query
+                    ->where('gl.gatepass_no', 'like', $like)
+                    ->orWhere('gl.remarks', 'like', $like);
+            });
+        }
+
+        $total = (clone $baseQuery)->count();
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = min(max(1, $page), $lastPage);
+        $offset = ($page - 1) * $perPage;
+
+        $rows = $baseQuery
+            ->orderByDesc('gl.log_datetime')
+            ->orderByDesc('gl.log_id')
+            ->offset($offset)
+            ->limit($perPage)
+            ->get([
+                'gl.gatepass_no',
+                'gl.log_type',
+                'gl.log_datetime',
+                'gl.remarks',
+                'gl.scanned_by_guard_id',
+                'gl.requester_employee_id',
+                'guardEmp.employee_id as guard_employee_id',
+                'guardEmp.employee_name as guard_name',
+                'reqEmp.employee_name as requester_name',
+            ]);
+
+        $logs = $rows->map(static function ($row): array {
+            $dt = null;
+            if ($row->log_datetime !== null && $row->log_datetime !== '') {
+                try {
+                    $dt = Carbon::parse($row->log_datetime)->format('Y-m-d H:i:s');
+                } catch (\Throwable) {
+                    $dt = (string) $row->log_datetime;
+                }
+            }
+
+            return [
+                'gatepass_no' => (string) $row->gatepass_no,
+                'log_type' => (string) $row->log_type,
+                'log_datetime' => $dt,
+                'remarks' => $row->remarks,
+                'scanned_by_guard_id' => $row->scanned_by_guard_id,
+                'guard_employee_id' => $row->guard_employee_id,
+                'requester_employee_id' => $row->requester_employee_id,
+                'guard_name' => $row->guard_name,
+                'requester_name' => $row->requester_name,
+            ];
+        })
+            ->values()
+            ->all();
+
+        return response()->json([
+            'data' => [
+                'inventory_id' => $inventoryId,
+                'logs' => $logs,
+                'meta' => [
+                    'type' => $type,
+                    'from' => $fromDate->toDateString(),
+                    'to' => $toDate->toDateString(),
+                    'q' => $q !== '' ? $q : null,
+                    'current_page' => $page,
+                    'per_page' => $perPage,
+                    'total' => $total,
+                    'last_page' => $lastPage,
+                    'has_more' => $page < $lastPage,
+                ],
             ],
         ]);
     }

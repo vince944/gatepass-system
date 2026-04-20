@@ -287,6 +287,68 @@ class GuardGatepassLogController extends Controller
         ]);
     }
 
+    public function history(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'search' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $page = (int) ($validated['page'] ?? 1);
+        $perPage = (int) ($validated['per_page'] ?? 5);
+        $search = trim((string) ($validated['search'] ?? ''));
+
+        $baseQuery = DB::table('gatepass_logs as gl')
+            ->leftJoin('gatepass_requests as gr', 'gr.gatepass_no', '=', 'gl.gatepass_no')
+            ->leftJoin('employees as requester', 'requester.employee_id', '=', 'gl.requester_employee_id')
+            ->leftJoin('users as guard_user', 'guard_user.id', '=', 'gl.scanned_by_guard_id')
+            ->whereIn('gl.log_type', ['INCOMING', 'OUTGOING']);
+
+        if ($search !== '') {
+            $searchLike = '%'.$search.'%';
+            $baseQuery->where(function ($query) use ($searchLike) {
+                $query
+                    ->where('gl.gatepass_no', 'like', $searchLike)
+                    ->orWhere('requester.employee_name', 'like', $searchLike)
+                    ->orWhere('gl.requester_employee_id', 'like', $searchLike);
+            });
+        }
+
+        $total = (clone $baseQuery)->count();
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $lastPage);
+        $offset = ($page - 1) * $perPage;
+
+        $rows = $baseQuery
+            ->orderByDesc('gl.log_datetime')
+            ->orderByDesc('gl.log_id')
+            ->offset($offset)
+            ->limit($perPage)
+            ->get([
+                'gl.log_id',
+                'gl.gatepass_no',
+                'gl.log_type',
+                'gl.log_datetime',
+                'gl.requester_employee_id',
+                'requester.employee_name as requester_name',
+                'guard_user.name as scanned_by_guard_name',
+                'gr.status as gatepass_status',
+                'gr.destination',
+                'gr.purpose',
+            ]);
+
+        return response()->json([
+            'records' => $rows,
+            'meta' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => $lastPage,
+            ],
+        ]);
+    }
+
     public function partialReturn(Request $request): JsonResponse
     {
         $validated = $request->validate([

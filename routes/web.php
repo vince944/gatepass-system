@@ -139,6 +139,11 @@ Route::post('/admin/gatepass-requests/{gatepassNo}/reject', [AdminGatepassReques
     ->middleware('auth')
     ->name('admin.gatepass-requests.reject');
 
+Route::get('/admin/items/{inventoryId}/movement-history', [AdminGatepassRequestController::class, 'itemMovementHistory'])
+    ->whereNumber('inventoryId')
+    ->middleware('auth')
+    ->name('admin.items.movement-history');
+
 Route::get('/coordinator/dashboard', [CoordinatorController::class, 'index'])
     ->middleware('auth')
     ->name('admin.coordinator.index');
@@ -202,6 +207,10 @@ Route::get('/guard/gatepass-logs/next', [GuardGatepassLogController::class, 'nex
 Route::post('/guard/gatepass-logs', [GuardGatepassLogController::class, 'store'])
     ->middleware('auth')
     ->name('guard.gatepass-logs.store');
+
+Route::get('/guard/gatepass-logs/history', [GuardGatepassLogController::class, 'history'])
+    ->middleware('auth')
+    ->name('guard.gatepass-logs.history');
 
 Route::get('/guard/gatepass-items', [GuardGatepassLogController::class, 'items'])
     ->middleware('auth')

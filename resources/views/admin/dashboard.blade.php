@@ -20,7 +20,7 @@
         class="fixed inset-y-0 left-0 z-50 w-64 bg-[#173a6b] text-white transform -translate-x-full transition-transform duration-300 ease-in-out lg:hidden"
         aria-hidden="true"
     >
-        <div class="flex h-full min-h-0 flex-col overflow-hidden">
+        <div class="flex h-full min-h-0 flex-col overflow-y-auto">
             <div class="shrink-0 px-4 py-6 border-b border-white/10 flex items-start justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
                     <img src="/images/dap_logo.png" alt="DAP Logo" class="w-12 h-12 object-contain rounded-md shrink-0">
@@ -41,14 +41,29 @@
                 </button>
             </div>
 
-            <nav class="flex-1 min-h-0 overflow-hidden px-3 py-6 space-y-2">
+            <nav class="flex-1 min-h-0 overflow-y-auto px-3 py-6 space-y-2">
+                <button type="button" data-mobile-nav="gatepass-request" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white hover:bg-white/10 transition">
+                    <i class="fa-regular fa-file-lines text-[18px]"></i>
+                    <span>Gatepass Request</span>
+                </button>
+                <button type="button" data-mobile-nav="gatepass-history" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-clock-rotate-left text-[18px]"></i>
+                    <span>Request History</span>
+                </button>
+                <div class="px-1 pt-2 pb-1">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-white/55">Admin Control</p>
+                </div>
                 <button type="button" data-mobile-nav="dashboard" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white hover:bg-white/10 transition">
                     <i class="fa-solid fa-border-all text-[18px]"></i>
                     <span>Dashboard</span>
                 </button>
-                <button type="button" data-mobile-nav="items" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white hover:bg-white/10 transition">
-                    <i class="fa-solid fa-cubes-stacked text-[18px]"></i>
-                    <span>Item Tracking</span>
+                <button type="button" data-mobile-nav="items-tracker" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-list-check text-[18px]"></i>
+                    <span>Items Tracker</span>
+                </button>
+                <button type="button" data-mobile-nav="inventory-portal" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-cube text-[18px]"></i>
+                    <span>Inventory Portal</span>
                 </button>
                 <button type="button" data-mobile-nav="reports" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white hover:bg-white/10 transition">
                     <i class="fa-solid fa-chart-pie text-[18px]" aria-hidden="true"></i>
@@ -56,7 +71,7 @@
                 </button>
             </nav>
 
-            <div class="shrink-0 mt-auto px-6 py-6 border-t border-white/10">
+            <div class="shrink-0 mt-auto px-6 py-6 border-t border-white/10 mb-2">
                 <form method="POST" action="/logout">
                     @csrf
                     <button type="submit" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-semibold text-left text-white/90 hover:text-white hover:bg-white/10 transition">
@@ -71,7 +86,7 @@
     <div class="flex min-h-0 h-screen flex-col md:flex-row overflow-hidden">
 
         <!-- Sidebar -->
-        <aside class="hidden lg:flex h-screen max-h-screen w-full md:w-72 lg:w-80 bg-[#173a6b] text-white flex-col shrink-0 overflow-hidden">
+        <aside class="hidden lg:flex h-screen min-h-screen max-h-screen w-full md:w-72 lg:w-80 bg-[#173a6b] text-white flex-col shrink-0 overflow-y-auto">
             <div class="shrink-0">
                 <!-- Logo / Title -->
                 <div class="px-4 py-8 border-b border-white/10">
@@ -85,15 +100,34 @@
                 </div>
 
                 <!-- Navigation -->
-                <nav class="px-3 py-10 space-y-3">
+                <nav class="px-3 py-10 space-y-3 pb-6">
+                    <button id="navGatepassRequest" type="button" class="w-full flex items-center gap-4 px-6 py-4 text-[17px] font-semibold text-white/90 hover:bg-white/10 rounded-2xl transition text-left">
+                        <i class="fa-regular fa-file-lines text-[20px]"></i>
+                        <span>Gatepass Request</span>
+                    </button>
+
+                    <button id="navGatepassHistory" type="button" class="w-full flex items-center gap-4 px-6 py-4 text-[17px] font-semibold text-white/90 hover:bg-white/10 rounded-2xl transition text-left">
+                        <i class="fa-solid fa-clock-rotate-left text-[20px]"></i>
+                        <span>Request History</span>
+                    </button>
+
+                    <div class="px-1 pt-2 pb-1">
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-white/55">Admin Control</p>
+                    </div>
+
                     <button id="navDashboard" type="button" class="w-full flex items-center gap-4 bg-[#47698f] rounded-2xl px-6 py-4 text-[17px] font-semibold text-left text-white">
                         <i class="fa-solid fa-border-all text-[20px]"></i>
                         <span>Dashboard</span>
                     </button>
 
-                    <button id="navItemTracking" type="button" class="w-full flex items-center gap-4 px-6 py-4 text-[17px] font-semibold text-white/90 hover:bg-white/10 rounded-2xl transition text-left">
-                        <i class="fa-solid fa-cubes-stacked text-[20px]"></i>
-                        <span>Item Tracking</span>
+                    <button id="navAdminItemsTracker" type="button" class="w-full flex items-center gap-4 px-6 py-4 text-[17px] font-semibold text-white/90 hover:bg-white/10 rounded-2xl transition text-left">
+                        <i class="fa-solid fa-list-check text-[20px]"></i>
+                        <span>Items Tracker</span>
+                    </button>
+
+                    <button id="navAdminInventoryPortal" type="button" class="w-full flex items-center gap-4 px-6 py-4 text-[17px] font-semibold text-white/90 hover:bg-white/10 rounded-2xl transition text-left">
+                        <i class="fa-solid fa-cube text-[20px]"></i>
+                        <span>Inventory Portal</span>
                     </button>
 
                     <button id="navReports" type="button" class="w-full flex items-center gap-4 px-6 py-4 text-[17px] font-semibold text-white/90 hover:bg-white/10 rounded-2xl transition text-left">
@@ -104,7 +138,7 @@
             </div>
 
             <!-- Logout -->
-            <div class="mt-auto shrink-0 px-8 py-10 border-t border-white/10">
+            <div class="mt-auto shrink-0 px-8 py-8 border-t border-white/10 mb-2">
                 <form method="POST" action="/logout">
                     @csrf
                     <button type="submit" class="flex items-center gap-4 text-[18px] font-semibold text-white/90 hover:text-white transition">
@@ -135,16 +169,26 @@
                     </div>
                 </div>
 
-                <button onclick="openAdminProfileModal()" class="w-11 h-11 sm:w-[52px] sm:h-[52px] rounded-xl sm:rounded-full bg-[#003b95] text-white flex items-center justify-center text-[20px] sm:text-[24px] shrink-0">
-                    <i class="fa-regular fa-user"></i>
-                </button>
+                <div class="flex items-center gap-3 shrink-0">
+                    <button onclick="openAdminProfileModal()" class="w-11 h-11 sm:w-[52px] sm:h-[52px] rounded-xl sm:rounded-full bg-[#003b95] text-white flex items-center justify-center text-[20px] sm:text-[24px] shrink-0">
+                        <i class="fa-regular fa-user"></i>
+                    </button>
+                </div>
             </header>
 
             <!-- Content -->
             <section class="flex-1 min-h-0 w-full max-w-full min-w-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
 
+                @include('partials.coordinator-employee-gatepass', [
+                    'employee' => $gatepassEmployee ?? null,
+                    'employeeFullName' => $gatepassEmployeeFullName ?? null,
+                    'equipment' => $gatepassEquipment ?? collect(),
+                ])
+
+                @include('partials.coordinator-workspace-sections')
+
                 <!-- DASHBOARD SECTION -->
-                <div id="dashboardSection">
+                <div id="adminGatepassOverviewSection">
                     <!-- Stat Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 mb-8 items-stretch">
 
@@ -495,134 +539,6 @@
                 </div>
 
 
-                <!-- ITEM TRACKING SECTION -->
-                <div id="itemTrackingSection" class="hidden">
-                    <div class="bg-white border border-gray-200 overflow-hidden rounded-[22px]">
-
-                        <!-- Search Bar -->
-                        <div class="px-5 py-5 border-b border-gray-200">
-                            <form method="GET" action="{{ route('admin.dashboard') }}">
-                                <input type="hidden" name="tab" value="items">
-                                <div class="relative w-full max-w-full sm:max-w-[540px]">
-                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
-                                        <i class="fa-solid fa-magnifying-glass"></i>
-                                    </span>
-                                    <input
-                                        type="text"
-                                        name="q"
-                                        value="{{ $trackedItemsSearch ?? '' }}"
-                                        placeholder="Search by Gate Pass No, Item, Serial No, Property No, Employee..."
-                                        class="w-full h-[48px] rounded-2xl border border-gray-300 bg-white pl-12 pr-4 text-[16px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                                    >
-                                </div>
-                            </form>
-                        </div>
-
-                        <!-- Table -->
-                        <div class="overflow-x-auto rounded-2xl">
-                            <table class="w-full min-w-[720px]">
-                                <thead>
-                                    <tr class="border-b border-gray-200 text-left">
-                                        <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Gate Pass No</th>
-                                        <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Item Description</th>
-                                        <th class="px-7 py-5 text-[15px] uppercase tracking-wide font-semibold text-[#556b86]">Employees</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody id="itemTrackingTableBody">
-                                    @forelse (($trackedItems ?? null) as $row)
-                                        @php
-                                            $office = trim((string) ($row->center ?? ''));
-                                            $divisionForModal = $office !== '' ? $office : '';
-                                        @endphp
-                                        <tr
-                                            class="border-b border-gray-100 cursor-pointer select-none hover:bg-gray-50/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003b95] focus-visible:ring-inset"
-                                            tabindex="0"
-                                            role="button"
-                                            data-item-tracking-row
-                                            data-tracking-property="{{ e((string) ($row->property_number ?? '')) }}"
-                                            data-tracking-serial="{{ e((string) ($row->serial_no ?? '')) }}"
-                                            data-tracking-division="{{ e($divisionForModal) }}"
-                                            data-tracking-status="{{ e((string) ($row->request_status ?? '')) }}"
-                                            aria-label="View details for gate pass {{ $row->gatepass_no }}"
-                                        >
-                                            <td class="px-7 py-5 text-[15px] text-gray-800 whitespace-nowrap">{{ $row->gatepass_no }}</td>
-                                            <td class="px-7 py-5 text-[15px] text-gray-800">{{ $row->item_description ?? '—' }}</td>
-                                            <td class="px-7 py-5 text-[15px] text-gray-800">{{ $row->employee_full_name ?? '—' }}</td>
-                                        </tr>
-                                    @empty
-                                        <tr class="border-b border-gray-200">
-                                            <td colspan="3" class="px-7 py-14 text-center text-gray-400 text-[16px]">
-                                                No tracked items yet.
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Pagination Design -->
-                        <div id="itemTrackingPagination" class="flex items-center justify-between px-7 py-5 border-t border-gray-200">
-                            <p class="text-[16px] text-[#3e5573]">
-                                @php
-                                    $p = $trackedItems ?? null;
-                                    $from = $p?->firstItem() ?? 0;
-                                    $to = $p?->lastItem() ?? 0;
-                                    $total = $p?->total() ?? 0;
-                                @endphp
-                                Showing {{ $from }}–{{ $to }} of {{ $total }} results
-                            </p>
-
-                            <div class="flex flex-wrap items-center gap-2">
-                                @php
-                                    $itemPaginator = $trackedItems ?? null;
-                                    $prevUrl = $itemPaginator?->previousPageUrl();
-                                    $nextUrl = $itemPaginator?->nextPageUrl();
-                                    $currentPage = $itemPaginator?->currentPage() ?? 1;
-                                    $itemLastPage = $itemPaginator?->lastPage() ?? 1;
-                                    if ($itemLastPage <= 3) {
-                                        $itemPageWindowStart = 1;
-                                        $itemPageWindowEnd = $itemLastPage;
-                                    } else {
-                                        $itemPageWindowStart = max(1, min($currentPage - 1, $itemLastPage - 2));
-                                        $itemPageWindowEnd = min($itemLastPage, $itemPageWindowStart + 2);
-                                    }
-                                @endphp
-
-                                @if ($prevUrl)
-                                    <a href="{{ $prevUrl }}" class="px-4 py-2 rounded-xl border border-gray-300 bg-white text-[16px] font-medium">
-                                        Previous
-                                    </a>
-                                @else
-                                    <span class="px-4 py-2 rounded-xl border border-gray-300 text-gray-400 bg-gray-50 text-[16px] font-medium cursor-not-allowed" aria-disabled="true">
-                                        Previous
-                                    </span>
-                                @endif
-
-                                @if ($itemPaginator)
-                                    @for ($page = $itemPageWindowStart; $page <= $itemPageWindowEnd; $page++)
-                                        @if ($page === $currentPage)
-                                            <span class="w-auto min-w-[40px] h-[40px] px-3 inline-flex items-center justify-center rounded-xl bg-[#020826] text-white text-[16px] font-semibold" aria-current="page">{{ $page }}</span>
-                                        @else
-                                            <a href="{{ $itemPaginator->url($page) }}" class="min-w-[40px] h-[40px] px-3 inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white text-[16px] font-medium">{{ $page }}</a>
-                                        @endif
-                                    @endfor
-                                @endif
-
-                                @if ($nextUrl)
-                                    <a href="{{ $nextUrl }}" class="px-4 py-2 rounded-xl border border-gray-300 bg-white text-[16px] font-medium">
-                                        Next
-                                    </a>
-                                @else
-                                    <span class="px-4 py-2 rounded-xl border border-gray-300 text-gray-400 bg-gray-50 text-[16px] font-medium cursor-not-allowed" aria-disabled="true">
-                                        Next
-                                    </span>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- REPORTS SECTION -->
                 <div id="reportsSection" class="hidden">
                     <div class="space-y-6">
@@ -721,6 +637,8 @@
             </section>
         </main>
     </div>
+
+    @include('partials.coordinator-workspace-modals')
 
     <!-- Toast (Animated Alerts) -->
     <div id="toastContainer" class="fixed top-6 right-6 z-[60] space-y-3 pointer-events-none"></div>
@@ -1022,63 +940,6 @@
         </div>
     </div>
 
-    <!-- Item Tracking row detail (property, serial, division, status) -->
-    <div
-        id="itemTrackingDetailModal"
-        class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="itemTrackingDetailTitle"
-    >
-        <div class="w-full max-w-[520px] bg-white rounded-[18px] shadow-2xl overflow-hidden border border-gray-200">
-            <div class="flex items-center justify-between px-7 py-6 border-b border-gray-200">
-                <h2 id="itemTrackingDetailTitle" class="text-[24px] font-bold text-[#003b95]">Item tracking details</h2>
-                <button
-                    type="button"
-                    onclick="closeItemTrackingDetailModal()"
-                    class="text-[#98a2b3] hover:text-black text-[28px] leading-none"
-                    aria-label="Close"
-                >
-                    ×
-                </button>
-            </div>
-
-            <div class="px-7 py-6 space-y-5">
-                <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
-                    <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Property number</p>
-                    <p id="itemTrackingModalProperty" class="mt-2 text-[16px] font-semibold text-gray-900">—</p>
-                </div>
-                <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
-                    <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Serial number</p>
-                    <p id="itemTrackingModalSerial" class="mt-2 text-[16px] font-semibold text-gray-900">—</p>
-                </div>
-                <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
-                    <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Division</p>
-                    <p id="itemTrackingModalDivision" class="mt-2 text-[16px] font-semibold text-gray-900">—</p>
-                </div>
-                <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
-                    <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Status</p>
-                    <div class="mt-2">
-                        <span
-                            id="itemTrackingModalStatus"
-                            class="inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold bg-gray-100 text-gray-800 border border-gray-200"
-                        >—</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="border-t border-gray-200 px-7 py-6 flex justify-end">
-                <button
-                    type="button"
-                    onclick="closeItemTrackingDetailModal()"
-                    class="px-6 sm:px-10 h-[46px] rounded-xl border border-gray-300 bg-white text-[15px] font-semibold text-black hover:bg-gray-50 transition"
-                >
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Gate Pass Details Modal -->
     <div id="gatepassDetailsModal" class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6">
         <div class="w-full max-w-[980px] bg-white rounded-[18px] shadow-2xl overflow-hidden border border-gray-200">
@@ -1363,6 +1224,33 @@
         </div>
     </div>
 
+    @php
+        $adminGatepassSnippet = file_get_contents(resource_path('views/partials/coordinator-gatepass-employee-snippet.js'));
+        $adminGatepassSnippet = str_replace(
+            "{{ route('employee.gatepass-requests.dashboard') }}",
+            route('employee.gatepass-requests.dashboard'),
+            $adminGatepassSnippet
+        );
+        $adminGatepassSnippet = str_replace(
+            "{{ route('employee.gatepass-requests.history') }}",
+            route('employee.gatepass-requests.history'),
+            $adminGatepassSnippet
+        );
+        $adminGatepassSnippet = str_replace(
+            "{{ route('employee.gatepass-requests.show', ['gatepass_no' => '__GP__']) }}",
+            route('employee.gatepass-requests.show', ['gatepass_no' => '__GP__']),
+            $adminGatepassSnippet
+        );
+        $adminGatepassSnippet = str_replace(
+            "{{ asset('storage') }}",
+            asset('storage'),
+            $adminGatepassSnippet
+        );
+    @endphp
+    <script>
+        {!! $adminGatepassSnippet !!}
+    </script>
+
     <script>
         let nextGatePassNumber = 'GP2601';
 
@@ -1415,17 +1303,31 @@
         }());
 
         const navDashboard = document.getElementById('navDashboard');
-        const navItemTracking = document.getElementById('navItemTracking');
+        const navGatepassRequest = document.getElementById('navGatepassRequest');
+        const navGatepassHistory = document.getElementById('navGatepassHistory');
+        const navAdminItemsTracker = document.getElementById('navAdminItemsTracker');
+        const navAdminInventoryPortal = document.getElementById('navAdminInventoryPortal');
         const navReports = document.getElementById('navReports');
 
-        const dashboardSection = document.getElementById('dashboardSection');
-        const itemTrackingSection = document.getElementById('itemTrackingSection');
+        const gatepassEmployeePanel = document.getElementById('gatepassEmployeePanel');
+        const adminGatepassOverviewSection = document.getElementById('adminGatepassOverviewSection');
         const reportsSection = document.getElementById('reportsSection');
+        const coordinatorWorkspaceDashboardSection = document.getElementById('dashboardSection');
+        const coordinatorWorkspaceInventorySection = document.getElementById('inventoryPortalSection');
 
         const pageTitle = document.getElementById('pageTitle');
         const pageSubtitle = document.getElementById('pageSubtitle');
 
-        const adminNavButtons = [navDashboard, navItemTracking, navReports].filter(Boolean);
+        const adminNavButtons = [navDashboard, navGatepassRequest, navGatepassHistory, navAdminItemsTracker, navAdminInventoryPortal, navReports].filter(Boolean);
+
+        function hideCoordinatorWorkspaceSections() {
+            if (coordinatorWorkspaceDashboardSection) {
+                coordinatorWorkspaceDashboardSection.classList.add('hidden');
+            }
+            if (coordinatorWorkspaceInventorySection) {
+                coordinatorWorkspaceInventorySection.classList.add('hidden');
+            }
+        }
 
         function setActiveAdminNav(activeButton) {
             adminNavButtons.forEach(function (btn) {
@@ -1440,8 +1342,12 @@
         }
 
         function showDashboardSection() {
-            dashboardSection.classList.remove('hidden');
-            itemTrackingSection.classList.add('hidden');
+            hideCoordinatorWorkspaceSections();
+            if (gatepassEmployeePanel) {
+                gatepassEmployeePanel.classList.add('hidden');
+            }
+
+            adminGatepassOverviewSection.classList.remove('hidden');
             reportsSection.classList.add('hidden');
 
             pageTitle.textContent = 'Dashboard';
@@ -1449,23 +1355,73 @@
             pageSubtitle.classList.remove('hidden');
 
             setActiveAdminNav(navDashboard);
+
+            if (window.location.hash === '#gatepass-request' || window.location.hash === '#gatepass-history') {
+                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
         }
 
-        function showItemTrackingSection() {
-            dashboardSection.classList.add('hidden');
-            itemTrackingSection.classList.remove('hidden');
+        function showAdminGatepassRequestSection() {
+            hideCoordinatorWorkspaceSections();
+            if (gatepassEmployeePanel) {
+                gatepassEmployeePanel.classList.remove('hidden');
+            }
+
+            adminGatepassOverviewSection.classList.add('hidden');
             reportsSection.classList.add('hidden');
 
-            pageTitle.textContent = 'Item Tracking';
-            pageSubtitle.textContent = 'Track all items with gate passes';
+            pageSubtitle.textContent = 'My gate pass requests';
             pageSubtitle.classList.remove('hidden');
 
-            setActiveAdminNav(navItemTracking);
+            if (typeof window.coordinatorGatepassLazyInit === 'function') {
+                window.coordinatorGatepassLazyInit();
+            }
+
+            if (typeof window.coordinatorGpShowMyRequestsPanel === 'function') {
+                window.coordinatorGpShowMyRequestsPanel();
+            }
+
+            setActiveAdminNav(navGatepassRequest);
+
+            if (window.location.hash !== '#gatepass-request') {
+                window.history.replaceState(null, '', '#gatepass-request');
+            }
+        }
+
+        function showAdminGatepassHistorySection() {
+            hideCoordinatorWorkspaceSections();
+            if (gatepassEmployeePanel) {
+                gatepassEmployeePanel.classList.remove('hidden');
+            }
+
+            adminGatepassOverviewSection.classList.add('hidden');
+            reportsSection.classList.add('hidden');
+
+            pageSubtitle.textContent = 'Request history';
+            pageSubtitle.classList.remove('hidden');
+
+            if (typeof window.coordinatorGatepassLazyInit === 'function') {
+                window.coordinatorGatepassLazyInit();
+            }
+
+            if (typeof window.coordinatorGpShowHistoryPanel === 'function') {
+                window.coordinatorGpShowHistoryPanel();
+            }
+
+            setActiveAdminNav(navGatepassHistory);
+
+            if (window.location.hash !== '#gatepass-history') {
+                window.history.replaceState(null, '', '#gatepass-history');
+            }
         }
 
         function showReportsSection() {
-            dashboardSection.classList.add('hidden');
-            itemTrackingSection.classList.add('hidden');
+            hideCoordinatorWorkspaceSections();
+            if (gatepassEmployeePanel) {
+                gatepassEmployeePanel.classList.add('hidden');
+            }
+
+            adminGatepassOverviewSection.classList.add('hidden');
             reportsSection.classList.remove('hidden');
 
             pageTitle.textContent = 'Reports';
@@ -1476,65 +1432,78 @@
             initReportsAnalyticsIfNeeded();
         }
 
+        function showAdminItemsTrackerWorkspace() {
+            hideCoordinatorWorkspaceSections();
+
+            if (typeof window.cwsShowItemsTrackerHome === 'function') {
+                window.cwsShowItemsTrackerHome();
+            } else {
+                if (adminGatepassOverviewSection) {
+                    adminGatepassOverviewSection.classList.add('hidden');
+                }
+                if (reportsSection) {
+                    reportsSection.classList.add('hidden');
+                }
+                if (gatepassEmployeePanel) {
+                    gatepassEmployeePanel.classList.add('hidden');
+                }
+                const embedded = document.getElementById('dashboardSection');
+                if (embedded) {
+                    embedded.classList.remove('hidden');
+                }
+            }
+
+            pageTitle.textContent = 'Items Tracker';
+            pageSubtitle.textContent = 'List of Inventory';
+            pageSubtitle.classList.remove('hidden');
+        }
+
+        function showAdminInventoryPortalWorkspace() {
+            hideCoordinatorWorkspaceSections();
+
+            if (typeof window.cwsShowInventoryPortal === 'function') {
+                window.cwsShowInventoryPortal();
+            } else {
+                if (adminGatepassOverviewSection) {
+                    adminGatepassOverviewSection.classList.add('hidden');
+                }
+                if (reportsSection) {
+                    reportsSection.classList.add('hidden');
+                }
+                if (gatepassEmployeePanel) {
+                    gatepassEmployeePanel.classList.add('hidden');
+                }
+                const embedded = document.getElementById('inventoryPortalSection');
+                if (embedded) {
+                    embedded.classList.remove('hidden');
+                }
+            }
+
+            pageTitle.textContent = 'Asset Inventory Management';
+            pageSubtitle.textContent = 'Manage all equipment inventory';
+            pageSubtitle.classList.remove('hidden');
+        }
+
         navDashboard.addEventListener('click', showDashboardSection);
-        navItemTracking.addEventListener('click', showItemTrackingSection);
-        navReports.addEventListener('click', showReportsSection);
-
-        let itemTrackingPaginationRequestInFlight = false;
-
-        function setupItemTrackingRealtimePagination() {
-            const paginationWrap = document.getElementById('itemTrackingPagination');
-            if (!paginationWrap) return;
-
-            // Avoid double-binding on SPA-like navigation inside the page.
-            if (paginationWrap.dataset.realtimeBound === 'true') return;
-            paginationWrap.dataset.realtimeBound = 'true';
-
-            paginationWrap.addEventListener('click', function (e) {
-                const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-                if (!link) return;
-
-                const url = link.getAttribute('href');
-                if (!url) return;
-
-                e.preventDefault();
-
-                if (itemTrackingPaginationRequestInFlight) return;
-                itemTrackingPaginationRequestInFlight = true;
-
-                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                    .then(function (res) {
-                        return res.text();
-                    })
-                    .then(function (html) {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-
-                        const newBody = doc.getElementById('itemTrackingTableBody');
-                        const newPagination = doc.getElementById('itemTrackingPagination');
-
-                        const currentBody = document.getElementById('itemTrackingTableBody');
-                        const currentPagination = document.getElementById('itemTrackingPagination');
-
-                        if (newBody && currentBody) {
-                            currentBody.innerHTML = newBody.innerHTML;
-                        }
-
-                        if (newPagination && currentPagination) {
-                            currentPagination.innerHTML = newPagination.innerHTML;
-                        }
-
-                        // Keep browser URL in sync with the loaded page.
-                        window.history.pushState({}, '', url);
-                    })
-                    .catch(function () {
-                        showToast('Failed to load next/previous page.', 'error');
-                    })
-                    .finally(function () {
-                        itemTrackingPaginationRequestInFlight = false;
-                    });
+        if (navGatepassRequest) {
+            navGatepassRequest.addEventListener('click', showAdminGatepassRequestSection);
+        }
+        if (navGatepassHistory) {
+            navGatepassHistory.addEventListener('click', showAdminGatepassHistorySection);
+        }
+        if (navAdminItemsTracker) {
+            navAdminItemsTracker.addEventListener('click', function () {
+                showAdminItemsTrackerWorkspace();
+                setActiveAdminNav(navAdminItemsTracker);
             });
         }
+        if (navAdminInventoryPortal) {
+            navAdminInventoryPortal.addEventListener('click', function () {
+                showAdminInventoryPortalWorkspace();
+                setActiveAdminNav(navAdminInventoryPortal);
+            });
+        }
+        navReports.addEventListener('click', showReportsSection);
 
         function openNewGatePassModal() {
             const modal = document.getElementById('newGatePassModal');
@@ -1931,13 +1900,19 @@
             if (overlay) overlay.addEventListener('click', closeMobileSidebar);
 
             if (sidebar) {
-                sidebar.querySelectorAll('button[data-mobile-nav]').forEach(function (btn) {
-                    btn.addEventListener('click', function () {
-                        const kind = btn.getAttribute('data-mobile-nav');
-                        if (kind === 'dashboard') {
+                sidebar.querySelectorAll('button[data-mobile-nav]').forEach(function (el) {
+                    el.addEventListener('click', function () {
+                        const kind = el.getAttribute('data-mobile-nav');
+                        if (kind === 'items-tracker') {
+                            showAdminItemsTrackerWorkspace();
+                        } else if (kind === 'inventory-portal') {
+                            showAdminInventoryPortalWorkspace();
+                        } else if (kind === 'dashboard') {
                             showDashboardSection();
-                        } else if (kind === 'items') {
-                            showItemTrackingSection();
+                        } else if (kind === 'gatepass-request') {
+                            showAdminGatepassRequestSection();
+                        } else if (kind === 'gatepass-history') {
+                            showAdminGatepassHistorySection();
                         } else if (kind === 'reports') {
                             showReportsSection();
                         }
@@ -1948,22 +1923,18 @@
         });
 
         document.addEventListener('DOMContentLoaded', function () {
-            const shouldShowItemTracking = @json((bool) ($showItemTracking ?? false));
-            if (shouldShowItemTracking) {
-                showItemTrackingSection();
+            const params = new URLSearchParams(window.location.search);
+            const cw = params.get('cw');
+            if (window.location.hash === '#gatepass-history') {
+                showAdminGatepassHistorySection();
+            } else if (window.location.hash === '#gatepass-request') {
+                showAdminGatepassRequestSection();
+            } else if (cw === 'inventory') {
+                showAdminInventoryPortalWorkspace();
+            } else if (cw === 'items') {
+                showAdminItemsTrackerWorkspace();
             } else {
                 showDashboardSection();
-            }
-
-            setupItemTrackingRealtimePagination();
-            setupItemTrackingTableRowModal();
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key !== 'Escape') return;
-            const modal = document.getElementById('itemTrackingDetailModal');
-            if (modal && modal.classList.contains('flex')) {
-                closeItemTrackingDetailModal();
             }
         });
 
@@ -1993,71 +1964,6 @@
             if (s === 'returned') return 'bg-gray-100 text-gray-800 border border-gray-200';
             if (s === 'active outside') return 'bg-blue-100 text-blue-800 border border-blue-200';
             return 'bg-gray-100 text-gray-800 border border-gray-200';
-        }
-
-        function itemTrackingDetailDisplay(val) {
-            const s = String(val || '').trim();
-            return s === '' ? '—' : s;
-        }
-
-        function openItemTrackingDetailModal(tr) {
-            if (!tr || !tr.dataset) return;
-
-            const modal = document.getElementById('itemTrackingDetailModal');
-            if (!modal) return;
-
-            const propEl = document.getElementById('itemTrackingModalProperty');
-            const serialEl = document.getElementById('itemTrackingModalSerial');
-            const divEl = document.getElementById('itemTrackingModalDivision');
-            const statusEl = document.getElementById('itemTrackingModalStatus');
-
-            if (propEl) {
-                propEl.textContent = itemTrackingDetailDisplay(tr.dataset.trackingProperty);
-            }
-            if (serialEl) {
-                serialEl.textContent = itemTrackingDetailDisplay(tr.dataset.trackingSerial);
-            }
-            if (divEl) {
-                divEl.textContent = itemTrackingDetailDisplay(tr.dataset.trackingDivision);
-            }
-
-            const statusText = itemTrackingDetailDisplay(tr.dataset.trackingStatus);
-            if (statusEl) {
-                statusEl.textContent = statusText;
-                statusEl.className =
-                    'inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold border ' +
-                    statusBadgeClasses(statusText);
-            }
-
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function closeItemTrackingDetailModal() {
-            const modal = document.getElementById('itemTrackingDetailModal');
-            if (!modal) return;
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        function setupItemTrackingTableRowModal() {
-            const tbody = document.getElementById('itemTrackingTableBody');
-            if (!tbody || tbody.dataset.modalRowBound === 'true') return;
-            tbody.dataset.modalRowBound = 'true';
-
-            tbody.addEventListener('click', function (e) {
-                const tr = e.target.closest('tr[data-item-tracking-row]');
-                if (!tr) return;
-                openItemTrackingDetailModal(tr);
-            });
-
-            tbody.addEventListener('keydown', function (e) {
-                if (e.key !== 'Enter' && e.key !== ' ') return;
-                const tr = e.target.closest('tr[data-item-tracking-row]');
-                if (!tr || e.target !== tr) return;
-                e.preventDefault();
-                openItemTrackingDetailModal(tr);
-            });
         }
 
         function showToast(message, type) {
@@ -3232,6 +3138,10 @@
             if (flashSuccess) {
                 showToast(flashSuccess, 'success');
             }
+            const flashStatus = @json(session('status'));
+            if (flashStatus) {
+                showToast(flashStatus, 'success');
+            }
         });
 
         window.addEventListener('click', function(e) {
@@ -3241,6 +3151,8 @@
             }
         });
     </script>
+
+    @include('partials.coordinator-workspace-script')
 
 </body>
 </html>

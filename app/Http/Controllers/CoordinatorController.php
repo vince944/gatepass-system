@@ -29,7 +29,12 @@ use Illuminate\View\View;
 
 class CoordinatorController extends Controller
 {
-    public function index(Request $request): View|JsonResponse
+    /**
+     * Shared inventory / tracker / portal payload for coordinator and admin dashboards.
+     *
+     * @return array<string, mixed>
+     */
+    public function coordinatorWorkspaceViewData(Request $request, string $inventorySearchQueryKey = 'search'): array
     {
         $accountableCount = Inventory::query()
             ->whereNotNull('employee_id')
@@ -78,7 +83,7 @@ class CoordinatorController extends Controller
 
         $selectedEmployee = $employees->firstWhere('employee_id', $selectedEmployeeId);
 
-        $search = $request->query('search');
+        $search = $request->query($inventorySearchQueryKey);
 
         $items = collect();
 
@@ -87,8 +92,20 @@ class CoordinatorController extends Controller
                 ->with(['employee', 'currentPropNo', 'currentUnitCost', 'currentEndUser', 'currentRemarks'])
                 ->where('employee_id', $selectedEmployeeId)
                 ->when($search, function ($query, $search) {
-                    $query->whereHas('currentPropNo', function ($propQuery) use ($search) {
-                        $propQuery->where('prop_no', 'like', '%'.$search.'%');
+                    $s = trim((string) $search);
+                    if ($s === '') {
+                        return;
+                    }
+
+                    $like = '%'.$s.'%';
+
+                    $query->where(function ($q) use ($like) {
+                        $q->whereHas('currentPropNo', function ($propQuery) use ($like) {
+                            $propQuery->where('prop_no', 'like', $like);
+                        })
+                            ->orWhere('description', 'like', $like)
+                            ->orWhere('serial_no', 'like', $like)
+                            ->orWhere('acct_code', 'like', $like);
                     });
                 })
                 ->orderBy(
@@ -103,24 +120,8 @@ class CoordinatorController extends Controller
 
         $items = $this->attachLatestMovementToItems($items);
 
-        if ($request->wantsJson()) {
-            return response()->json([
-                'selectedEmployee' => $selectedEmployee,
-                'selectedEmployeeId' => $selectedEmployeeId,
-                'items' => $items,
-            ]);
-        }
-
-        $authUser = $request->user();
-        $gatepassEmployee = Employee::resolveForGatepassUser($authUser);
-        $gatepassEquipment = $gatepassEmployee
-            ? Inventory::query()
-                ->where('employee_id', $gatepassEmployee->employee_id)
-                ->orderBy('current_prop_no')
-                ->get()
-            : collect();
-
-        return view('admin.coordinator', [
+        return [
+            'inventorySearchQueryKey' => $inventorySearchQueryKey,
             'employees' => $employees,
             'employeeRecords' => $employees,
             'selectedEmployeeId' => $selectedEmployeeId,
@@ -135,10 +136,61 @@ class CoordinatorController extends Controller
             'dashboardTotalItems' => $dashboardTotalItems,
             'dashboardTrackerMovements' => $dashboardTrackerMovements,
             'users' => $users,
+        ];
+    }
+
+    private function redirectAfterInventoryPortalMutation(Request $request, ?string $employeeId, string $statusMessage): RedirectResponse
+    {
+        if ($request->input('workspace_context') === 'admin') {
+            $inventorySearch = $request->input('search') ?: $request->input('inventory_search');
+            $query = array_filter([
+                'employee_id' => $employeeId,
+                'search' => $inventorySearch,
+                'cw' => 'inventory',
+            ], static fn ($value): bool => $value !== null && $value !== '');
+
+            return redirect()->route('admin.dashboard', $query)->with('status', $statusMessage);
+        }
+
+        $query = array_filter([
+            'employee_id' => $employeeId,
+            'search' => $request->input('search'),
+        ], static fn ($value): bool => $value !== null && $value !== '');
+
+        return redirect()->route('admin.coordinator.index', $query)->with('status', $statusMessage);
+    }
+
+    public function index(Request $request): View|JsonResponse
+    {
+        $workspace = $this->coordinatorWorkspaceViewData($request);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'selectedEmployee' => $workspace['selectedEmployee'],
+                'selectedEmployeeId' => $workspace['selectedEmployeeId'],
+                'items' => $workspace['items'],
+            ]);
+        }
+
+        $authUser = $request->user();
+        $gatepassEmployee = Employee::resolveForGatepassUser($authUser);
+        $gatepassEquipment = $gatepassEmployee
+            ? Inventory::query()
+                ->where('employee_id', $gatepassEmployee->employee_id)
+                ->orderBy('current_prop_no')
+                ->get()
+            : collect();
+
+        return view('admin.coordinator', array_merge($workspace, [
             'gatepassEmployee' => $gatepassEmployee,
             'gatepassEmployeeFullName' => $gatepassEmployee?->employee_name ?? $authUser?->name,
             'gatepassEquipment' => $gatepassEquipment,
-        ]);
+            'coordinatorWorkspaceEmbedMode' => 'coordinator',
+            'coordinatorWorkspaceJsonUrl' => route('admin.coordinator.index'),
+            'coordinatorWorkspaceSearchParam' => 'search',
+            'inventoryPortalFormAction' => route('admin.coordinator.index'),
+            'inventorySearchInputName' => 'search',
+        ]));
     }
 
     public function checkItemDuplicate(Request $request): JsonResponse
@@ -294,9 +346,7 @@ class CoordinatorController extends Controller
             ]);
         }
 
-        return redirect()
-            ->route('admin.coordinator.index', ['employee_id' => $employeeId])
-            ->with('status', 'Item added successfully.');
+        return $this->redirectAfterInventoryPortalMutation($request, $employeeId, 'Item added successfully.');
     }
 
     public function destroy(Request $request, int $inventory): RedirectResponse|JsonResponse
@@ -310,9 +360,7 @@ class CoordinatorController extends Controller
 
         $employeeId = $request->input('employee_id');
 
-        return redirect()
-            ->route('admin.coordinator.index', $employeeId ? ['employee_id' => $employeeId] : [])
-            ->with('status', 'Item deleted successfully.');
+        return $this->redirectAfterInventoryPortalMutation($request, $employeeId !== null ? (string) $employeeId : null, 'Item deleted successfully.');
     }
 
     public function updateItem(Request $request, int $inventory): RedirectResponse|JsonResponse
@@ -442,9 +490,9 @@ class CoordinatorController extends Controller
             ]);
         }
 
-        return redirect()
-            ->route('admin.coordinator.index', ['employee_id' => $item->employee_id])
-            ->with('status', 'Equipment updated successfully.');
+        $employeeIdForRedirect = $item->employee_id !== null ? (string) $item->employee_id : null;
+
+        return $this->redirectAfterInventoryPortalMutation($request, $employeeIdForRedirect, 'Equipment updated successfully.');
     }
 
     public function updateEmployee(Request $request, string $employee): RedirectResponse|JsonResponse
