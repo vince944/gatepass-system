@@ -42,6 +42,14 @@
     const outgoingHistoryList = document.getElementById('outgoingHistoryList');
 
     const employeeSelect = document.getElementById('employeeSelect');
+    const employeeIdHiddenInput = document.getElementById('employeeIdHiddenInput');
+    const employeeSelectDisplay = document.getElementById('employeeSelectDisplay');
+    const openEmployeePickerModalBtn = document.getElementById('openEmployeePickerModal');
+    const employeePickerModal = document.getElementById('employeePickerModal');
+    const closeEmployeePickerModalBtn = document.getElementById('closeEmployeePickerModal');
+    const employeePickerSearchInput = document.getElementById('employeePickerSearchInput');
+    const employeePickerList = document.getElementById('employeePickerList');
+    const employeePickerNoResults = document.getElementById('employeePickerNoResults');
     const searchInput = document.getElementById('inventoryPortalSearchInput');
     const employeeTypeField = document.getElementById('employeeTypeField');
     const employeeNumberField = document.getElementById('employeeNumberField');
@@ -2392,8 +2400,137 @@
         cancelEditItemModalBtn.addEventListener('click', closeEditModal);
     }
 
+    function syncEmployeePickerDisplayFromSelect() {
+        if (!employeeSelect) {
+            return;
+        }
+
+        const selectedOption = employeeSelect.options[employeeSelect.selectedIndex] || null;
+        const selectedName = selectedOption ? String(selectedOption.textContent || '').trim() : '';
+
+        if (employeeSelectDisplay) {
+            employeeSelectDisplay.value = selectedName;
+        }
+
+        if (employeeIdHiddenInput) {
+            employeeIdHiddenInput.value = employeeSelect.value || '';
+        }
+
+        if (employeePickerList) {
+            const pickerItems = employeePickerList.querySelectorAll('.employee-picker-item');
+            pickerItems.forEach((item) => {
+                const isSelected = String(item.getAttribute('data-employee-id') || '') === String(employeeSelect.value || '');
+                item.classList.toggle('bg-[#003b95]/10', isSelected);
+                item.classList.toggle('font-semibold', isSelected);
+            });
+        }
+    }
+
+    function closeEmployeePickerModal() {
+        if (!employeePickerModal) {
+            return;
+        }
+        employeePickerModal.classList.add('hidden');
+        employeePickerModal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function filterEmployeePickerItems() {
+        if (!employeePickerList) {
+            return;
+        }
+
+        const query = String(employeePickerSearchInput?.value || '').trim().toLowerCase();
+        const groups = employeePickerList.querySelectorAll('.employee-picker-group');
+        let visibleItemCount = 0;
+
+        groups.forEach((group) => {
+            const items = group.querySelectorAll('.employee-picker-item');
+            let groupVisibleCount = 0;
+
+            items.forEach((item) => {
+                const name = String(item.getAttribute('data-employee-name') || '').toLowerCase();
+                const visible = query === '' || name.includes(query);
+                item.classList.toggle('hidden', !visible);
+                if (visible) {
+                    groupVisibleCount += 1;
+                    visibleItemCount += 1;
+                }
+            });
+
+            group.classList.toggle('hidden', groupVisibleCount === 0);
+        });
+
+        if (employeePickerNoResults) {
+            employeePickerNoResults.classList.toggle('hidden', visibleItemCount !== 0);
+        }
+    }
+
+    function openEmployeePickerModal() {
+        if (!employeePickerModal) {
+            return;
+        }
+
+        employeePickerModal.classList.remove('hidden');
+        employeePickerModal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+
+        if (employeePickerSearchInput) {
+            employeePickerSearchInput.value = '';
+        }
+        filterEmployeePickerItems();
+        syncEmployeePickerDisplayFromSelect();
+
+        window.setTimeout(() => {
+            employeePickerSearchInput?.focus();
+        }, 10);
+    }
+
+    if (openEmployeePickerModalBtn) {
+        openEmployeePickerModalBtn.addEventListener('click', openEmployeePickerModal);
+    }
+
+    if (closeEmployeePickerModalBtn) {
+        closeEmployeePickerModalBtn.addEventListener('click', closeEmployeePickerModal);
+    }
+
+    if (employeePickerModal) {
+        employeePickerModal.addEventListener('click', function (event) {
+            if (event.target === employeePickerModal) {
+                closeEmployeePickerModal();
+            }
+        });
+    }
+
+    if (employeePickerSearchInput) {
+        employeePickerSearchInput.addEventListener('input', filterEmployeePickerItems);
+    }
+
+    if (employeePickerList) {
+        employeePickerList.addEventListener('click', function (event) {
+            const target = event.target.closest('.employee-picker-item');
+            if (!target || !employeeSelect) {
+                return;
+            }
+
+            const employeeId = String(target.getAttribute('data-employee-id') || '');
+            const existingOption = employeeSelect.querySelector(`option[value="${employeeId}"]`);
+            if (!existingOption) {
+                return;
+            }
+
+            employeeSelect.value = employeeId;
+            employeeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            closeEmployeePickerModal();
+        });
+    }
+
     if (employeeSelect) {
-        employeeSelect.addEventListener('change', loadEmployeeInventory);
+        employeeSelect.addEventListener('change', function () {
+            syncEmployeePickerDisplayFromSelect();
+            loadEmployeeInventory();
+        });
+        syncEmployeePickerDisplayFromSelect();
     }
 
     if (searchInput) {
@@ -2529,6 +2666,7 @@
     const deleteConfirmMessage = document.getElementById('deleteConfirmMessage');
     let pendingDeleteForm = null;
     let pendingDeleteType = 'equipment';
+    let deleteModalCloseTimer = null;
 
     function openDeleteModal(form, type = 'equipment') {
         pendingDeleteForm = form;
@@ -2536,11 +2674,23 @@
         if (!deleteConfirmModal || !deleteConfirmCard) {
             return;
         }
+        if (deleteModalCloseTimer) {
+            clearTimeout(deleteModalCloseTimer);
+            deleteModalCloseTimer = null;
+        }
+
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.classList.remove('hidden');
+            confirmDeleteBtn.textContent = 'Delete';
+        }
+        if (cancelDeleteBtn) {
+            cancelDeleteBtn.textContent = 'Cancel';
+        }
 
         if (deleteConfirmTitle && deleteConfirmMessage) {
             if (type === 'employee') {
                 deleteConfirmTitle.textContent = 'Delete employee?';
-                deleteConfirmMessage.textContent = 'This will permanently remove the selected employee record.';
+                deleteConfirmMessage.textContent = 'This will permanently remove the employee record and delete their user account so they can no longer sign in.';
             } else {
                 deleteConfirmTitle.textContent = 'Delete equipment?';
                 deleteConfirmMessage.textContent = 'This will permanently remove the selected equipment from the inventory for this employee.';
@@ -2553,17 +2703,51 @@
         deleteConfirmCard.classList.add('opacity-100', 'scale-100');
     }
 
+    function showDeleteCautionModal(message) {
+        if (!deleteConfirmModal || !deleteConfirmCard) {
+            window.alert(message);
+            return;
+        }
+        if (deleteModalCloseTimer) {
+            clearTimeout(deleteModalCloseTimer);
+            deleteModalCloseTimer = null;
+        }
+
+        if (deleteConfirmTitle) {
+            deleteConfirmTitle.textContent = 'Cannot delete equipment';
+        }
+        if (deleteConfirmMessage) {
+            deleteConfirmMessage.textContent = message;
+        }
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.classList.add('hidden');
+        }
+        if (cancelDeleteBtn) {
+            cancelDeleteBtn.textContent = 'OK';
+        }
+
+        deleteConfirmModal.classList.remove('hidden');
+        deleteConfirmModal.classList.add('flex');
+        deleteConfirmCard.classList.remove('opacity-0', 'scale-95');
+        deleteConfirmCard.classList.add('opacity-100', 'scale-100');
+    }
+
     function closeDeleteModal() {
         if (!deleteConfirmModal || !deleteConfirmCard) {
             return;
+        }
+        if (deleteModalCloseTimer) {
+            clearTimeout(deleteModalCloseTimer);
+            deleteModalCloseTimer = null;
         }
 
         deleteConfirmCard.classList.add('opacity-0', 'scale-95');
         deleteConfirmCard.classList.remove('opacity-100', 'scale-100');
 
-        setTimeout(() => {
+        deleteModalCloseTimer = setTimeout(() => {
             deleteConfirmModal.classList.add('hidden');
             deleteConfirmModal.classList.remove('flex');
+            deleteModalCloseTimer = null;
         }, 150);
     }
 
@@ -2596,7 +2780,7 @@
 
                 const message = data?.message || 'Failed to delete. Please try again.';
                 closeDeleteModal();
-                window.alert(message);
+                showDeleteCautionModal(message);
                 return;
             }
 
@@ -2907,6 +3091,17 @@
 
     if (editEmployeeForm) {
         editEmployeeForm.addEventListener('submit', submitEditEmployeeForm);
+    }
+
+    if (employeeManagementSection) {
+        employeeManagementSection.addEventListener('submit', function (event) {
+            const form = event.target;
+            if (!form || !form.classList || !form.classList.contains('employee-delete-form')) {
+                return;
+            }
+            event.preventDefault();
+            openDeleteModal(form, 'employee');
+        });
     }
 
     if (employeeManagementTableBody) {

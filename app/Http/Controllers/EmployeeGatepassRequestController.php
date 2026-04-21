@@ -80,6 +80,7 @@ class EmployeeGatepassRequestController extends Controller
             'gatepass_no',
             'request_date',
             'status',
+            'rejection_reason',
         ]);
 
         $rows = $requests->map(function (GatepassRequest $requestModel): array {
@@ -87,6 +88,7 @@ class EmployeeGatepassRequestController extends Controller
                 'gatepass_no' => $requestModel->gatepass_no,
                 'request_date' => optional($requestModel->request_date)->format('Y-m-d'),
                 'status' => $requestModel->status,
+                'rejection_reason' => $requestModel->rejection_reason,
                 'equipments' => $requestModel->items
                     ->map(function ($item): array {
                         $inv = $item->inventory;
@@ -140,6 +142,7 @@ class EmployeeGatepassRequestController extends Controller
                 'gatepass_no',
                 'request_date',
                 'status',
+                'rejection_reason',
             ])
             ->unique('gatepass_no')
             ->values();
@@ -149,6 +152,7 @@ class EmployeeGatepassRequestController extends Controller
                 'gatepass_no' => $requestModel->gatepass_no,
                 'request_date' => optional($requestModel->request_date)->format('Y-m-d'),
                 'status' => $requestModel->status,
+                'rejection_reason' => $requestModel->rejection_reason,
                 'equipments' => $requestModel->items
                     ->map(function ($item): array {
                         $inv = $item->inventory;
@@ -205,6 +209,7 @@ class EmployeeGatepassRequestController extends Controller
                 'purpose' => $gatepass->purpose,
                 'destination' => $gatepass->destination,
                 'remarks' => $gatepass->remarks,
+                'rejection_reason' => $gatepass->rejection_reason,
                 'qr_code_path' => $gatepass->qr_code_path,
                 'qr_code_url' => $gatepass->qr_code_path ? asset('storage/'.ltrim($gatepass->qr_code_path, '/')) : null,
                 'items' => $gatepass->items
@@ -408,11 +413,51 @@ class EmployeeGatepassRequestController extends Controller
             'remarks' => ['nullable', 'string', 'max:500'],
             'inventory_ids' => ['required', 'array', 'min:1'],
             'inventory_ids.*' => ['integer', 'exists:inventory,id'],
+            'resubmit_gatepass_no' => ['nullable', 'string', 'max:50'],
         ]);
 
         try {
             $gatepassRequest = DB::transaction(function () use ($validated, $employee) {
                 $now = now();
+                $resubmitGatepassNo = trim((string) ($validated['resubmit_gatepass_no'] ?? ''));
+
+                if ($resubmitGatepassNo !== '') {
+                    $requestModel = GatepassRequest::query()
+                        ->where('gatepass_no', $resubmitGatepassNo)
+                        ->where('requester_employee_id', $employee->employee_id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($requestModel === null) {
+                        throw new \RuntimeException('Resubmit request not found.');
+                    }
+
+                    $requestModel->forceFill([
+                        'request_date' => $now->toDateString(),
+                        'center' => $employee->center,
+                        'purpose' => $validated['purpose'],
+                        'destination' => $validated['destination'],
+                        'remarks' => $validated['remarks'] ?? null,
+                        'status' => 'Pending',
+                        'rejection_reason' => null,
+                        'updated_at' => $now,
+                    ])->save();
+
+                    GatepassRequestItem::query()
+                        ->where('gatepass_no', $requestModel->gatepass_no)
+                        ->delete();
+
+                    foreach ($validated['inventory_ids'] as $inventoryId) {
+                        GatepassRequestItem::query()->create([
+                            'gatepass_no' => $requestModel->gatepass_no,
+                            'inventory_id' => $inventoryId,
+                            'item_remarks' => null,
+                            'item_status' => null,
+                        ]);
+                    }
+
+                    return $requestModel;
+                }
 
                 $requestModel = GatepassRequest::query()->create([
                     'gatepass_no' => GatepassRequest::generateGatepassNo(),
@@ -446,11 +491,14 @@ class EmployeeGatepassRequestController extends Controller
             ], 500);
         }
 
+        $isResubmit = trim((string) ($validated['resubmit_gatepass_no'] ?? '')) !== '';
+
         return response()->json([
             'message' => 'Gate pass request submitted successfully.',
             'data' => [
                 'gatepass_no' => $gatepassRequest->gatepass_no,
+                'status' => $isResubmit ? 'Pending' : null,
             ],
-        ], 201);
+        ], $isResubmit ? 200 : 201);
     }
 }

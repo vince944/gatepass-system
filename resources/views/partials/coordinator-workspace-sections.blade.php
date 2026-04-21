@@ -159,20 +159,58 @@
                             </div>
 
                             <form method="GET" action="{{ $inventoryPortalFormAction }}">
+                                @php
+                                    $inventoryEmployeeList = collect($employees ?? []);
+                                    $inventorySortedEmployees = $inventoryEmployeeList
+                                        ->sortBy(function ($emp) {
+                                            return mb_strtolower(trim((string) ($emp->employee_name ?? '')));
+                                        })
+                                        ->values();
+                                    $inventoryEmployeesByLetter = $inventorySortedEmployees->groupBy(function ($emp) {
+                                        $name = trim((string) ($emp->employee_name ?? ''));
+                                        if ($name === '') {
+                                            return '#';
+                                        }
+
+                                        $firstChar = mb_substr($name, 0, 1);
+
+                                        return \Illuminate\Support\Str::upper($firstChar);
+                                    });
+                                    $selectedEmployeeName = trim((string) ($selectedEmployee?->employee_name ?? ''));
+                                @endphp
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5 mb-6">
                                     <div>
-                                        <label class="block text-[14px] font-semibold text-black mb-2">Employee Name</label>
+                                        <label class="block text-[14px] font-semibold text-black mb-2" for="employeeSelectDisplay">Employee Name</label>
+                                        <button
+                                            id="openEmployeePickerModal"
+                                            type="button"
+                                            class="group flex h-[42px] w-full items-center justify-between rounded-xl border border-gray-300 bg-white px-4 text-left text-[14px] text-black transition hover:border-[#003b95]/40 focus:outline-none focus:ring-2 focus:ring-[#003b95]/20"
+                                            aria-haspopup="dialog"
+                                            aria-controls="employeePickerModal"
+                                        >
+                                            <input
+                                                id="employeeSelectDisplay"
+                                                type="text"
+                                                value="{{ $selectedEmployeeName }}"
+                                                placeholder="Select employee"
+                                                class="w-full cursor-pointer bg-transparent pr-3 text-[14px] text-black placeholder:text-[#98a2b3] focus:outline-none"
+                                                readonly
+                                            >
+                                            <i class="fa-solid fa-chevron-down text-[12px] text-[#667085] transition group-hover:text-[#003b95]"></i>
+                                        </button>
                                         <select
                                             id="employeeSelect"
-                                            name="employee_id"
-                                            class="w-full h-[42px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none"
+                                            class="hidden"
+                                            aria-hidden="true"
+                                            tabindex="-1"
                                         >
-                                            @foreach($employees as $employee)
+                                            @foreach($inventorySortedEmployees as $employee)
                                                 <option value="{{ $employee->employee_id }}" @selected($employee->employee_id === $selectedEmployeeId)>
                                                     {{ $employee->employee_name }}
                                                 </option>
                                             @endforeach
                                         </select>
+                                        <input type="hidden" id="employeeIdHiddenInput" name="employee_id" value="{{ $selectedEmployeeId }}">
                                     </div>
 
                                     <div>
@@ -210,6 +248,51 @@
 
                                 </div>
                             </form>
+                        </div>
+                    </div>
+
+                    <div id="employeePickerModal" class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/45 px-4 py-6">
+                        <div class="w-full max-w-xl rounded-2xl bg-white shadow-2xl">
+                            <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+                                <h4 class="text-[18px] font-semibold text-[#111827]">Select Employee</h4>
+                                <button id="closeEmployeePickerModal" type="button" class="text-[20px] text-[#98a2b3] transition hover:text-black" aria-label="Close employee picker">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            <div class="px-5 py-4">
+                                <div class="relative">
+                                    <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#667085]">
+                                        <i class="fa-solid fa-magnifying-glass text-[14px]"></i>
+                                    </span>
+                                    <input
+                                        id="employeePickerSearchInput"
+                                        type="text"
+                                        placeholder="Search employee name..."
+                                        autocomplete="off"
+                                        class="h-[42px] w-full rounded-xl border border-gray-300 bg-white pl-10 pr-4 text-[14px] text-black placeholder:text-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-[#003b95]/20"
+                                    >
+                                </div>
+                            </div>
+                            <div id="employeePickerList" class="max-h-[360px] overflow-y-auto border-t border-gray-100 px-2 py-2">
+                                @forelse($inventoryEmployeesByLetter as $letter => $letterEmployees)
+                                    <div class="employee-picker-group py-1" data-letter-group="{{ $letter }}">
+                                        <div class="px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#003b95]/80">{{ $letter }}</div>
+                                        @foreach($letterEmployees as $employee)
+                                            <button
+                                                type="button"
+                                                class="employee-picker-item flex w-full items-center rounded-lg px-3 py-2.5 text-left text-[14px] text-[#111827] transition hover:bg-[#003b95]/8"
+                                                data-employee-id="{{ $employee->employee_id }}"
+                                                data-employee-name="{{ $employee->employee_name }}"
+                                            >
+                                                {{ $employee->employee_name }}
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                @empty
+                                    <p class="px-3 py-6 text-center text-[14px] text-[#98a2b3]">No employees available.</p>
+                                @endforelse
+                                <p id="employeePickerNoResults" class="hidden px-3 py-6 text-center text-[14px] text-[#98a2b3]">No matching employee found.</p>
+                            </div>
                         </div>
                     </div>
 

@@ -139,6 +139,11 @@ Route::post('/admin/gatepass-requests/{gatepassNo}/reject', [AdminGatepassReques
     ->middleware('auth')
     ->name('admin.gatepass-requests.reject');
 
+Route::post('/admin/gatepass-requests/{gatepassNo}/resubmit', [AdminGatepassRequestController::class, 'resubmit'])
+    ->where('gatepassNo', '.*')
+    ->middleware('auth')
+    ->name('admin.gatepass-requests.resubmit');
+
 Route::get('/admin/items/{inventoryId}/movement-history', [AdminGatepassRequestController::class, 'itemMovementHistory'])
     ->whereNumber('inventoryId')
     ->middleware('auth')

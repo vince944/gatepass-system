@@ -352,7 +352,20 @@ class CoordinatorController extends Controller
     public function destroy(Request $request, int $inventory): RedirectResponse|JsonResponse
     {
         $item = Inventory::query()->findOrFail($inventory);
-        $item->delete();
+        try {
+            $item->delete();
+        } catch (QueryException $e) {
+            $message = 'Cannot delete this equipment because it is already requested in a gate pass record. You cannot remove it.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $message], 409);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['delete' => $message]);
+        }
 
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Item deleted successfully.']);
@@ -720,6 +733,21 @@ class CoordinatorController extends Controller
     {
         $employeeRecord = Employee::query()->findOrFail($employee);
 
+        $linkedUserId = $employeeRecord->user_id;
+
+        if ($linkedUserId !== null && (int) $linkedUserId === (int) $request->user()->id) {
+            $message = 'You cannot delete your own account from employee management.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $message], 403);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['delete' => $message]);
+        }
+
         // Prevent FK constraint failures when the employee is referenced by gatepass_requests.
         if (GatepassRequest::query()->where('requester_employee_id', $employeeRecord->employee_id)->exists()) {
             $message = 'Cannot delete employee because they are referenced by existing gate pass requests.';
@@ -735,7 +763,13 @@ class CoordinatorController extends Controller
         }
 
         try {
-            $employeeRecord->delete();
+            DB::transaction(function () use ($employeeRecord, $linkedUserId): void {
+                $employeeRecord->delete();
+
+                if ($linkedUserId !== null) {
+                    User::query()->whereKey($linkedUserId)->delete();
+                }
+            });
         } catch (QueryException $e) {
             $message = 'Unable to delete employee. Please remove related records first.';
 

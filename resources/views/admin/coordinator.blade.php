@@ -495,18 +495,6 @@
                                                     required
                                                 >
                                             </div>
-
-                                            <div class="md:col-span-2">
-                                                <label class="mb-2 block text-sm font-semibold text-black">Role</label>
-                                                <input
-                                                    id="addEmployeeRoleField"
-                                                    type="text"
-                                                    name="role"
-                                                    placeholder="e.g. employee"
-                                                    class="h-11 w-full rounded-xl border border-gray-300 bg-white px-4 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20"
-                                                    required
-                                                >
-                                            </div>
                                         </div>
                                     </div>
 
@@ -541,7 +529,7 @@
                                                 >
                                             </div>
 
-                                            <div class="md:col-span-2">
+                                            <div>
                                                 <label class="mb-2 block text-sm font-semibold text-black">Employee Type</label>
                                                 <select
                                                     id="addEmployeeTypeField"
@@ -552,6 +540,19 @@
                                                     <option value="Plantilla" selected>Plantilla</option>
                                                     <option value="Nonplantilla">Nonplantilla</option>
                                                 </select>
+                                            </div>
+
+                                            <div>
+                                                <label class="mb-2 block text-sm font-semibold text-black">Role</label>
+                                                <input
+                                                    id="addEmployeeRoleField"
+                                                    type="text"
+                                                    name="role"
+                                                    placeholder="e.g. employee"
+                                                    autocomplete="off"
+                                                    class="h-11 w-full rounded-xl border border-gray-300 bg-white px-4 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20"
+                                                    required
+                                                >
                                             </div>
                                         </div>
                                     </div>

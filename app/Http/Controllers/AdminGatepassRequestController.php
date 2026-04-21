@@ -709,6 +709,56 @@ class AdminGatepassRequestController extends Controller
         return $this->updateStatus($request, $gatepassNo, 'Rejected');
     }
 
+    public function resubmit(Request $request, string $gatepassNo): JsonResponse|RedirectResponse
+    {
+        $validated = $request->validate([
+            'rejection_reason' => ['required', 'string', 'max:2000'],
+        ], [
+            'rejection_reason.required' => 'Please provide a reason before resubmitting.',
+        ]);
+
+        $reason = trim((string) ($validated['rejection_reason'] ?? ''));
+
+        $result = DB::transaction(function () use ($gatepassNo, $reason): array {
+            $gatepass = GatepassRequest::query()
+                ->where('gatepass_no', $gatepassNo)
+                ->lockForUpdate()
+                ->first();
+
+            if ($gatepass === null) {
+                return [
+                    'ok' => false,
+                    'code' => 404,
+                    'message' => 'Gate pass request not found.',
+                    'status' => null,
+                ];
+            }
+
+            $gatepass->forceFill([
+                'status' => 'Resubmit',
+                'rejection_reason' => $reason,
+            ])->save();
+
+            return [
+                'ok' => true,
+                'code' => 200,
+                'message' => 'Rejection reason saved. Request marked as Resubmit.',
+                'status' => $gatepass->status,
+            ];
+        });
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $result['message'],
+                'data' => [
+                    'status' => $result['status'],
+                ],
+            ], $result['code']);
+        }
+
+        return back()->with('success', $result['message']);
+    }
+
     protected function updateStatus(Request $request, string $gatepassNo, string $status): JsonResponse|RedirectResponse
     {
         $result = DB::transaction(function () use ($gatepassNo, $status): array {

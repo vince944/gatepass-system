@@ -440,11 +440,13 @@
                                                         class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#f6b400] text-black shadow-sm ring-1 ring-inset ring-black/5 hover:bg-[#e5a900] focus:outline-none focus:ring-2 focus:ring-[#f6b400]/30 {{ strtolower(trim((string) $req->status)) === 'rejected' ? '' : '!hidden' }}"
                                                         onclick="openTakeActionsModal(this)"
                                                         data-url="{{ route('admin.gatepass-requests.show', $req->gatepass_no) }}"
+                                                        data-resubmit-url="{{ route('admin.gatepass-requests.resubmit', $req->gatepass_no) }}"
                                                         data-gatepass-no="{{ $req->gatepass_no }}"
-                                                        aria-label="Take actions"
-                                                        title="Take actions"
+                                                        aria-label="Rejection Reason"
+                                                        title="View Rejection Reason"
                                                     >
                                                         <i class="fa-solid fa-pen-to-square text-[14px]" aria-hidden="true"></i>
+                                                        <span class="sr-only">Rejection Reason</span>
                                                     </button>
 
                                                     <button
@@ -454,7 +456,7 @@
                                                         onclick="rejectGatepass(this)"
                                                         data-url="{{ route('admin.gatepass-requests.reject', $req->gatepass_no) }}"
                                                         data-gatepass-no="{{ $req->gatepass_no }}"
-                                                        @disabled(strtolower(trim((string) $req->status)) === 'rejected')
+                                                        @disabled(in_array(strtolower(trim((string) $req->status)), ['approved', 'rejected'], true))
                                                         aria-label="Reject"
                                                         title="Reject"
                                                     >
@@ -744,13 +746,13 @@
                         Please add at least one equipment.
                     </p>
 
-                    <div class="border border-gray-200 rounded-2xl overflow-hidden">
-                        <table class="w-full text-left">
+                    <div class="border border-gray-200 rounded-2xl overflow-x-auto">
+                        <table class="w-full min-w-[520px] table-fixed sm:table-auto text-left">
                             <thead class="bg-gray-50 border-b border-gray-200">
                                 <tr>
-                                    <th class="px-4 py-3 text-[14px] font-semibold text-[#4b6790]">#</th>
+                                    <th class="w-[52px] px-4 py-3 text-[14px] font-semibold text-[#4b6790]">#</th>
                                     <th class="px-4 py-3 text-[14px] font-semibold text-[#4b6790]">Equipment</th>
-                                    <th class="px-4 py-3 text-[14px] font-semibold text-[#4b6790] text-right">Action</th>
+                                    <th class="w-[90px] px-4 py-3 text-[14px] font-semibold text-[#4b6790] sm:text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="selectedEquipmentBody">
@@ -1055,11 +1057,11 @@
                 </div>
 
                 <div class="mt-5">
-                    <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Remarks</p>
+                    <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Write a Reason</p>
                     <textarea
                         id="takeActionsRemarks"
                         rows="5"
-                        placeholder="Enter remarks..."
+                        placeholder="Enter rejection reason..."
                         class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-[16px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
                     ></textarea>
                 </div>
@@ -1589,10 +1591,10 @@
             const tr = document.createElement('tr');
 
             tr.innerHTML = ''
-                + '<td class="px-4 py-3 text-[14px] text-gray-700">' + index + '</td>'
-                + '<td class="px-4 py-3 text-[14px] text-gray-800">' + label + '</td>'
-                + '<td class="px-4 py-3 text-right">'
-                + '  <button type="button" class="text-red-500 text-[14px] font-semibold" onclick="removeSelectedEquipment(this)">Remove</button>'
+                + '<td class="px-4 py-3 align-top text-[14px] text-gray-700">' + index + '</td>'
+                + '<td class="px-4 py-3 align-top text-[14px] text-gray-800 break-words">' + label + '</td>'
+                + '<td class="px-4 py-3 align-top sm:text-right">'
+                + '  <button type="button" class="inline-flex whitespace-nowrap text-red-500 text-[13px] sm:text-[14px] font-semibold" onclick="removeSelectedEquipment(this)">Remove</button>'
                 + '</td>';
 
             tbody.appendChild(tr);
@@ -1960,6 +1962,7 @@
             const s = String(status || '').trim().toLowerCase();
             if (s === 'approved') return 'bg-green-100 text-green-800 border border-green-200';
             if (s === 'rejected') return 'bg-red-100 text-red-800 border border-red-200';
+            if (s === 'resubmit') return 'bg-rose-100 text-rose-800 border border-rose-200';
             if (s === 'pending') return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
             if (s === 'returned') return 'bg-gray-100 text-gray-800 border border-gray-200';
             if (s === 'active outside') return 'bg-blue-100 text-blue-800 border border-blue-200';
@@ -2043,7 +2046,7 @@
             // For rejected status, only show "Take Actions" + "View".
             if (approveBtn) approveBtn.classList.toggle('!hidden', newStatusLower === 'rejected');
             if (approveBtn) approveBtn.disabled = newStatusLower === 'approved';
-            if (rejectBtn) rejectBtn.disabled = newStatusLower === 'rejected';
+            if (rejectBtn) rejectBtn.disabled = newStatusLower === 'approved' || newStatusLower === 'rejected';
 
             // Toggle between "Take Actions" and the normal reject button.
             if (takeActionsBtn) takeActionsBtn.classList.toggle('!hidden', newStatusLower !== 'rejected');
@@ -2305,6 +2308,9 @@
         }
 
         function rejectGatepass(button) {
+            if (button?.disabled) {
+                return;
+            }
             openRejectConfirmationModal(button);
         }
 
@@ -2330,6 +2336,7 @@
 
             const gatepassNo = button?.dataset?.gatepassNo || '';
             const url = button?.dataset?.url;
+            const resubmitUrl = button?.dataset?.resubmitUrl || '';
 
             const gatepassNoEl = document.getElementById('takeActionsGatepassNo');
             const remarksEl = document.getElementById('takeActionsRemarks');
@@ -2340,6 +2347,8 @@
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             document.body.classList.add('overflow-hidden');
+            modal.dataset.gatepassNo = gatepassNo;
+            modal.dataset.resubmitUrl = resubmitUrl;
 
             // Best-effort prefill with existing rejection reason.
             if (!url || !remarksEl) return;
@@ -2369,19 +2378,49 @@
             document.body.classList.remove('overflow-hidden');
         }
 
-        function confirmTakeActions() {
+        async function confirmTakeActions() {
             const remarksEl = document.getElementById('takeActionsRemarks');
             const modal = document.getElementById('takeActionsModal');
-
-            const remarks = String(remarksEl?.value || '').trim();
-            if (!remarks) {
-                showToast('Please enter remarks before saving.', 'error');
+            const gatepassNo = modal?.dataset?.gatepassNo || '';
+            const resubmitUrl = modal?.dataset?.resubmitUrl || '';
+            if (!gatepassNo || !resubmitUrl) {
+                showToast('Unable to update request right now.', 'error');
                 return;
             }
 
-            // UI-only confirmation (no backend call requested).
-            showToast('Remarks captured.', 'success');
-            closeTakeActionsModal();
+            const remarks = String(remarksEl?.value || '').trim();
+            if (!remarks) {
+                showToast('Please write a reason before saving.', 'error');
+                return;
+            }
+
+            try {
+                const oldStatus = document.getElementById('statusBadge-' + gatepassNo)?.dataset?.status;
+                const res = await fetch(resubmitUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': getCsrfToken(),
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        rejection_reason: remarks,
+                    }),
+                });
+                const payload = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    showToast(payload?.message || 'Failed to save rejection reason.', 'error');
+                    return;
+                }
+
+                const newStatus = payload?.data?.status || 'Resubmit';
+                updateRowStatus(gatepassNo, newStatus);
+                updateCardsForStatusChange(oldStatus, newStatus);
+                showToast(payload?.message || 'Request marked as Resubmit.', 'success');
+                closeTakeActionsModal();
+            } catch (e) {
+                showToast('Failed to save rejection reason.', 'error');
+            }
         }
 
         // -----------------------------

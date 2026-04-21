@@ -303,6 +303,19 @@ class GuardGatepassLogController extends Controller
             ->leftJoin('gatepass_requests as gr', 'gr.gatepass_no', '=', 'gl.gatepass_no')
             ->leftJoin('employees as requester', 'requester.employee_id', '=', 'gl.requester_employee_id')
             ->leftJoin('users as guard_user', 'guard_user.id', '=', 'gl.scanned_by_guard_id')
+            ->leftJoinSub(
+                DB::table('gatepass_items as gi')
+                    ->leftJoin('inventory as i', 'i.id', '=', 'gi.inventory_id')
+                    ->select(
+                        'gi.gatepass_no',
+                        DB::raw("GROUP_CONCAT(DISTINCT COALESCE(NULLIF(i.description, ''), 'N/A') ORDER BY i.description SEPARATOR ', ') as equipment_type")
+                    )
+                    ->groupBy('gatepass_no'),
+                'gi_counts',
+                'gi_counts.gatepass_no',
+                '=',
+                'gl.gatepass_no'
+            )
             ->whereIn('gl.log_type', ['INCOMING', 'OUTGOING']);
 
         if ($search !== '') {
@@ -333,6 +346,7 @@ class GuardGatepassLogController extends Controller
                 'gl.requester_employee_id',
                 'requester.employee_name as requester_name',
                 'guard_user.name as scanned_by_guard_name',
+                DB::raw("COALESCE(NULLIF(gi_counts.equipment_type, ''), 'N/A') as equipment_type"),
                 'gr.status as gatepass_status',
                 'gr.destination',
                 'gr.purpose',

@@ -144,7 +144,7 @@
                     </button>
                     <button id="viewHistoryBtn"
                         class="w-full bg-[#173a6b] hover:bg-[#123154] text-white font-bold text-[20px] py-4 rounded-[18px] transition">
-                        Scanned History
+                        Scan History
                     </button>
                 </div>
 
@@ -196,7 +196,7 @@
                             <th class="px-4 py-3 font-semibold">Status</th>
                             <th class="px-4 py-3 font-semibold">Employee</th>
                             <th class="px-4 py-3 font-semibold">Employee ID</th>
-                            <th class="px-4 py-3 font-semibold">Scanned By</th>
+                            <th class="px-4 py-3 font-semibold">Equipment</th>
                             <th class="px-4 py-3 font-semibold">Purpose</th>
                             <th class="px-4 py-3 font-semibold">Destination</th>
                         </tr>
@@ -1405,7 +1405,7 @@
                     <td class="px-4 py-3">${historyStatusBadgeHtml(record.log_type)}</td>
                     <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.requester_name ?? 'N/A'))}</td>
                     <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.requester_employee_id ?? 'N/A'))}</td>
-                    <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.scanned_by_guard_name ?? 'N/A'))}</td>
+                    <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.equipment_type ?? 'N/A'))}</td>
                     <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.purpose ?? 'N/A'))}</td>
                     <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.destination ?? 'N/A'))}</td>
                 `;
@@ -1428,7 +1428,7 @@
             try {
                 const params = new URLSearchParams({
                     page: String(page),
-                    per_page: '5',
+                    per_page: '4',
                 });
                 if (historySearchTerm.trim() !== '') {
                     params.set('search', historySearchTerm.trim());

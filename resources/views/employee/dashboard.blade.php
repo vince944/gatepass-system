@@ -139,15 +139,6 @@
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <button
-                        id="newRequestBtn"
-                        type="button"
-                        onclick="openRequestModal()"
-                        class="bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] font-semibold text-[14px] sm:text-[16px] px-4 sm:px-8 py-2.5 sm:py-3 rounded-2xl flex items-center gap-3 transition whitespace-nowrap">
-                        <i class="fa-solid fa-plus text-[18px]"></i>
-                        <span>New Request</span>
-                    </button>
-
                     <button onclick="openProfileModal()" class="w-11 h-11 sm:w-[50px] sm:h-[50px] rounded-xl sm:rounded-full bg-[#003b95] text-white flex items-center justify-center text-[20px] sm:text-[24px]">
                         <i class="fa-regular fa-user"></i>
                     </button>
@@ -184,7 +175,7 @@
                     </div>
                 </div>
 
-                <div class="order-1 md:order-2 flex flex-wrap items-center gap-4 mb-7">
+                <div class="order-1 md:order-2 hidden md:flex flex-wrap items-center gap-4 mb-7">
                     <div class="flex items-center gap-3 text-[#003b95] font-semibold text-[18px]">
                         <i class="fa-solid fa-filter text-[22px]"></i>
                         <span>Filter by Status:</span>
@@ -208,13 +199,40 @@
                 </div>
 
                 <div class="order-2 md:order-3 bg-white rounded-[22px] border border-black/10 min-h-[330px] px-5 sm:px-8 py-8">
-                    <h3 class="text-[22px] font-semibold text-[#003b95] mb-2">My Requests</h3>
+                    <div class="mb-2 flex items-center justify-between gap-3">
+                        <h3 class="text-[22px] font-semibold text-[#003b95]">My Requests</h3>
+                        <button
+                            id="newRequestBtn"
+                            type="button"
+                            onclick="openRequestModal()"
+                            class="bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] font-semibold text-[14px] sm:text-[16px] px-4 sm:px-8 py-2.5 sm:py-3 rounded-2xl flex items-center gap-3 transition whitespace-nowrap">
+                            <i class="fa-solid fa-plus text-[18px]"></i>
+                            <span>New Request</span>
+                        </button>
+                    </div>
                     <p id="employeeDashboardRequestsFound" class="text-[18px] text-[#6b7280] mb-10">0 requests found</p>
 
                     <div id="employeeDashboardEmpty" class="h-[180px] flex items-center justify-center border border-dashed border-gray-300 rounded-2xl">
                         <p class="text-gray-400 text-[18px]">No requests found.</p>
                     </div>
                     <div id="employeeDashboardList" class="hidden"></div>
+                    <div id="employeeDashboardPagination" class="hidden mt-6 flex items-center justify-end gap-2">
+                        <button
+                            id="employeeDashboardPrevBtn"
+                            type="button"
+                            class="h-[38px] px-4 rounded-xl border border-gray-300 bg-white text-[14px] font-semibold text-[#425b78] hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Prev
+                        </button>
+                        <div id="employeeDashboardPageNumbers" class="flex items-center gap-2"></div>
+                        <button
+                            id="employeeDashboardNextBtn"
+                            type="button"
+                            class="h-[38px] px-4 rounded-xl border border-gray-300 bg-white text-[14px] font-semibold text-[#425b78] hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -239,6 +257,26 @@
 
                     <div id="emptyHistory" class="py-16 text-center text-gray-400 text-[18px]">
                         No request history yet.
+                    </div>
+
+                    <div id="employeeHistoryPagination" class="hidden px-5 sm:px-8 py-5 border-t border-gray-200">
+                        <div class="flex items-center justify-end gap-2">
+                            <button
+                                id="employeeHistoryPrevBtn"
+                                type="button"
+                                class="h-[38px] px-4 rounded-xl border border-gray-300 bg-white text-[14px] font-semibold text-[#425b78] hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Prev
+                            </button>
+                            <div id="employeeHistoryPageNumbers" class="flex items-center gap-2"></div>
+                            <button
+                                id="employeeHistoryNextBtn"
+                                type="button"
+                                class="h-[38px] px-4 rounded-xl border border-gray-300 bg-white text-[14px] font-semibold text-[#425b78] hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Next
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -287,6 +325,7 @@
                     action="{{ route('employee.gatepass-requests.store') }}"
                 >
                     @csrf
+                    <input type="hidden" id="employeeResubmitGatepassNo" name="resubmit_gatepass_no" value="">
 
                     <!-- Top Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -418,14 +457,14 @@
                     </div>
 
                     <!-- Selected Equipment Box -->
-                    <div class="border border-gray-200 rounded-2xl bg-[#fbfcfe] min-h-[155px]">
-                        <table class="w-full text-left">
+                    <div class="border border-gray-200 rounded-2xl bg-[#fbfcfe] min-h-[155px] overflow-x-auto">
+                        <table class="w-full min-w-[520px] table-fixed sm:table-auto text-left">
                             <thead class="border-b border-gray-200 bg-white/60">
                                 <tr>
-                                    <th class="px-5 py-3 text-[14px] font-semibold text-[#4b6790]">#</th>
-                                    <th class="px-5 py-3 text-[14px] font-semibold text-[#4b6790]">Prop No</th>
+                                    <th class="w-[52px] px-5 py-3 text-[14px] font-semibold text-[#4b6790]">#</th>
+                                    <th class="w-[120px] px-5 py-3 text-[14px] font-semibold text-[#4b6790]">Prop No</th>
                                     <th class="px-5 py-3 text-[14px] font-semibold text-[#4b6790]">Description</th>
-                                    <th class="px-5 py-3 text-[14px] font-semibold text-[#4b6790] text-right">Action</th>
+                                    <th class="w-[90px] px-5 py-3 text-[14px] font-semibold text-[#4b6790] sm:text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="employeeSelectedEquipmentBody">
@@ -672,6 +711,11 @@
                                 <div id="requestDetailsRemarks" class="text-[15px] font-semibold text-[#111827] break-words">—</div>
                             </div>
                         </div>
+
+                        <div id="requestDetailsRejectionReasonWrap" class="hidden mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+                            <div class="text-[12px] font-semibold text-rose-700 uppercase tracking-wide mb-1">Rejection Reason</div>
+                            <div id="requestDetailsRejectionReason" class="text-[14px] font-semibold text-rose-900 break-words">—</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -744,6 +788,23 @@
         const employeeAddEquipmentBtn = document.getElementById('employeeAddEquipmentBtn');
         const employeeSelectedEquipmentBody = document.getElementById('employeeSelectedEquipmentBody');
         const employeeNoEquipmentRow = document.getElementById('employeeNoEquipmentRow');
+        const employeeGatepassModalTitle = document.querySelector('#requestModal h2');
+        const employeeGatepassSubmitBtn = document.querySelector('#employeeGatepassForm button[type="submit"]');
+        const employeePurposeInput = document.getElementById('employeePurpose');
+        const employeeRemarksInput = document.getElementById('employeeRemarks');
+        const employeeDestinationInput = document.getElementById('employeeDestination');
+        const employeeGatepassNoInput = document.getElementById('employeeGatepassNo');
+        const employeeResubmitGatepassNoInput = document.getElementById('employeeResubmitGatepassNo');
+        const employeeRequestDateInput = document.querySelector('#employeeGatepassForm input[type="date"]');
+        const employeeResubmitCache = new Map();
+        const EMPLOYEE_DASHBOARD_PAGE_SIZE = 5;
+        const EMPLOYEE_DASHBOARD_MAX_VISIBLE_PAGES = 3;
+        let employeeDashboardRows = [];
+        let employeeDashboardCurrentPage = 1;
+        const EMPLOYEE_HISTORY_PAGE_SIZE = 5;
+        const EMPLOYEE_HISTORY_MAX_VISIBLE_PAGES = 3;
+        let employeeHistoryRows = [];
+        let employeeHistoryCurrentPage = 1;
 
         function activateDashboardButton() {
             navDashboard.classList.add('bg-[#47698f]', 'text-white');
@@ -843,8 +904,32 @@
         });
 
 
-        function openRequestModal() {
+        function openRequestModal(options = {}) {
             const modal = document.getElementById('requestModal');
+            const shouldReset = options.reset !== false;
+            const form = document.getElementById('employeeGatepassForm');
+
+            if (shouldReset && form) {
+                form.reset();
+                form.dataset.mode = 'new';
+                form.dataset.editGatepassNo = '';
+                if (employeeGatepassModalTitle) {
+                    employeeGatepassModalTitle.textContent = 'New Gate Pass Request';
+                }
+                if (employeeGatepassSubmitBtn) {
+                    employeeGatepassSubmitBtn.textContent = 'Submit Request';
+                }
+                if (employeeGatepassNoInput) {
+                    employeeGatepassNoInput.value = '';
+                }
+                if (employeeResubmitGatepassNoInput) {
+                    employeeResubmitGatepassNoInput.value = '';
+                }
+                if (employeeRequestDateInput) {
+                    employeeRequestDateInput.value = "{{ date('Y-m-d') }}";
+                }
+                employeeResetEquipmentTable();
+            }
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -906,6 +991,84 @@
 
             employeeSelectedEquipmentBody.innerHTML = '';
             employeeSelectedEquipmentBody.appendChild(employeeNoEquipmentRow);
+        }
+
+        function employeeFillSelectedEquipment(equipments) {
+            if (!employeeSelectedEquipmentBody || !employeeNoEquipmentRow) {
+                return;
+            }
+
+            employeeSelectedEquipmentBody.innerHTML = '';
+            const rows = Array.isArray(equipments) ? equipments : [];
+
+            if (rows.length === 0) {
+                employeeSelectedEquipmentBody.appendChild(employeeNoEquipmentRow);
+                return;
+            }
+
+            rows.forEach(function (eq, idx) {
+                const tr = document.createElement('tr');
+                const propNo = String(eq?.prop_no || '').trim();
+                const description = String(eq?.description || '').trim();
+                const inventoryId = String(eq?.inventory_id || '').trim();
+
+                tr.innerHTML = ''
+                    + '<td class="px-5 py-3 align-top text-[14px] text-gray-700">' + (idx + 1) + '</td>'
+                    + '<td class="px-5 py-3 align-top text-[14px] text-gray-800 break-words">' + escapeHtml(propNo || '—') + '</td>'
+                    + '<td class="px-5 py-3 align-top text-[14px] text-gray-800 break-words">' + escapeHtml(description || '—') + '</td>'
+                    + '<td class="px-5 py-3 align-top sm:text-right">'
+                    + '  <button type="button" class="inline-flex whitespace-nowrap text-red-500 text-[13px] sm:text-[14px] font-semibold" onclick="employeeRemoveSelectedEquipment(this)">Remove</button>'
+                    + (inventoryId ? ('  <input type="hidden" name="inventory_ids[]" value="' + escapeHtml(inventoryId) + '">') : '')
+                    + '</td>';
+
+                employeeSelectedEquipmentBody.appendChild(tr);
+            });
+        }
+
+        function openEditResubmitModal(row) {
+            const gatepassNo = String(row?.gatepass_no || '').trim();
+            const draft = employeeResubmitCache.get(gatepassNo) || {};
+            const purpose = String(draft.purpose ?? row?.purpose ?? '').trim();
+            const remarks = String(draft.remarks ?? row?.remarks ?? '').trim();
+            const destination = String(draft.destination ?? row?.destination ?? '').trim();
+            const requestDate = String(draft.request_date ?? row?.request_date ?? '').trim();
+            const equipments = Array.isArray(draft.equipments) && draft.equipments.length
+                ? draft.equipments
+                : (Array.isArray(row?.equipments) ? row.equipments : []);
+            const form = document.getElementById('employeeGatepassForm');
+
+            if (form) {
+                form.dataset.mode = 'resubmit';
+                form.dataset.editGatepassNo = gatepassNo;
+            }
+
+            if (employeeGatepassModalTitle) {
+                employeeGatepassModalTitle.textContent = 'Edit & Resubmit Gate Pass Request';
+            }
+            if (employeeGatepassSubmitBtn) {
+                employeeGatepassSubmitBtn.textContent = 'Resubmit Request';
+            }
+            if (employeeGatepassNoInput) {
+                employeeGatepassNoInput.value = gatepassNo || '';
+            }
+            if (employeeResubmitGatepassNoInput) {
+                employeeResubmitGatepassNoInput.value = gatepassNo || '';
+            }
+            if (employeeRequestDateInput && requestDate) {
+                employeeRequestDateInput.value = requestDate;
+            }
+            if (employeePurposeInput) {
+                employeePurposeInput.value = purpose;
+            }
+            if (employeeRemarksInput) {
+                employeeRemarksInput.value = remarks;
+            }
+            if (employeeDestinationInput) {
+                employeeDestinationInput.value = destination;
+            }
+
+            employeeFillSelectedEquipment(equipments);
+            openRequestModal({ reset: false });
         }
 
         window.addEventListener('click', function(e) {
@@ -978,11 +1141,11 @@
                     const tr = document.createElement('tr');
 
                     tr.innerHTML = ''
-                        + '<td class="px-5 py-3 text-[14px] text-gray-700">' + index + '</td>'
-                        + '<td class="px-5 py-3 text-[14px] text-gray-800">' + propNo + '</td>'
-                        + '<td class="px-5 py-3 text-[14px] text-gray-800">' + description + '</td>'
-                        + '<td class="px-5 py-3 text-right">'
-                        + '  <button type="button" class="text-red-500 text-[14px] font-semibold" onclick="employeeRemoveSelectedEquipment(this)">Remove</button>'
+                        + '<td class="px-5 py-3 align-top text-[14px] text-gray-700">' + index + '</td>'
+                        + '<td class="px-5 py-3 align-top text-[14px] text-gray-800 break-words">' + propNo + '</td>'
+                        + '<td class="px-5 py-3 align-top text-[14px] text-gray-800 break-words">' + description + '</td>'
+                        + '<td class="px-5 py-3 align-top sm:text-right">'
+                        + '  <button type="button" class="inline-flex whitespace-nowrap text-red-500 text-[13px] sm:text-[14px] font-semibold" onclick="employeeRemoveSelectedEquipment(this)">Remove</button>'
                         + '  <input type="hidden" name="inventory_ids[]" value="' + value + '">'
                         + '</td>';
 
@@ -1026,6 +1189,12 @@
                     const action = form.getAttribute('action') || '';
 
                     const formData = new FormData(form);
+                    const resubmitGatepassNo = String(form?.dataset?.editGatepassNo || '').trim();
+                    if (resubmitGatepassNo) {
+                        formData.set('resubmit_gatepass_no', resubmitGatepassNo);
+                    } else {
+                        formData.delete('resubmit_gatepass_no');
+                    }
 
                     try {
                         const response = await fetch(action, {
@@ -1073,6 +1242,31 @@
             if (gatepassQrDownloadBtn) {
                 gatepassQrDownloadBtn.addEventListener('click', async function () {
                     await employeeDownloadGatepassQrCode();
+                });
+            }
+
+            const employeeHistoryPrevBtn = document.getElementById('employeeHistoryPrevBtn');
+            const employeeHistoryNextBtn = document.getElementById('employeeHistoryNextBtn');
+            const employeeDashboardPrevBtn = document.getElementById('employeeDashboardPrevBtn');
+            const employeeDashboardNextBtn = document.getElementById('employeeDashboardNextBtn');
+            if (employeeHistoryPrevBtn) {
+                employeeHistoryPrevBtn.addEventListener('click', function () {
+                    renderEmployeeHistoryPage(employeeHistoryCurrentPage - 1);
+                });
+            }
+            if (employeeHistoryNextBtn) {
+                employeeHistoryNextBtn.addEventListener('click', function () {
+                    renderEmployeeHistoryPage(employeeHistoryCurrentPage + 1);
+                });
+            }
+            if (employeeDashboardPrevBtn) {
+                employeeDashboardPrevBtn.addEventListener('click', function () {
+                    renderEmployeeDashboardPage(employeeDashboardCurrentPage - 1);
+                });
+            }
+            if (employeeDashboardNextBtn) {
+                employeeDashboardNextBtn.addEventListener('click', function () {
+                    renderEmployeeDashboardPage(employeeDashboardCurrentPage + 1);
                 });
             }
         });
@@ -1131,8 +1325,9 @@
             const foundEl = document.getElementById('employeeDashboardRequestsFound');
             const emptyEl = document.getElementById('employeeDashboardEmpty');
             const listEl = document.getElementById('employeeDashboardList');
+            const paginationWrap = document.getElementById('employeeDashboardPagination');
 
-            if (!totalEl || !pendingEl || !approvedEl || !activeOutsideEl || !foundEl || !emptyEl || !listEl) {
+            if (!totalEl || !pendingEl || !approvedEl || !activeOutsideEl || !foundEl || !emptyEl || !listEl || !paginationWrap) {
                 return;
             }
 
@@ -1157,6 +1352,8 @@
                 const data = (json && json.data) ? json.data : {};
                 const counts = data.counts || {};
                 const rows = Array.isArray(data.requests) ? data.requests : [];
+                employeeDashboardRows = rows;
+                employeeDashboardCurrentPage = 1;
 
                 totalEl.textContent = String(counts.total ?? 0);
                 pendingEl.textContent = String(counts.pending ?? 0);
@@ -1170,13 +1367,46 @@
                 if (!rows.length) {
                     emptyEl.classList.remove('hidden');
                     listEl.classList.add('hidden');
+                    paginationWrap.classList.add('hidden');
                     return;
                 }
 
                 emptyEl.classList.add('hidden');
                 listEl.classList.remove('hidden');
+                renderEmployeeDashboardPage(1);
+            } catch (e) {
+                employeeShowToast('Failed to load dashboard. Please refresh.', 'error');
+            }
+        }
 
-                for (const row of rows) {
+        function renderEmployeeDashboardPage(page) {
+            const listEl = document.getElementById('employeeDashboardList');
+            const emptyEl = document.getElementById('employeeDashboardEmpty');
+            const paginationWrap = document.getElementById('employeeDashboardPagination');
+            const prevBtn = document.getElementById('employeeDashboardPrevBtn');
+            const nextBtn = document.getElementById('employeeDashboardNextBtn');
+            const pageNumbers = document.getElementById('employeeDashboardPageNumbers');
+
+            if (!listEl || !emptyEl || !paginationWrap || !prevBtn || !nextBtn || !pageNumbers) {
+                return;
+            }
+
+            const totalRows = employeeDashboardRows.length;
+            if (!totalRows) {
+                listEl.innerHTML = '';
+                emptyEl.classList.remove('hidden');
+                paginationWrap.classList.add('hidden');
+                return;
+            }
+
+            const lastPage = Math.max(1, Math.ceil(totalRows / EMPLOYEE_DASHBOARD_PAGE_SIZE));
+            employeeDashboardCurrentPage = Math.min(Math.max(1, Number(page) || 1), lastPage);
+            const offset = (employeeDashboardCurrentPage - 1) * EMPLOYEE_DASHBOARD_PAGE_SIZE;
+            const rows = employeeDashboardRows.slice(offset, offset + EMPLOYEE_DASHBOARD_PAGE_SIZE);
+            listEl.innerHTML = '';
+            emptyEl.classList.add('hidden');
+
+            for (const row of rows) {
                     const equipments = Array.isArray(row.equipments) ? row.equipments : [];
                     const itemsText = equipments.length
                         ? equipments.map(function (eq) {
@@ -1190,6 +1420,8 @@
                     const statusText = (row.status || '—').toString();
                     const statusTextLower = String(statusText).toLowerCase();
                     const badgeClass = employeeStatusBadgeClass(statusText);
+                    const rejectionReason = (row.rejection_reason || '').toString().trim();
+                    const showRejectionReason = statusTextLower === 'resubmit' && rejectionReason !== '';
 
                     const card = document.createElement('div');
                     card.className = 'border border-gray-200 rounded-2xl bg-white px-5 py-5 mb-4 cursor-pointer hover:shadow-md hover:border-[#003b95]/30 transition';
@@ -1200,10 +1432,14 @@
                     const showQrButton = (statusTextLower === 'approved'
                         || statusTextLower === 'incoming partial'
                         || statusTextLower === 'returned') && gatepassNo;
+                    const showEditResubmitButton = statusTextLower === 'resubmit' && gatepassNo;
                     const qrButtonHtml = showQrButton
                         ? '<button type="button" data-qr-gatepass-no="' + escapeHtml(gatepassNo) + '" aria-label="Show Gate Pass QR Code" class="w-[36px] h-[36px] rounded-full border border-[#00b84f]/30 bg-white text-[#00b84f] flex items-center justify-center text-[16px] hover:bg-[#e8fff0] transition">' +
                             '<i class="fa-solid fa-qrcode"></i>' +
                           '</button>'
+                        : '';
+                    const editResubmitButtonHtml = showEditResubmitButton
+                        ? '<button type="button" data-edit-resubmit-gatepass-no="' + escapeHtml(gatepassNo) + '" aria-label="Edit and Resubmit Request" class="h-[36px] rounded-xl border border-[#003b95]/20 bg-white px-3 text-[12px] font-semibold text-[#003b95] hover:bg-[#eef5ff] transition">Edit &amp; Resubmit</button>'
                         : '';
 
                     card.innerHTML = ''
@@ -1212,10 +1448,14 @@
                         + '    <div class="text-[16px] font-semibold text-[#003b95]">' + escapeHtml(row.gatepass_no || '') + '</div>'
                         + '    <div class="text-[14px] text-[#425b78] mt-1">Date: ' + escapeHtml(row.request_date || '') + '</div>'
                         + '    <div class="text-[14px] text-gray-700 mt-2 break-words">' + escapeHtml(itemsText) + '</div>'
+                        + (showRejectionReason
+                            ? '    <div class="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-800"><span class="font-semibold">Rejection Reason:</span> ' + escapeHtml(rejectionReason) + '</div>'
+                            : '')
                         + '  </div>'
                         + '  <div class="shrink-0 flex flex-col items-end gap-2">'
                         + '    <div class="flex items-center gap-2">'
                         + '      <span class="inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold ' + badgeClass + '">' + escapeHtml(statusText) + '</span>'
+                        + editResubmitButtonHtml
                         + qrButtonHtml
                         + '    </div>'
                         + '    <span class="text-[13px] font-semibold text-[#003b95] underline underline-offset-4">View Details</span>'
@@ -1252,23 +1492,57 @@
                         }
                     }
 
+                    if (showEditResubmitButton) {
+                        const editBtn = card.querySelector('button[data-edit-resubmit-gatepass-no]');
+                        if (editBtn) {
+                            editBtn.addEventListener('click', function (ev) {
+                                ev.stopPropagation();
+                                openEditResubmitModal(row);
+                            });
+                        }
+                    }
+
                     listEl.appendChild(card);
                 }
-            } catch (e) {
-                employeeShowToast('Failed to load dashboard. Please refresh.', 'error');
+
+            paginationWrap.classList.toggle('hidden', totalRows <= EMPLOYEE_DASHBOARD_PAGE_SIZE);
+            prevBtn.disabled = employeeDashboardCurrentPage <= 1;
+            nextBtn.disabled = employeeDashboardCurrentPage >= lastPage;
+
+            pageNumbers.innerHTML = '';
+            let startPage = Math.max(1, employeeDashboardCurrentPage - 1);
+            let endPage = Math.min(lastPage, startPage + EMPLOYEE_DASHBOARD_MAX_VISIBLE_PAGES - 1);
+            startPage = Math.max(1, endPage - EMPLOYEE_DASHBOARD_MAX_VISIBLE_PAGES + 1);
+
+            for (let p = startPage; p <= endPage; p += 1) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.textContent = String(p);
+                btn.className = 'h-[38px] min-w-[38px] px-3 rounded-xl border text-[14px] font-semibold transition';
+                if (p === employeeDashboardCurrentPage) {
+                    btn.classList.add('bg-[#003b95]', 'text-white', 'border-[#003b95]');
+                } else {
+                    btn.classList.add('bg-white', 'text-[#425b78]', 'border-gray-300', 'hover:bg-gray-50');
+                }
+                btn.addEventListener('click', function () {
+                    renderEmployeeDashboardPage(p);
+                });
+                pageNumbers.appendChild(btn);
             }
         }
 
         async function employeeLoadRequestHistory() {
             const historyList = document.getElementById('historyList');
             const emptyHistory = document.getElementById('emptyHistory');
+            const paginationWrap = document.getElementById('employeeHistoryPagination');
 
-            if (!historyList || !emptyHistory) {
+            if (!historyList || !emptyHistory || !paginationWrap) {
                 return;
             }
 
             historyList.innerHTML = '';
             emptyHistory.classList.add('hidden');
+            paginationWrap.classList.add('hidden');
 
             try {
                 const response = await fetch("{{ route('employee.gatepass-requests.history') }}", {
@@ -1284,47 +1558,102 @@
 
                 const json = await response.json();
                 const rows = (json && json.data) ? json.data : [];
+                employeeHistoryRows = Array.isArray(rows) ? rows : [];
+                employeeHistoryCurrentPage = 1;
 
-                if (!rows.length) {
+                if (!employeeHistoryRows.length) {
                     emptyHistory.classList.remove('hidden');
                     return;
                 }
 
-                for (const row of rows) {
-                    const equipments = Array.isArray(row.equipments) ? row.equipments : [];
-                    const equipmentsHtml = equipments.length
-                        ? equipments.map(function (eq) {
-                            const prop = (eq.prop_no || '').toString().trim();
-                            const desc = (eq.description || '').toString().trim();
-                            const text = (prop ? (prop + ' - ') : '') + (desc || ('Inventory #' + eq.inventory_id));
-                            return '<div class="text-[14px] text-[#1f2a37]">' + escapeHtml(text) + '</div>';
-                        }).join('')
-                        : '<div class="text-[14px] text-gray-400">No items</div>';
-
-                    const status = (row.status || '—').toString();
-
-                    const statusClass = status.toLowerCase() === 'pending'
-                        ? 'bg-[#fff7e6] text-[#b45309] border border-[#f5b000]/30'
-                        : (status.toLowerCase() === 'approved'
-                            ? 'bg-[#e8fff0] text-[#15803d] border border-[#00b84f]/30'
-                            : 'bg-gray-100 text-gray-700 border border-gray-200');
-
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'grid min-w-[720px] grid-cols-12 px-5 sm:px-8 py-5 border-b border-gray-200';
-
-                    wrapper.innerHTML = ''
-                        + '<div class="col-span-2 whitespace-nowrap text-[15px] font-semibold text-[#003b95]">' + escapeHtml(row.gatepass_no || '') + '</div>'
-                        + '<div class="col-span-6 pr-4">' + equipmentsHtml + '</div>'
-                        + '<div class="col-span-2 whitespace-nowrap text-[15px] text-[#425b78]">' + escapeHtml(row.request_date || '') + '</div>'
-                        + '<div class="col-span-2 whitespace-nowrap">'
-                        + '  <span class="inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold ' + statusClass + '">' + escapeHtml(status) + '</span>'
-                        + '</div>';
-
-                    historyList.appendChild(wrapper);
-                }
+                renderEmployeeHistoryPage(1);
             } catch (e) {
                 emptyHistory.classList.remove('hidden');
                 employeeShowToast('Failed to load request history. Please refresh.', 'error');
+            }
+        }
+
+        function renderEmployeeHistoryPage(page) {
+            const historyList = document.getElementById('historyList');
+            const emptyHistory = document.getElementById('emptyHistory');
+            const paginationWrap = document.getElementById('employeeHistoryPagination');
+            const prevBtn = document.getElementById('employeeHistoryPrevBtn');
+            const nextBtn = document.getElementById('employeeHistoryNextBtn');
+            const pageNumbers = document.getElementById('employeeHistoryPageNumbers');
+
+            if (!historyList || !emptyHistory || !paginationWrap || !prevBtn || !nextBtn || !pageNumbers) {
+                return;
+            }
+
+            const totalRows = employeeHistoryRows.length;
+            if (!totalRows) {
+                historyList.innerHTML = '';
+                emptyHistory.classList.remove('hidden');
+                paginationWrap.classList.add('hidden');
+                return;
+            }
+
+            const lastPage = Math.max(1, Math.ceil(totalRows / EMPLOYEE_HISTORY_PAGE_SIZE));
+            employeeHistoryCurrentPage = Math.min(Math.max(1, Number(page) || 1), lastPage);
+            const offset = (employeeHistoryCurrentPage - 1) * EMPLOYEE_HISTORY_PAGE_SIZE;
+            const rows = employeeHistoryRows.slice(offset, offset + EMPLOYEE_HISTORY_PAGE_SIZE);
+
+            historyList.innerHTML = '';
+            emptyHistory.classList.add('hidden');
+
+            for (const row of rows) {
+                const equipments = Array.isArray(row.equipments) ? row.equipments : [];
+                const equipmentsHtml = equipments.length
+                    ? equipments.map(function (eq) {
+                        const prop = (eq.prop_no || '').toString().trim();
+                        const desc = (eq.description || '').toString().trim();
+                        const text = (prop ? (prop + ' - ') : '') + (desc || ('Inventory #' + eq.inventory_id));
+                        return '<div class="text-[14px] text-[#1f2a37]">' + escapeHtml(text) + '</div>';
+                    }).join('')
+                    : '<div class="text-[14px] text-gray-400">No items</div>';
+
+                const status = (row.status || '—').toString();
+                const statusClass = status.toLowerCase() === 'pending'
+                    ? 'bg-[#fff7e6] text-[#b45309] border border-[#f5b000]/30'
+                    : (status.toLowerCase() === 'approved'
+                        ? 'bg-[#e8fff0] text-[#15803d] border border-[#00b84f]/30'
+                        : 'bg-gray-100 text-gray-700 border border-gray-200');
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'grid min-w-[720px] grid-cols-12 px-5 sm:px-8 py-5 border-b border-gray-200';
+                wrapper.innerHTML = ''
+                    + '<div class="col-span-2 whitespace-nowrap text-[15px] font-semibold text-[#003b95]">' + escapeHtml(row.gatepass_no || '') + '</div>'
+                    + '<div class="col-span-6 pr-4">' + equipmentsHtml + '</div>'
+                    + '<div class="col-span-2 whitespace-nowrap text-[15px] text-[#425b78]">' + escapeHtml(row.request_date || '') + '</div>'
+                    + '<div class="col-span-2 whitespace-nowrap">'
+                    + '  <span class="inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold ' + statusClass + '">' + escapeHtml(status) + '</span>'
+                    + '</div>';
+                historyList.appendChild(wrapper);
+            }
+
+            paginationWrap.classList.toggle('hidden', totalRows <= EMPLOYEE_HISTORY_PAGE_SIZE);
+            prevBtn.disabled = employeeHistoryCurrentPage <= 1;
+            nextBtn.disabled = employeeHistoryCurrentPage >= lastPage;
+
+            pageNumbers.innerHTML = '';
+            let startPage = Math.max(1, employeeHistoryCurrentPage - 1);
+            let endPage = Math.min(lastPage, startPage + EMPLOYEE_HISTORY_MAX_VISIBLE_PAGES - 1);
+            startPage = Math.max(1, endPage - EMPLOYEE_HISTORY_MAX_VISIBLE_PAGES + 1);
+
+            for (let p = startPage; p <= endPage; p += 1) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.textContent = String(p);
+                btn.className = 'h-[38px] min-w-[38px] px-3 rounded-xl border text-[14px] font-semibold transition';
+                if (p === employeeHistoryCurrentPage) {
+                    btn.classList.add('bg-[#003b95]', 'text-white', 'border-[#003b95]');
+                } else {
+                    btn.classList.add('bg-white', 'text-[#425b78]', 'border-gray-300', 'hover:bg-gray-50');
+                }
+                btn.addEventListener('click', function () {
+                    renderEmployeeHistoryPage(p);
+                });
+                pageNumbers.appendChild(btn);
             }
         }
 
@@ -1344,6 +1673,9 @@
             }
             if (statusLower === 'approved') {
                 return 'bg-[#e8fff0] text-[#15803d] border border-[#00b84f]/30';
+            }
+            if (statusLower === 'resubmit') {
+                return 'bg-rose-100 text-rose-800 border border-rose-200';
             }
             if (statusLower === 'returned') {
                 return 'bg-[#eef5ff] text-[#1d4ed8] border border-[#2962ff]/30';
@@ -1635,8 +1967,10 @@
             const purposeEl = document.getElementById('requestDetailsPurpose');
             const destinationEl = document.getElementById('requestDetailsDestination');
             const remarksEl = document.getElementById('requestDetailsRemarks');
+            const rejectionReasonWrapEl = document.getElementById('requestDetailsRejectionReasonWrap');
+            const rejectionReasonEl = document.getElementById('requestDetailsRejectionReason');
 
-            if (!loadingEl || !errorEl || !bodyEl || !gatepassNoEl || !statusBadgeEl || !itemsEl || !requestDateEl || !purposeEl || !destinationEl || !remarksEl) {
+            if (!loadingEl || !errorEl || !bodyEl || !gatepassNoEl || !statusBadgeEl || !itemsEl || !requestDateEl || !purposeEl || !destinationEl || !remarksEl || !rejectionReasonWrapEl || !rejectionReasonEl) {
                 return;
             }
 
@@ -1652,6 +1986,8 @@
             purposeEl.textContent = '—';
             destinationEl.textContent = '—';
             remarksEl.textContent = '—';
+            rejectionReasonEl.textContent = '—';
+            rejectionReasonWrapEl.classList.add('hidden');
 
             try {
                 const urlTemplate = "{{ route('employee.gatepass-requests.show', ['gatepass_no' => '__GP__']) }}";
@@ -1714,6 +2050,31 @@
                 purposeEl.textContent = data.purpose || '—';
                 destinationEl.textContent = data.destination || '—';
                 remarksEl.textContent = data.remarks || '—';
+                if (data.gatepass_no) {
+                    employeeResubmitCache.set(String(data.gatepass_no), {
+                        request_date: data.request_date || '',
+                        purpose: data.purpose || '',
+                        destination: data.destination || '',
+                        remarks: data.remarks || '',
+                        equipments: Array.isArray(data.items)
+                            ? data.items.map(function (item) {
+                                return {
+                                    inventory_id: item.inventory_id,
+                                    prop_no: item.prop_no,
+                                    description: item.description,
+                                };
+                            })
+                            : [],
+                    });
+                }
+                const rejectionReason = String(data.rejection_reason || '').trim();
+                if (statusText.toLowerCase() === 'resubmit' && rejectionReason !== '') {
+                    rejectionReasonEl.textContent = rejectionReason;
+                    rejectionReasonWrapEl.classList.remove('hidden');
+                } else {
+                    rejectionReasonEl.textContent = '—';
+                    rejectionReasonWrapEl.classList.add('hidden');
+                }
 
                 loadingEl.classList.add('hidden');
                 bodyEl.classList.remove('hidden');
