@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AdminGatepassRequestSubmittedMail;
 use App\Models\Employee;
 use App\Models\GatepassRequest;
 use App\Models\GatepassRequestItem;
+use App\Models\User;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
 use Endroid\QrCode\Logo\Logo;
@@ -14,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class EmployeeGatepassRequestController extends Controller
@@ -492,6 +495,7 @@ class EmployeeGatepassRequestController extends Controller
         }
 
         $isResubmit = trim((string) ($validated['resubmit_gatepass_no'] ?? '')) !== '';
+        $this->notifyAdminsOfNewGatepassRequest($gatepassRequest);
 
         return response()->json([
             'message' => 'Gate pass request submitted successfully.',
@@ -500,5 +504,44 @@ class EmployeeGatepassRequestController extends Controller
                 'status' => $isResubmit ? 'Pending' : null,
             ],
         ], $isResubmit ? 200 : 201);
+    }
+
+    private function notifyAdminsOfNewGatepassRequest(GatepassRequest $gatepassRequest): void
+    {
+        try {
+            $gatepassRequest->loadMissing(['requester.user']);
+
+            $requesterDisplayName = (string) (
+                $gatepassRequest->requester?->employee_name
+                ?? $gatepassRequest->requester?->user?->name
+                ?? ''
+            );
+
+            $adminEmails = User::query()
+                ->where('role', 'admin')
+                ->whereNotNull('email')
+                ->pluck('email')
+                ->map(static fn ($email) => trim((string) $email))
+                ->filter(static fn (string $email) => $email !== '')
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($adminEmails === []) {
+                return;
+            }
+
+            foreach ($adminEmails as $adminEmail) {
+                Mail::to($adminEmail)->send(new AdminGatepassRequestSubmittedMail(
+                    gatepass: $gatepassRequest,
+                    requesterDisplayName: $requesterDisplayName,
+                ));
+            }
+        } catch (\Throwable $e) {
+            Log::error('Failed to send admin gatepass request notification email.', [
+                'gatepass_no' => $gatepassRequest->gatepass_no,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

@@ -319,7 +319,22 @@ class GuardGatepassLogController extends Controller
                     ->leftJoin('inventory as i', 'i.id', '=', 'gi.inventory_id')
                     ->select(
                         'gi.gatepass_no',
-                        DB::raw("GROUP_CONCAT(DISTINCT COALESCE(NULLIF(i.description, ''), 'N/A') ORDER BY i.description SEPARATOR ', ') as equipment_type")
+                        DB::raw("
+                            GROUP_CONCAT(
+                                DISTINCT TRIM(
+                                    CONCAT(
+                                        CASE
+                                            WHEN NULLIF(TRIM(COALESCE(i.current_prop_no, '')), '') IS NOT NULL
+                                                THEN CONCAT(TRIM(i.current_prop_no), ' - ')
+                                            ELSE ''
+                                        END,
+                                        COALESCE(NULLIF(TRIM(i.description), ''), 'N/A')
+                                    )
+                                )
+                                ORDER BY i.description
+                                SEPARATOR ', '
+                            ) as equipment_display
+                        ")
                     )
                     ->groupBy('gatepass_no'),
                 'gi_counts',
@@ -357,7 +372,7 @@ class GuardGatepassLogController extends Controller
                 'gl.requester_employee_id',
                 'requester.employee_name as requester_name',
                 'guard_user.name as scanned_by_guard_name',
-                DB::raw("COALESCE(NULLIF(gi_counts.equipment_type, ''), 'N/A') as equipment_type"),
+                DB::raw("COALESCE(NULLIF(gi_counts.equipment_display, ''), 'N/A') as equipment_display"),
                 'gr.status as gatepass_status',
                 'gr.destination',
                 'gr.purpose',

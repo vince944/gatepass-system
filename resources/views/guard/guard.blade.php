@@ -208,7 +208,7 @@
                             <th class="px-4 py-3 font-semibold">Status</th>
                             <th class="px-4 py-3 font-semibold">Employee</th>
                             <th class="px-4 py-3 font-semibold">Employee ID</th>
-                            <th class="px-4 py-3 font-semibold">Equipment</th>
+                            <th class="px-4 py-3 font-semibold">Property No./Equipment</th>
                             <th class="px-4 py-3 font-semibold">Purpose</th>
                             <th class="px-4 py-3 font-semibold">Destination</th>
                         </tr>
@@ -1463,7 +1463,7 @@
                     <td class="px-4 py-3">${historyStatusBadgeHtml(record.log_type)}</td>
                     <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.requester_name ?? 'N/A'))}</td>
                     <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.requester_employee_id ?? 'N/A'))}</td>
-                    <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.equipment_type ?? 'N/A'))}</td>
+                    <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.equipment_display ?? record.equipment_type ?? 'N/A'))}</td>
                     <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.purpose ?? 'N/A'))}</td>
                     <td class="px-4 py-3 text-[#173a6b]">${escapeHtml(String(record.destination ?? 'N/A'))}</td>
                 `;

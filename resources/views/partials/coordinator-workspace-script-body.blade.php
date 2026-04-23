@@ -40,6 +40,8 @@
     const trackerHistorySubtitle = document.getElementById('trackerHistorySubtitle');
     const incomingHistoryList = document.getElementById('incomingHistoryList');
     const outgoingHistoryList = document.getElementById('outgoingHistoryList');
+    const trackerHistoryGatepassModal = document.getElementById('trackerHistoryGatepassModal');
+    const closeTrackerHistoryGatepassModalBtn = document.getElementById('closeTrackerHistoryGatepassModal');
 
     const employeeSelect = document.getElementById('employeeSelect');
     const employeeIdHiddenInput = document.getElementById('employeeIdHiddenInput');
@@ -75,6 +77,10 @@
     const cancelAddItemModal = document.getElementById('cancelAddItemModal');
     const currentDateField = document.getElementById('currentDateField');
     const addItemForm = document.getElementById('addItemForm');
+    const addItemSubmitBtn = document.getElementById('addItemSubmitBtn');
+    const addItemProgressWrap = document.getElementById('addItemProgressWrap');
+    const addItemProgressBar = document.getElementById('addItemProgressBar');
+    const addItemProgressPercent = document.getElementById('addItemProgressPercent');
     const formErrorToast = document.getElementById('formErrorToast');
     const formErrorToastMessage = document.getElementById('formErrorToastMessage');
 
@@ -209,6 +215,107 @@
         return div.innerHTML;
     }
 
+    function getTrackerHistoryGatepassDetailUrl(gatepassNo) {
+        if (!gatepassNo) {
+            return '';
+        }
+
+        const template = (typeof adminGatepassShowUrlTemplate === 'string' && adminGatepassShowUrlTemplate.trim() !== '')
+            ? adminGatepassShowUrlTemplate
+            : '';
+
+        if (!template) {
+            return '';
+        }
+
+        return template.replace('__GP__', encodeURIComponent(String(gatepassNo)));
+    }
+
+    function closeTrackerHistoryGatepassDetailsModal() {
+        if (!trackerHistoryGatepassModal) {
+            return;
+        }
+
+        trackerHistoryGatepassModal.classList.add('hidden');
+        trackerHistoryGatepassModal.classList.remove('flex');
+    }
+
+    function trackerHistorySetText(id, value) {
+        const el = document.getElementById(id);
+        if (!el) {
+            return;
+        }
+
+        const text = String(value || '').trim();
+        el.textContent = text !== '' ? text : '—';
+    }
+
+    async function openTrackerHistoryGatepassDetails(gatepassNo) {
+        const detailsUrl = getTrackerHistoryGatepassDetailUrl(gatepassNo);
+        if (!trackerHistoryGatepassModal || !detailsUrl) {
+            return;
+        }
+
+        const loadingEl = document.getElementById('trackerHistoryGatepassLoading');
+        const errorEl = document.getElementById('trackerHistoryGatepassError');
+        const bodyEl = document.getElementById('trackerHistoryGatepassBody');
+        const equipmentEl = document.getElementById('trackerHistoryGatepassEquipment');
+        if (!loadingEl || !errorEl || !bodyEl || !equipmentEl) {
+            return;
+        }
+
+        trackerHistorySetText('trackerHistoryGatepassNo', '—');
+        trackerHistorySetText('trackerHistoryGatepassStatus', '—');
+        trackerHistorySetText('trackerHistoryGatepassRequester', '—');
+        trackerHistorySetText('trackerHistoryGatepassDate', '—');
+        trackerHistorySetText('trackerHistoryGatepassPurpose', '—');
+        trackerHistorySetText('trackerHistoryGatepassDestination', '—');
+        equipmentEl.innerHTML = '';
+
+        loadingEl.classList.remove('hidden');
+        errorEl.classList.add('hidden');
+        bodyEl.classList.add('hidden');
+
+        trackerHistoryGatepassModal.classList.remove('hidden');
+        trackerHistoryGatepassModal.classList.add('flex');
+
+        try {
+            const res = await fetch(detailsUrl, { headers: { Accept: 'application/json' } });
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(payload?.message || 'Failed to load gate pass details.');
+            }
+
+            const d = payload?.data || {};
+            trackerHistorySetText('trackerHistoryGatepassNo', d.gatepass_no || gatepassNo);
+            trackerHistorySetText('trackerHistoryGatepassStatus', d.status || '—');
+            trackerHistorySetText('trackerHistoryGatepassRequester', d.requester_name || '—');
+            trackerHistorySetText('trackerHistoryGatepassDate', d.request_date || '—');
+            trackerHistorySetText('trackerHistoryGatepassPurpose', d.purpose || '—');
+            trackerHistorySetText('trackerHistoryGatepassDestination', d.destination || '—');
+
+            const items = Array.isArray(d.items) ? d.items : [];
+            if (!items.length) {
+                equipmentEl.innerHTML = '<li class="text-gray-500">No equipment listed.</li>';
+            } else {
+                equipmentEl.innerHTML = items.map(function (item) {
+                    const propNo = String(item?.prop_no || '').trim();
+                    const description = String(item?.description || '').trim();
+                    const line = (propNo ? (propNo + ' - ') : '') + (description || 'N/A');
+                    return '<li class="rounded-lg border border-gray-200 bg-[#f8fafc] px-3 py-2">' + escapeHtml(line) + '</li>';
+                }).join('');
+            }
+
+            loadingEl.classList.add('hidden');
+            errorEl.classList.add('hidden');
+            bodyEl.classList.remove('hidden');
+        } catch (e) {
+            loadingEl.classList.add('hidden');
+            bodyEl.classList.add('hidden');
+            errorEl.classList.remove('hidden');
+        }
+    }
+
     function renderHistoryLogsList(container, logs, emptyLabel) {
         if (!container) {
             return;
@@ -226,12 +333,25 @@
             const gp = log?.gatepass_no ? `GP: ${log.gatepass_no}` : '';
             const remarks = log?.remarks ? `Remarks: ${log.remarks}` : '';
             const extra = [gp, remarks].filter(Boolean).join(' • ');
+            const gatepassNo = String(log?.gatepass_no || '').trim();
+            const detailsUrl = getTrackerHistoryGatepassDetailUrl(gatepassNo);
 
             const li = document.createElement('li');
             li.className = 'rounded-lg bg-white/80 border border-white px-3 py-2';
-            li.innerHTML =
-                `<div class="font-medium">${escapeHtml(dt)}</div>` +
-                (extra ? `<div class="mt-1 text-[11px] text-gray-600">${escapeHtml(extra)}</div>` : '');
+            if (detailsUrl) {
+                li.classList.add('cursor-pointer', 'hover:bg-white', 'hover:border-[#003b95]/30', 'transition');
+                li.innerHTML =
+                    `<div class="font-medium">${escapeHtml(dt)}</div>` +
+                    (extra ? `<div class="mt-1 text-[11px] text-gray-600">${escapeHtml(extra)}</div>` : '') +
+                    '<div class="mt-1 text-[11px] font-semibold text-[#003b95]">Click for request details</div>';
+                li.addEventListener('click', function () {
+                    openTrackerHistoryGatepassDetails(gatepassNo);
+                });
+            } else {
+                li.innerHTML =
+                    `<div class="font-medium">${escapeHtml(dt)}</div>` +
+                    (extra ? `<div class="mt-1 text-[11px] text-gray-600">${escapeHtml(extra)}</div>` : '');
+            }
 
             container.appendChild(li);
         });
@@ -374,12 +494,25 @@
                         const gp = log?.gatepass_no ? `GP: ${log.gatepass_no}` : '';
                         const remarks = log?.remarks ? `Remarks: ${log.remarks}` : '';
                         const extra = [gp, remarks].filter(Boolean).join(' • ');
+                        const gatepassNo = String(log?.gatepass_no || '').trim();
+                        const detailsUrl = getTrackerHistoryGatepassDetailUrl(gatepassNo);
 
                         const li = document.createElement('li');
                         li.className = 'rounded-lg bg-white/80 border border-white px-3 py-2';
-                        li.innerHTML =
-                            `<div class="font-medium">${escapeHtml(dt)}</div>` +
-                            (extra ? `<div class="mt-1 text-[11px] text-gray-600">${escapeHtml(extra)}</div>` : '');
+                        if (detailsUrl) {
+                            li.classList.add('cursor-pointer', 'hover:bg-white', 'hover:border-[#003b95]/30', 'transition');
+                            li.innerHTML =
+                                `<div class="font-medium">${escapeHtml(dt)}</div>` +
+                                (extra ? `<div class="mt-1 text-[11px] text-gray-600">${escapeHtml(extra)}</div>` : '') +
+                                '<div class="mt-1 text-[11px] font-semibold text-[#003b95]">Click for request details</div>';
+                            li.addEventListener('click', function () {
+                                openTrackerHistoryGatepassDetails(gatepassNo);
+                            });
+                        } else {
+                            li.innerHTML =
+                                `<div class="font-medium">${escapeHtml(dt)}</div>` +
+                                (extra ? `<div class="mt-1 text-[11px] text-gray-600">${escapeHtml(extra)}</div>` : '');
+                        }
                         listEl.appendChild(li);
                     });
                 }
@@ -1753,6 +1886,13 @@
         if (options.clearDuplicateState !== false) {
             resetAddItemDuplicateState();
         }
+        if (addItemForm) {
+            const currentEmployeeId = String(employeeIdHiddenInput?.value || employeeSelect?.value || '').trim();
+            const formEmployeeIdInput = addItemForm.querySelector('input[name="employee_id"]');
+            if (formEmployeeIdInput && currentEmployeeId !== '') {
+                formEmployeeIdInput.value = currentEmployeeId;
+            }
+        }
         addItemModal.classList.remove('hidden');
         addItemModal.classList.add('flex');
         setTodayDate();
@@ -1763,6 +1903,7 @@
         addItemModal.classList.add('hidden');
         addItemModal.classList.remove('flex');
         resetAddItemDuplicateState();
+        resetAddItemProgress();
 
         if (formErrorToast) {
             formErrorToast.classList.remove('show-form-error-toast');
@@ -1869,6 +2010,77 @@
     let addItemDuplicateCheckTimer = null;
     let addItemDuplicateCheckSeq = 0;
     let lastAddItemDuplicateResult = false;
+    let addItemProgressTimer = null;
+    let addItemProgressValue = 0;
+
+    function resetAddItemProgress() {
+        if (addItemProgressTimer) {
+            clearInterval(addItemProgressTimer);
+            addItemProgressTimer = null;
+        }
+        addItemProgressValue = 0;
+        if (addItemProgressBar) {
+            addItemProgressBar.style.width = '0%';
+        }
+        if (addItemProgressPercent) {
+            addItemProgressPercent.textContent = '0%';
+        }
+        if (addItemProgressWrap) {
+            addItemProgressWrap.classList.add('hidden');
+        }
+        if (addItemSubmitBtn) {
+            addItemSubmitBtn.disabled = false;
+            addItemSubmitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+        }
+    }
+
+    function startAddItemProgress() {
+        resetAddItemProgress();
+        if (addItemProgressWrap) {
+            addItemProgressWrap.classList.remove('hidden');
+        }
+        if (addItemSubmitBtn) {
+            addItemSubmitBtn.disabled = true;
+            addItemSubmitBtn.classList.add('opacity-70', 'cursor-not-allowed');
+        }
+
+        addItemProgressValue = 8;
+        if (addItemProgressBar) {
+            addItemProgressBar.style.width = addItemProgressValue + '%';
+        }
+        if (addItemProgressPercent) {
+            addItemProgressPercent.textContent = addItemProgressValue + '%';
+        }
+
+        addItemProgressTimer = setInterval(function () {
+            if (addItemProgressValue >= 90) {
+                return;
+            }
+            const step = addItemProgressValue < 50 ? 8 : 3;
+            addItemProgressValue = Math.min(90, addItemProgressValue + step);
+            if (addItemProgressBar) {
+                addItemProgressBar.style.width = addItemProgressValue + '%';
+            }
+            if (addItemProgressPercent) {
+                addItemProgressPercent.textContent = addItemProgressValue + '%';
+            }
+        }, 180);
+    }
+
+    async function finishAddItemProgressSuccess() {
+        if (addItemProgressTimer) {
+            clearInterval(addItemProgressTimer);
+            addItemProgressTimer = null;
+        }
+        addItemProgressValue = 100;
+        if (addItemProgressBar) {
+            addItemProgressBar.style.width = '100%';
+        }
+        if (addItemProgressPercent) {
+            addItemProgressPercent.textContent = '100%';
+        }
+        await new Promise((resolve) => setTimeout(resolve, 220));
+    }
 
     function applyAddItemDuplicateFieldStyles(isDuplicate) {
         if (!addItemForm) {
@@ -1996,6 +2208,16 @@
         }
 
         e.preventDefault();
+        if (addItemSubmitBtn?.disabled) {
+            return;
+        }
+
+        const resolvedEmployeeId = String(
+            employeeIdHiddenInput?.value
+            || employeeSelect?.value
+            || addItemForm.querySelector('input[name="employee_id"]')?.value
+            || ''
+        ).trim();
 
         const propertyNumber = addItemForm.querySelector('[name="property_number"]')?.value;
         const accountCode = addItemForm.querySelector('[name="rca_acctcode"]')?.value;
@@ -2010,26 +2232,31 @@
             isBlank(description) ||
             isBlank(unitCost) ||
             isBlank(status) ||
-            isBlank(accountability)
+            isBlank(accountability) ||
+            isBlank(resolvedEmployeeId)
         ) {
             openModal();
-            showFormErrorToast('Please complete all required fields before adding equipment.');
+            if (isBlank(resolvedEmployeeId)) {
+                showFormErrorToast('Please select an employee before adding equipment.');
+            } else {
+                showFormErrorToast('Please complete all required fields before adding equipment.');
+            }
+            resetAddItemProgress();
             return;
         }
 
         try {
+            startAddItemProgress();
             const isDuplicate = await fetchAddItemDuplicateStatus({ forLiveCheck: false });
             if (isDuplicate) {
                 openModal({ clearDuplicateState: false });
                 showFormErrorToast('This item already exists.');
+                resetAddItemProgress();
                 return;
             }
 
             const formData = new FormData(addItemForm);
-
-            if (employeeSelect?.value) {
-                formData.set('employee_id', employeeSelect.value);
-            }
+            formData.set('employee_id', resolvedEmployeeId);
 
             const response = await fetch(addItemForm.action, {
                 method: 'POST',
@@ -2055,17 +2282,22 @@
                     } else {
                         showFormErrorToast('Please fix the highlighted fields and try again.');
                     }
+                } else {
+                    showFormErrorToast(payload?.message || 'Failed to add equipment. Please try again.');
                 }
+                resetAddItemProgress();
                 return;
             }
 
+            await finishAddItemProgressSuccess();
             addItemForm.reset();
             resetAddItemDuplicateState();
             closeModal();
             await loadEmployeeInventory();
             showItemSuccessToast('Equipment added successfully');
         } catch (error) {
-            // silent fail for now
+            showFormErrorToast('Network error while adding equipment. Please try again.');
+            resetAddItemProgress();
         }
     }
 
@@ -2360,6 +2592,18 @@
         trackerHistoryModal.addEventListener('click', function (event) {
             if (event.target === trackerHistoryModal) {
                 closeTrackerHistoryModalDialog();
+            }
+        });
+    }
+
+    if (closeTrackerHistoryGatepassModalBtn) {
+        closeTrackerHistoryGatepassModalBtn.addEventListener('click', closeTrackerHistoryGatepassDetailsModal);
+    }
+
+    if (trackerHistoryGatepassModal) {
+        trackerHistoryGatepassModal.addEventListener('click', function (event) {
+            if (event.target === trackerHistoryGatepassModal) {
+                closeTrackerHistoryGatepassDetailsModal();
             }
         });
     }

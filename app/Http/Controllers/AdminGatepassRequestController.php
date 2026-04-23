@@ -92,6 +92,7 @@ class AdminGatepassRequestController extends Controller
 
         $movementTracking = $this->getMovementTrackingStats();
         $gatepassTrendsByFilter = $this->getGatepassTrendsByFilter();
+        $deviceUsageTrends = $this->getDeviceUsageTrends();
 
         $gatepassListSearch = trim((string) $request->query('gp_q', ''));
         $gatepassListStatusRaw = trim((string) $request->query('gp_status', ''));
@@ -136,6 +137,7 @@ class AdminGatepassRequestController extends Controller
             ],
             'movementTracking' => $movementTracking,
             'gatepassTrendsByFilter' => $gatepassTrendsByFilter,
+            'deviceUsageTrends' => $deviceUsageTrends,
             'gatepassEmployee' => $gatepassEmployee,
             'gatepassEmployeeFullName' => $gatepassEmployee?->employee_name ?? $authUser?->name,
             'gatepassEquipment' => $gatepassEquipment,
@@ -1060,6 +1062,36 @@ class AdminGatepassRequestController extends Controller
             'monthly' => $this->gatepassTrendsForFilter('monthly'),
             'quarterly' => $this->gatepassTrendsForFilter('quarterly'),
             'yearly' => $this->gatepassTrendsForFilter('yearly'),
+        ];
+    }
+
+    /**
+     * @return array{labels: string[], usage: int[]}
+     */
+    private function getDeviceUsageTrends(): array
+    {
+        $rows = DB::table('gatepass_logs as gl')
+            ->join('gatepass_items as gi', 'gi.gatepass_no', '=', 'gl.gatepass_no')
+            ->join('inventory as inv', 'inv.id', '=', 'gi.inventory_id')
+            ->where('gl.log_type', 'OUTGOING')
+            ->selectRaw("COALESCE(NULLIF(inv.current_prop_no, ''), 'No Property No') as property_no")
+            ->selectRaw('COUNT(*) as usage_count')
+            ->groupBy('property_no')
+            ->orderByDesc('usage_count')
+            ->orderBy('property_no')
+            ->limit(10)
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return [
+                'labels' => ['No data'],
+                'usage' => [0],
+            ];
+        }
+
+        return [
+            'labels' => $rows->pluck('property_no')->map(fn ($value) => (string) $value)->all(),
+            'usage' => $rows->pluck('usage_count')->map(fn ($value) => (int) $value)->all(),
         ];
     }
 

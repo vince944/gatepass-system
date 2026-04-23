@@ -63,6 +63,15 @@
                                 <input type="hidden" name="workspace_context" value="admin">
                                 <input type="hidden" name="{{ $inventorySearchInputName }}" value="{{ request($inventorySearchInputName) }}">
                             @endif
+                            <div id="addItemProgressWrap" class="hidden mb-5">
+                                <div class="mb-1 flex items-center justify-between">
+                                    <p class="text-[12px] font-semibold text-[#003b95]">Adding equipment...</p>
+                                    <span id="addItemProgressPercent" class="text-[12px] font-semibold text-[#003b95]">0%</span>
+                                </div>
+                                <div class="h-2 w-full overflow-hidden rounded-full bg-[#e5e7eb]">
+                                    <div id="addItemProgressBar" class="h-full w-0 rounded-full bg-[#003b95] transition-[width] duration-200 ease-out"></div>
+                                </div>
+                            </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
 
                                 <!-- Property Number -->
@@ -147,10 +156,10 @@
                                     @enderror
                                 </div>
 
-                                <!-- Center -->
+                                <!-- Division -->
                                 <div>
                                     <label class="block text-[14px] font-semibold text-black mb-2">
-                                        Center
+                                        Division
                                     </label>
                                     <select name="center"
                                         class="w-full h-[44px] rounded-xl border border-gray-300 bg-white px-4 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-[#003b95]/20">
@@ -223,6 +232,7 @@
                                     Cancel
                                 </button>
                                 <button type="submit"
+                                    id="addItemSubmitBtn"
                                     class="px-5 h-[42px] rounded-xl bg-[#003b95] hover:bg-[#002d73] text-white text-[14px] font-semibold flex items-center gap-2 transition">
                                     <i class="fa-solid fa-plus"></i>
                                     <span>Add Equipment</span>
@@ -509,6 +519,69 @@
         </div>
     </div>
 
+    <!-- Tracker History Gatepass Details Modal -->
+    <div id="trackerHistoryGatepassModal" class="fixed inset-0 z-[85] hidden items-center justify-center bg-black/45 px-4 py-6">
+        <div class="w-full max-w-3xl rounded-2xl border border-gray-200 bg-white shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between border-b border-gray-200 bg-[#003b95] px-6 py-4">
+                <div>
+                    <h3 class="text-[20px] font-bold text-white leading-tight">Gate Pass Details</h3>
+                    <p class="mt-1 text-[12px] text-white/80">From item movement history</p>
+                </div>
+                <button id="closeTrackerHistoryGatepassModal" type="button" class="text-white text-[24px] hover:text-white/80 transition" aria-label="Close gate pass details">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="max-h-[78vh] overflow-y-auto px-6 py-5">
+                <div id="trackerHistoryGatepassLoading" class="hidden py-10 text-center text-[14px] text-gray-500">
+                    Loading gate pass details...
+                </div>
+                <div id="trackerHistoryGatepassError" class="hidden py-10 text-center text-[14px] text-red-600">
+                    Failed to load gate pass details.
+                </div>
+
+                <div id="trackerHistoryGatepassBody" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="rounded-xl border border-gray-200 bg-[#f8fafc] px-4 py-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Gate Pass No.</p>
+                            <p id="trackerHistoryGatepassNo" class="mt-1 text-[15px] font-semibold text-[#111827]">—</p>
+                        </div>
+                        <div class="rounded-xl border border-gray-200 bg-[#f8fafc] px-4 py-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Status</p>
+                            <p id="trackerHistoryGatepassStatus" class="mt-1 text-[15px] font-semibold text-[#111827]">—</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Requester</p>
+                            <p id="trackerHistoryGatepassRequester" class="mt-1 text-[14px] text-[#111827]">—</p>
+                        </div>
+                        <div class="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Request Date</p>
+                            <p id="trackerHistoryGatepassDate" class="mt-1 text-[14px] text-[#111827]">—</p>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Purpose</p>
+                        <p id="trackerHistoryGatepassPurpose" class="mt-1 text-[14px] text-[#111827] break-words">—</p>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Brought To</p>
+                        <p id="trackerHistoryGatepassDestination" class="mt-1 text-[14px] text-[#111827] break-words">—</p>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Requested Equipment</p>
+                        <ul id="trackerHistoryGatepassEquipment" class="space-y-1 text-[14px] text-[#111827]"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- See More Modal -->
     <div id="seeMoreModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6">
         <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
@@ -528,7 +601,7 @@
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-2 sm:gap-3">
-                        <span class="font-semibold text-[#4b5563]">Center:</span>
+                        <span class="font-semibold text-[#4b5563]">Division:</span>
                         <div class="min-h-[32px] rounded-lg bg-[#f3f4f6] px-3 py-1.5 flex items-center justify-between min-w-0">
                             <span id="seeMoreCenter" class="text-[13px] text-[#111827] break-words min-w-0">N/A</span>
                         </div>

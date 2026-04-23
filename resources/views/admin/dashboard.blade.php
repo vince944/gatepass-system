@@ -634,6 +634,24 @@
                                 <canvas id="gatepassTrendsBarChart"></canvas>
                             </div>
                         </div>
+
+                        <!-- DEVICE USAGE TRENDS (PROPERTY NO) -->
+                        <div class="bg-white border border-gray-200 overflow-hidden rounded-[22px] px-6 sm:px-8 py-6 sm:py-8">
+                            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+                                <div>
+                                    <h3 class="text-[20px] sm:text-[24px] font-bold text-black leading-tight">
+                                        Device Trend by Property No.
+                                    </h3>
+                                    <p class="text-[14px] sm:text-[16px] text-[#3e5573] mt-2">
+                                        Most frequently used devices based on outgoing scans
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="relative h-[340px] sm:h-[380px]">
+                                <canvas id="deviceUsageBarChart"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1267,6 +1285,7 @@
         const adminGatepassShowUrlTemplate = "{{ route('admin.gatepass-requests.show', ['gatepassNo' => '__GP__']) }}";
         const adminGatepassStoreQrUrlTemplate = "{{ route('admin.gatepass-requests.store-qr-code', ['gatepassNo' => '__GP__']) }}";
         const adminGatepassPollUrl = "{{ route('admin.gatepass-requests.dashboard-poll') }}";
+        window.adminGatepassShowUrlTemplate = adminGatepassShowUrlTemplate;
 
         (function setupGatepassDashboardLiveFilter() {
             const form = document.getElementById('gatepassDashboardFilterForm');
@@ -3102,17 +3121,20 @@
         const movementTracking = @json($movementTracking ?? $movementTrackingDefault);
 
         const gatepassTrendsByFilter = @json($gatepassTrendsByFilter ?? []);
+        const deviceUsageTrends = @json($deviceUsageTrends ?? ['labels' => ['No data'], 'usage' => [0]]);
 
         let reportsChartsInitialized = false;
         let movementDoughnutChart = null;
         let gatepassTrendsBarChart = null;
+        let deviceUsageBarChart = null;
 
         function initReportsAnalyticsIfNeeded() {
             if (reportsChartsInitialized) return;
 
             const movementCanvas = document.getElementById('movementDoughnutChart');
             const trendsCanvas = document.getElementById('gatepassTrendsBarChart');
-            if (!movementCanvas || !trendsCanvas) return;
+            const deviceUsageCanvas = document.getElementById('deviceUsageBarChart');
+            if (!movementCanvas || !trendsCanvas || !deviceUsageCanvas) return;
 
             if (!window.Chart) {
                 // Chart.js failed to load.
@@ -3349,10 +3371,59 @@
             // Ensure the correct filter is applied initially.
             applyGatepassTrendsFilter('daily');
 
+            // Device trend chart (tracked by property_no)
+            const deviceUsageCtx = deviceUsageCanvas.getContext('2d');
+            const deviceLabels = Array.isArray(deviceUsageTrends?.labels) && deviceUsageTrends.labels.length
+                ? deviceUsageTrends.labels
+                : ['No data'];
+            const deviceUsageCounts = Array.isArray(deviceUsageTrends?.usage) && deviceUsageTrends.usage.length
+                ? deviceUsageTrends.usage
+                : [0];
+
+            deviceUsageBarChart = new Chart(deviceUsageCtx, {
+                type: 'bar',
+                data: {
+                    labels: deviceLabels,
+                    datasets: [
+                        {
+                            label: 'Usage count',
+                            data: deviceUsageCounts,
+                            backgroundColor: '#173a6b',
+                            borderColor: '#173a6b',
+                            borderWidth: 1,
+                        },
+                    ],
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0,
+                            },
+                        },
+                        y: {
+                            ticks: {
+                                autoSkip: false,
+                            },
+                        },
+                    },
+                },
+            });
+
             // Helps Chart.js compute layout now that cards are visible.
             setTimeout(function() {
                 movementDoughnutChart?.resize?.();
                 gatepassTrendsBarChart?.resize?.();
+                deviceUsageBarChart?.resize?.();
             }, 50);
         }
 
