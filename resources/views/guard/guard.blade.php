@@ -70,7 +70,8 @@
     <div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none" aria-live="polite"></div>
 
     <!-- Header -->
-    <div class="w-full border-b border-white/10 px-6 md:px-8 py-5 flex items-center gap-4">
+    <div class="w-full border-b border-white/10 px-6 md:px-8 py-5 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4 min-w-0">
         <div class="flex items-center justify-center shrink-0">
             <img src="{{ asset('images/dap_logo.png') }}" alt="DAP Logo"
                  class="w-14 h-14 md:w-16 md:h-16 object-contain">
@@ -84,6 +85,17 @@
                 Security Gate Pass System
             </p>
         </div>
+        </div>
+        <form id="guardHeaderLogoutForm" method="POST" action="{{ url('/logout') }}" class="shrink-0">
+            @csrf
+            <button
+                id="guardHeaderLogoutBtn"
+                type="submit"
+                class="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm md:text-base font-semibold text-white hover:bg-white/20 transition"
+            >
+                <span>Logout</span>
+            </button>
+        </form>
     </div>
 
     <!-- Main Card -->
@@ -531,6 +543,11 @@
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <script>
+        const guardInactivityTimeoutMs = {{ (int) config('session.lifetime', 120) * 60 * 1000 }};
+        const guardLoginUrl = @json(route('login'));
+        let guardInactivityTimer = null;
+        let guardSessionTimedOut = false;
+
         let qrScanner = null;
         let scanning = false;
         let lastScannedText = null;
@@ -599,6 +616,7 @@
         const rejectModalError = document.getElementById('rejectModalError');
         const rejectModalGatepassNo = document.getElementById('rejectModalGatepassNo');
         const rejectReasonInput = document.getElementById('rejectReasonInput');
+        const guardHeaderLogoutForm = document.getElementById('guardHeaderLogoutForm');
 
         let currentGatepassNo = null;
         let selectedLogType = null;
@@ -614,6 +632,46 @@
         function showError(message) {
             errorBox.classList.remove('hidden');
             errorText.textContent = message;
+        }
+
+        async function runGuardSessionTimeoutLogout() {
+            if (guardSessionTimedOut) {
+                return;
+            }
+
+            guardSessionTimedOut = true;
+
+            try {
+                await stopScanner();
+            } catch (e) {
+                console.error(e);
+            }
+
+            if (guardHeaderLogoutForm) {
+                guardHeaderLogoutForm.submit();
+                window.setTimeout(() => {
+                    window.location.href = guardLoginUrl;
+                }, 1200);
+                return;
+            }
+
+            window.location.href = guardLoginUrl;
+        }
+
+        function resetGuardInactivityTimer() {
+            if (guardSessionTimedOut) {
+                return;
+            }
+
+            if (guardInactivityTimer !== null) {
+                clearTimeout(guardInactivityTimer);
+                guardInactivityTimer = null;
+            }
+
+            guardInactivityTimer = window.setTimeout(() => {
+                showToast('Session timed out due to inactivity. Redirecting to login.', 'error');
+                runGuardSessionTimeoutLogout();
+            }, guardInactivityTimeoutMs);
         }
 
         function hideError() {
@@ -1662,6 +1720,16 @@
                 historySearchTerm = '';
             }
         });
+
+        ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'].forEach((eventName) => {
+            window.addEventListener(eventName, resetGuardInactivityTimer, { passive: true });
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                resetGuardInactivityTimer();
+            }
+        });
+        resetGuardInactivityTimer();
     </script>
 </body>
 </html>

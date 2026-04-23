@@ -272,7 +272,7 @@
                                         <th class="px-4 py-4 text-[14px] font-semibold">#</th>
                                         <th class="px-4 py-4 text-[14px] font-semibold">Employee ID</th>
                                         <th class="px-4 py-4 text-[14px] font-semibold">Employee Name</th>
-                                        <th class="px-4 py-4 text-[14px] font-semibold">Center</th>
+                                        <th class="px-4 py-4 text-[14px] font-semibold">Division</th>
                                         <th class="px-4 py-4 text-[14px] font-semibold">Employee Type</th>
                                         <th class="px-4 py-4 text-[14px] font-semibold">Created At</th>
                                         <th class="px-4 py-4 text-[14px] font-semibold">Action</th>
@@ -519,7 +519,7 @@
                                             </div>
 
                                             <div>
-                                                <label class="mb-2 block text-sm font-semibold text-black">Center</label>
+                                                <label class="mb-2 block text-sm font-semibold text-black">Division</label>
                                                 <input
                                                     id="addEmployeeCenterField"
                                                     type="text"
