@@ -24,6 +24,8 @@ class GatepassStatusUpdatedMail extends Mailable
         $subject = match ($this->newStatus) {
             'Approved' => 'Your gate pass request was approved',
             'Rejected' => 'Your gate pass request was rejected',
+            'Incoming Partial' => 'Update on your gate pass: partial return recorded',
+            'Returned' => 'Your gate pass is marked as returned',
             default => 'Your gate pass request status was updated',
         };
 

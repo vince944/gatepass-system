@@ -1005,7 +1005,12 @@ class AdminGatepassRequestController extends Controller
         if (
             $result['ok']
             && ($result['status_changed'] ?? false)
-            && in_array((string) ($result['status'] ?? ''), ['Approved', 'Rejected'], true)
+            && in_array((string) ($result['status'] ?? ''), [
+                'Approved',
+                'Rejected',
+                'Incoming Partial',
+                'Returned',
+            ], true)
         ) {
             $fresh = GatepassRequest::query()->where('gatepass_no', $gatepassNo)->first();
 

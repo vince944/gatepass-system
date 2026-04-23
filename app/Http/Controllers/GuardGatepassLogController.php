@@ -236,6 +236,16 @@ class GuardGatepassLogController extends Controller
         }
 
         $payload = $result['data'];
+        if (isset($payload['gatepass_status']) && $payload['gatepass_status'] === self::STATUS_RETURNED) {
+            $gatepassForMail = GatepassRequest::query()
+                ->where('gatepass_no', (string) $payload['gatepass_no'])
+                ->first();
+
+            if ($gatepassForMail !== null) {
+                app(GatepassStatusEmailNotifier::class)->notifyRequester($gatepassForMail);
+            }
+        }
+
         if ($payload['gatepass_status'] === null) {
             unset($payload['gatepass_status']);
         }
@@ -457,6 +467,14 @@ class GuardGatepassLogController extends Controller
 
         if (! $result['ok']) {
             return response()->json(['message' => $result['message']], $result['status']);
+        }
+
+        $gatepassForMail = GatepassRequest::query()
+            ->where('gatepass_no', $validated['gatepass_no'])
+            ->first();
+
+        if ($gatepassForMail !== null) {
+            app(GatepassStatusEmailNotifier::class)->notifyRequester($gatepassForMail);
         }
 
         return response()->json([

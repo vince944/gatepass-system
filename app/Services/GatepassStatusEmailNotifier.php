@@ -9,14 +9,21 @@ use Illuminate\Support\Facades\Mail;
 
 class GatepassStatusEmailNotifier
 {
+    private const NOTIFIABLE_STATUSES = [
+        'Approved',
+        'Rejected',
+        'Incoming Partial',
+        'Returned',
+    ];
+
     /**
-     * Notify the employee linked to the gate pass (requester's `users` record) after a terminal status change.
+     * Notify the employee linked to the gate pass (requester's `users` record) after a notifiable status change.
      */
     public function notifyRequester(GatepassRequest $gatepass): void
     {
         $status = (string) $gatepass->status;
 
-        if (! in_array($status, ['Approved', 'Rejected'], true)) {
+        if (! in_array($status, self::NOTIFIABLE_STATUSES, true)) {
             return;
         }
 

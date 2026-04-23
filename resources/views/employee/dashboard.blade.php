@@ -154,7 +154,7 @@
                 <div class="mb-6 rounded-2xl border border-[#003b95]/20 bg-[#e8f0ff] px-4 sm:px-6 py-4 text-[14px] sm:text-[15px] text-[#173a6b] leading-relaxed" role="status" aria-live="polite">
                     <p class="font-semibold text-[#003b95] mb-1">Email notifications</p>
                     <p class="text-[#3e5573]">
-                        When your gate pass request is <span class="font-semibold text-[#00b84f]">approved</span> or <span class="font-semibold text-[#b91c1c]">rejected</span>, the system sends a message to your registered address
+                        When your gate pass is <span class="font-semibold text-[#00b84f]">approved</span>, <span class="font-semibold text-[#b91c1c]">rejected</span>, set to <span class="font-semibold text-[#b45309]">Incoming Partial</span> (partial return at the gate), or <span class="font-semibold text-[#2563eb]">Returned</span> (return completed), the system sends a message to your registered address
                         <span class="font-semibold text-[#173a6b]">{{ $employeeNotificationEmail }}</span>
                         after the update is saved successfully.
                     </p>

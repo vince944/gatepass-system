@@ -24,6 +24,8 @@
                             $statusLower = strtolower($newStatus);
                             $isApproved = $statusLower === 'approved';
                             $isRejected = $statusLower === 'rejected';
+                            $isIncomingPartial = $statusLower === 'incoming partial';
+                            $isReturned = $statusLower === 'returned';
                         @endphp
                         @if ($isApproved)
                             <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#334155;">
@@ -32,6 +34,14 @@
                         @elseif ($isRejected)
                             <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#334155;">
                                 Your gate pass request <strong>{{ $gatepass->gatepass_no }}</strong> has been <strong style="color:#b91c1c;">rejected</strong>.
+                            </p>
+                        @elseif ($isIncomingPartial)
+                            <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#334155;">
+                                A <strong>partial return</strong> was recorded for gate pass <strong>{{ $gatepass->gatepass_no }}</strong>. Some items are still <strong>missing</strong> or pending. Status: <strong style="color:#b45309;">{{ $newStatus }}</strong>.
+                            </p>
+                        @elseif ($isReturned)
+                            <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#334155;">
+                                Your equipment for gate pass <strong>{{ $gatepass->gatepass_no }}</strong> has been <strong style="color:#2563eb;">returned</strong> (incoming scan completed). Status: <strong>{{ $newStatus }}</strong>.
                             </p>
                         @else
                             <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#334155;">
