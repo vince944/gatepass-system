@@ -2683,7 +2683,7 @@
 
             bodyEl.innerHTML = logs.map(function (log) {
                 const type = log.log_type || '—';
-                const dt = log.log_datetime || '—';
+                const dt = formatMovementHistoryDatetime(log.log_datetime);
                 const guard = log.guard_name || log.guard_employee_id || log.scanned_by_guard_id || '—';
                 const requester = log.requester_name || log.requester_employee_id || '—';
                 const remarks = log.remarks || '—';
@@ -2905,7 +2905,7 @@
                     } else {
                         inOutBody.innerHTML = logs.map(function (log) {
                             const type = log.log_type || '—';
-                            const dt = log.log_datetime || '—';
+                            const dt = formatMovementHistoryDatetime(log.log_datetime);
                             const guard = log.guard_name || log.guard_employee_id || log.scanned_by_guard_id || '—';
                             const requester = log.requester_name || log.requester_employee_id || '—';
                             const remarks = log.remarks || '—';
@@ -2933,6 +2933,29 @@
             const div = document.createElement('div');
             div.textContent = String(text || '');
             return div.innerHTML;
+        }
+
+        function formatMovementHistoryDatetime(value) {
+            if (!value) {
+                return '—';
+            }
+
+            const parsed = new Date(value);
+            if (Number.isNaN(parsed.getTime())) {
+                return String(value);
+            }
+
+            const year = parsed.getFullYear();
+            const month = String(parsed.getMonth() + 1).padStart(2, '0');
+            const day = String(parsed.getDate()).padStart(2, '0');
+
+            const hours24 = parsed.getHours();
+            const minutes = String(parsed.getMinutes()).padStart(2, '0');
+            const seconds = String(parsed.getSeconds()).padStart(2, '0');
+            const period = hours24 >= 12 ? 'PM' : 'AM';
+            const hours12 = String(hours24 % 12 || 12).padStart(2, '0');
+
+            return `${year}-${month}-${day} ${hours12}:${minutes}:${seconds} ${period}`;
         }
 
         (function adminGatepassDashboardPolling() {
