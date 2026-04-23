@@ -745,6 +745,7 @@
         </div>
     </div>
 
+    {{-- Gate pass “My requests” / history (embedded) auto-refreshes every 3s when the Gate Pass panel is visible; see `coordinator-gatepass-employee-snippet.js`. --}}
     @php
         $coordinatorGatepassJs = file_get_contents(resource_path('views/partials/coordinator-gatepass-employee-snippet.js'));
         $coordinatorGatepassJs = str_replace(

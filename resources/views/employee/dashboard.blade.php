@@ -147,6 +147,19 @@
 
             <!-- Content Area -->
             <section class="flex-1 min-h-0 w-full max-w-full min-w-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+            @php
+                $employeeNotificationEmail = auth()->user()?->email;
+            @endphp
+            @if ($employeeNotificationEmail)
+                <div class="mb-6 rounded-2xl border border-[#003b95]/20 bg-[#e8f0ff] px-4 sm:px-6 py-4 text-[14px] sm:text-[15px] text-[#173a6b] leading-relaxed" role="status" aria-live="polite">
+                    <p class="font-semibold text-[#003b95] mb-1">Email notifications</p>
+                    <p class="text-[#3e5573]">
+                        When your gate pass request is <span class="font-semibold text-[#00b84f]">approved</span> or <span class="font-semibold text-[#b91c1c]">rejected</span>, the system sends a message to your registered address
+                        <span class="font-semibold text-[#173a6b]">{{ $employeeNotificationEmail }}</span>
+                        after the update is saved successfully.
+                    </p>
+                </div>
+            @endif
             <!-- DASHBOARD SECTION -->
             <div id="dashboardSection" class="flex flex-col">
                 <div class="order-3 md:order-1 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-7">
@@ -806,6 +819,70 @@
         let employeeHistoryRows = [];
         let employeeHistoryCurrentPage = 1;
 
+        /** Background refresh so admin status or data changes appear without a full page reload. */
+        const EMPLOYEE_DASHBOARD_POLL_MS = 2000;
+        let __employeeDashboardPollTimer = null;
+        let __employeeDashboardPollInFlight = false;
+        window.__employeeOpenRequestDetailsGatepassNo = null;
+
+        function employeeEmbedGatepassUiActive() {
+            const p = document.getElementById('gatepassEmployeePanel');
+            if (!p) {
+                return true;
+            }
+
+            return !p.classList.contains('hidden');
+        }
+
+        function employeeIsHistorySectionVisible() {
+            return historySection && !historySection.classList.contains('hidden');
+        }
+
+        async function employeeRefreshForAdminUpdates() {
+            if (document.visibilityState === 'hidden' || __employeeDashboardPollInFlight) {
+                return;
+            }
+
+            if (!employeeEmbedGatepassUiActive()) {
+                return;
+            }
+
+            __employeeDashboardPollInFlight = true;
+
+            const detailsModal = document.getElementById('requestDetailsModal');
+            const detailsOpen = detailsModal && !detailsModal.classList.contains('hidden');
+            const openGp = window.__employeeOpenRequestDetailsGatepassNo
+                ? String(window.__employeeOpenRequestDetailsGatepassNo).trim()
+                : '';
+
+            try {
+                if (employeeIsHistorySectionVisible()) {
+                    await employeeLoadRequestHistory({ silent: true, preservePage: true });
+                } else {
+                    await employeeLoadDashboard(window.__employeeDashboardActiveStatus || 'All', {
+                        silent: true,
+                        preservePage: true,
+                    });
+                }
+
+                if (detailsOpen && openGp !== '') {
+                    await employeeLoadRequestDetails(openGp, { silent: true });
+                }
+            } finally {
+                __employeeDashboardPollInFlight = false;
+            }
+        }
+
+        function employeeStartDashboardPolling() {
+            if (__employeeDashboardPollTimer !== null) {
+                return;
+            }
+
+            __employeeDashboardPollTimer = window.setInterval(function () {
+                employeeRefreshForAdminUpdates();
+            }, EMPLOYEE_DASHBOARD_POLL_MS);
+        }
+
         function activateDashboardButton() {
             navDashboard.classList.add('bg-[#47698f]', 'text-white');
             navDashboard.classList.remove('text-white/90', 'hover:bg-white/10');
@@ -831,6 +908,11 @@
             newRequestBtn.classList.remove('hidden');
 
             activateDashboardButton();
+
+            employeeLoadDashboard(window.__employeeDashboardActiveStatus || 'All', {
+                silent: true,
+                preservePage: true,
+            });
         }
 
         function showHistorySection() {
@@ -1097,12 +1179,19 @@
         document.addEventListener('DOMContentLoaded', function () {
             if (window.location.hash === '#request-history') {
                 showHistorySection();
+                employeeLoadDashboard('All', { silent: true, preservePage: true });
             } else {
                 showDashboardSection();
             }
 
             employeeWireDashboardFilters();
-            employeeLoadDashboard('All');
+
+            employeeStartDashboardPolling();
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') {
+                    employeeRefreshForAdminUpdates();
+                }
+            });
 
             if (employeeAddEquipmentBtn) {
                 employeeAddEquipmentBtn.addEventListener('click', function () {
@@ -1317,7 +1406,11 @@
             }
         }
 
-        async function employeeLoadDashboard(status) {
+        async function employeeLoadDashboard(status, opts = {}) {
+            const silent = opts.silent === true;
+            const preservePage = opts.preservePage === true;
+            const prevPage = employeeDashboardCurrentPage;
+
             const totalEl = document.getElementById('employeeTotalRequestsCount');
             const pendingEl = document.getElementById('employeePendingRequestsCount');
             const approvedEl = document.getElementById('employeeApprovedRequestsCount');
@@ -1353,7 +1446,13 @@
                 const counts = data.counts || {};
                 const rows = Array.isArray(data.requests) ? data.requests : [];
                 employeeDashboardRows = rows;
-                employeeDashboardCurrentPage = 1;
+
+                if (preservePage) {
+                    const lastPage = Math.max(1, Math.ceil(rows.length / EMPLOYEE_DASHBOARD_PAGE_SIZE));
+                    employeeDashboardCurrentPage = Math.min(Math.max(1, prevPage), lastPage);
+                } else {
+                    employeeDashboardCurrentPage = 1;
+                }
 
                 totalEl.textContent = String(counts.total ?? 0);
                 pendingEl.textContent = String(counts.pending ?? 0);
@@ -1373,9 +1472,11 @@
 
                 emptyEl.classList.add('hidden');
                 listEl.classList.remove('hidden');
-                renderEmployeeDashboardPage(1);
+                renderEmployeeDashboardPage(employeeDashboardCurrentPage);
             } catch (e) {
-                employeeShowToast('Failed to load dashboard. Please refresh.', 'error');
+                if (!silent) {
+                    employeeShowToast('Failed to load dashboard. Please refresh.', 'error');
+                }
             }
         }
 
@@ -1531,7 +1632,11 @@
             }
         }
 
-        async function employeeLoadRequestHistory() {
+        async function employeeLoadRequestHistory(opts = {}) {
+            const silent = opts.silent === true;
+            const preservePage = opts.preservePage === true;
+            const prevPage = employeeHistoryCurrentPage;
+
             const historyList = document.getElementById('historyList');
             const emptyHistory = document.getElementById('emptyHistory');
             const paginationWrap = document.getElementById('employeeHistoryPagination');
@@ -1559,17 +1664,25 @@
                 const json = await response.json();
                 const rows = (json && json.data) ? json.data : [];
                 employeeHistoryRows = Array.isArray(rows) ? rows : [];
-                employeeHistoryCurrentPage = 1;
+
+                if (preservePage) {
+                    const lastPage = Math.max(1, Math.ceil(employeeHistoryRows.length / EMPLOYEE_HISTORY_PAGE_SIZE));
+                    employeeHistoryCurrentPage = Math.min(Math.max(1, prevPage), lastPage);
+                } else {
+                    employeeHistoryCurrentPage = 1;
+                }
 
                 if (!employeeHistoryRows.length) {
                     emptyHistory.classList.remove('hidden');
                     return;
                 }
 
-                renderEmployeeHistoryPage(1);
+                renderEmployeeHistoryPage(employeeHistoryCurrentPage);
             } catch (e) {
                 emptyHistory.classList.remove('hidden');
-                employeeShowToast('Failed to load request history. Please refresh.', 'error');
+                if (!silent) {
+                    employeeShowToast('Failed to load request history. Please refresh.', 'error');
+                }
             }
         }
 
@@ -1693,6 +1806,8 @@
                 return;
             }
 
+            window.__employeeOpenRequestDetailsGatepassNo = gatepassNo != null ? String(gatepassNo) : null;
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             document.body.classList.add('overflow-hidden');
@@ -1705,6 +1820,8 @@
             if (!modal) {
                 return;
             }
+
+            window.__employeeOpenRequestDetailsGatepassNo = null;
 
             modal.classList.add('hidden');
             modal.classList.remove('flex');
@@ -1955,7 +2072,9 @@
             }
         }
 
-        async function employeeLoadRequestDetails(gatepassNo) {
+        async function employeeLoadRequestDetails(gatepassNo, opts = {}) {
+            const silent = opts.silent === true;
+
             const loadingEl = document.getElementById('requestDetailsLoading');
             const errorEl = document.getElementById('requestDetailsError');
             const bodyEl = document.getElementById('requestDetailsBody');
@@ -1974,20 +2093,22 @@
                 return;
             }
 
-            loadingEl.classList.remove('hidden');
-            errorEl.classList.add('hidden');
-            bodyEl.classList.add('hidden');
+            if (!silent) {
+                loadingEl.classList.remove('hidden');
+                errorEl.classList.add('hidden');
+                bodyEl.classList.add('hidden');
 
-            gatepassNoEl.textContent = '—';
-            statusBadgeEl.textContent = '—';
-            statusBadgeEl.className = 'inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold bg-gray-100 text-gray-700 border border-gray-200';
-            itemsEl.innerHTML = '';
-            requestDateEl.textContent = '—';
-            purposeEl.textContent = '—';
-            destinationEl.textContent = '—';
-            remarksEl.textContent = '—';
-            rejectionReasonEl.textContent = '—';
-            rejectionReasonWrapEl.classList.add('hidden');
+                gatepassNoEl.textContent = '—';
+                statusBadgeEl.textContent = '—';
+                statusBadgeEl.className = 'inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold bg-gray-100 text-gray-700 border border-gray-200';
+                itemsEl.innerHTML = '';
+                requestDateEl.textContent = '—';
+                purposeEl.textContent = '—';
+                destinationEl.textContent = '—';
+                remarksEl.textContent = '—';
+                rejectionReasonEl.textContent = '—';
+                rejectionReasonWrapEl.classList.add('hidden');
+            }
 
             try {
                 const urlTemplate = "{{ route('employee.gatepass-requests.show', ['gatepass_no' => '__GP__']) }}";
@@ -2080,8 +2201,10 @@
                 bodyEl.classList.remove('hidden');
             } catch (e) {
                 loadingEl.classList.add('hidden');
-                errorEl.classList.remove('hidden');
-                bodyEl.classList.add('hidden');
+                if (!silent) {
+                    errorEl.classList.remove('hidden');
+                    bodyEl.classList.add('hidden');
+                }
             }
         }
 

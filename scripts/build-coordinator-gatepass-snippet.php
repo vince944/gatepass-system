@@ -147,6 +147,13 @@ $s = preg_replace(
     1
 );
 
+// Coordinator/admin embed: poll a bit slower than the standalone employee page.
+$s = str_replace(
+    'const EMPLOYEE_DASHBOARD_POLL_MS = 2000;',
+    'const EMPLOYEE_DASHBOARD_POLL_MS = 3000;',
+    $s
+);
+
 $outDir = __DIR__.'/../storage/framework';
 if (! is_dir($outDir)) {
     mkdir($outDir, 0755, true);

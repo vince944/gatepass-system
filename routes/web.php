@@ -119,6 +119,10 @@ Route::get('/admin/dashboard', [AdminGatepassRequestController::class, 'index'])
     ->middleware('auth')
     ->name('admin.dashboard');
 
+Route::get('/admin/gatepass-requests/dashboard-poll', [AdminGatepassRequestController::class, 'gatepassDashboardPoll'])
+    ->middleware('auth')
+    ->name('admin.gatepass-requests.dashboard-poll');
+
 Route::get('/admin/gatepass-requests/{gatepassNo}', [AdminGatepassRequestController::class, 'show'])
     ->where('gatepassNo', '.*')
     ->middleware('auth')

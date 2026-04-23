@@ -187,6 +187,7 @@
 
                 @include('partials.coordinator-workspace-sections')
 
+                {{-- Gate pass overview: stat cards + table poll `/admin/gatepass-requests/dashboard-poll` every 3s while this section is visible. --}}
                 <!-- DASHBOARD SECTION -->
                 <div id="adminGatepassOverviewSection">
                     <!-- Stat Cards -->
@@ -305,7 +306,7 @@
                                         <th class="text-left px-4 sm:px-6 py-6 text-[14px] sm:text-[16px] font-semibold text-[#4b6790] uppercase whitespace-nowrap">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="gatepassRequestsTableBody">
                                     @php
                                         $statusBadge = function (?string $status): string {
                                             $s = strtolower(trim((string) $status));
@@ -1265,6 +1266,7 @@
 
         const adminGatepassShowUrlTemplate = "{{ route('admin.gatepass-requests.show', ['gatepassNo' => '__GP__']) }}";
         const adminGatepassStoreQrUrlTemplate = "{{ route('admin.gatepass-requests.store-qr-code', ['gatepassNo' => '__GP__']) }}";
+        const adminGatepassPollUrl = "{{ route('admin.gatepass-requests.dashboard-poll') }}";
 
         (function setupGatepassDashboardLiveFilter() {
             const form = document.getElementById('gatepassDashboardFilterForm');
@@ -1383,6 +1385,10 @@
                 window.coordinatorGpShowMyRequestsPanel();
             }
 
+            if (pageTitle) {
+                pageTitle.textContent = 'My Gate Pass Requests';
+            }
+
             setActiveAdminNav(navGatepassRequest);
 
             if (window.location.hash !== '#gatepass-request') {
@@ -1408,6 +1414,10 @@
 
             if (typeof window.coordinatorGpShowHistoryPanel === 'function') {
                 window.coordinatorGpShowHistoryPanel();
+            }
+
+            if (pageTitle) {
+                pageTitle.textContent = 'Request History';
             }
 
             setActiveAdminNav(navGatepassHistory);
@@ -1966,6 +1976,7 @@
             if (s === 'pending') return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
             if (s === 'returned') return 'bg-gray-100 text-gray-800 border border-gray-200';
             if (s === 'active outside') return 'bg-blue-100 text-blue-800 border border-blue-200';
+            if (s === 'incoming partial') return 'bg-amber-50 text-amber-900 border border-amber-200';
             return 'bg-gray-100 text-gray-800 border border-gray-200';
         }
 
@@ -2904,6 +2915,179 @@
             div.textContent = String(text || '');
             return div.innerHTML;
         }
+
+        (function adminGatepassDashboardPolling() {
+            const ADMIN_GATEPASS_POLL_MS = 3000;
+            let adminGatepassPollTimer = null;
+            let adminGatepassPollInFlight = false;
+
+            function adminBuildGatepassRequestRowHtml(row) {
+                const gn = String(row.gatepass_no || '');
+                const status = String(row.status || '—');
+                const stLower = status.trim().toLowerCase();
+                const u = row.urls || {};
+
+                const approveHidden = stLower === 'rejected' ? '!hidden' : '';
+                const approveDisabled = stLower === 'approved' ? 'disabled' : '';
+                const takeHidden = stLower === 'rejected' ? '' : '!hidden';
+                const rejectActionHidden = stLower === 'rejected' ? '!hidden' : '';
+                const rejectDisabled = (stLower === 'approved' || stLower === 'rejected') ? 'disabled' : '';
+
+                const itemsText = row.items_text;
+                const itemsCell = itemsText
+                    ? ('<div class="line-clamp-2 max-w-[420px]">' + escapeHtml(itemsText) + '</div>')
+                    : '<span class="text-gray-400">—</span>';
+
+                return ''
+                    + '<tr class="border-b border-gray-200 align-top" id="gatepassRow-' + escapeHtml(gn) + '">'
+                    + '  <td class="px-4 sm:px-6 py-6 text-[15px] text-gray-800 whitespace-nowrap">' + escapeHtml(gn) + '</td>'
+                    + '  <td class="px-4 sm:px-6 py-6 text-[15px] text-gray-800">' + escapeHtml(row.employee_name || '—') + '</td>'
+                    + '  <td class="px-4 sm:px-6 py-6 text-[15px] text-gray-800">' + escapeHtml(row.center || '—') + '</td>'
+                    + '  <td class="px-4 sm:px-6 py-6 text-[14px] text-gray-700">' + itemsCell + '</td>'
+                    + '  <td class="px-4 sm:px-6 py-6 text-[15px] text-gray-800 whitespace-nowrap">' + escapeHtml(row.request_date || '—') + '</td>'
+                    + '  <td class="px-4 sm:px-6 py-6 whitespace-nowrap">'
+                    + '    <span class="inline-flex items-center px-4 py-2 rounded-full text-[13px] font-semibold ' + statusBadgeClasses(status) + '" id="statusBadge-' + escapeHtml(gn) + '" data-status="' + escapeHtml(status) + '">' + escapeHtml(status) + '</span>'
+                    + '  </td>'
+                    + '  <td class="px-4 sm:px-6 py-6">'
+                    + '    <div class="flex flex-wrap items-center gap-2">'
+                    + '      <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-green-600 text-white shadow-sm ring-1 ring-inset ring-black/5 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600/30 disabled:opacity-50 disabled:cursor-not-allowed ' + approveHidden + '" onclick="approveGatepass(this)" data-url="' + escapeHtml(u.approve || '') + '" data-gatepass-no="' + escapeHtml(gn) + '" ' + approveDisabled + ' aria-label="Approve" title="Approve">'
+                    + '        <i class="fa-solid fa-check text-[14px]" aria-hidden="true"></i><span class="sr-only">Approve</span>'
+                    + '      </button>'
+                    + '      <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#003b95] text-white shadow-sm ring-1 ring-inset ring-black/5 hover:bg-[#002d73] focus:outline-none focus:ring-2 focus:ring-[#003b95]/30" onclick="viewGatepass(this)" data-url="' + escapeHtml(u.show || '') + '" data-gatepass-no="' + escapeHtml(gn) + '" aria-label="View details" title="View details">'
+                    + '        <i class="fa-solid fa-eye text-[14px]" aria-hidden="true"></i><span class="sr-only">View</span>'
+                    + '      </button>'
+                    + '      <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#003b95] shadow-sm ring-1 ring-inset ring-black/5 hover:bg-[#003b95]/10 focus:outline-none focus:ring-2 focus:ring-[#003b95]/30" onclick="openAuditTrailsModal(this)" data-url="' + escapeHtml(u.show || '') + '" data-gatepass-no="' + escapeHtml(gn) + '" aria-label="Audit Trails" title="Audit Trails">'
+                    + '        <i class="fa-solid fa-clipboard-list text-[14px]" aria-hidden="true"></i>'
+                    + '      </button>'
+                    + '      <button type="button" data-action="take-actions" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#f6b400] text-black shadow-sm ring-1 ring-inset ring-black/5 hover:bg-[#e5a900] focus:outline-none focus:ring-2 focus:ring-[#f6b400]/30 ' + takeHidden + '" onclick="openTakeActionsModal(this)" data-url="' + escapeHtml(u.show || '') + '" data-resubmit-url="' + escapeHtml(u.resubmit || '') + '" data-gatepass-no="' + escapeHtml(gn) + '" aria-label="Rejection Reason" title="View Rejection Reason">'
+                    + '        <i class="fa-solid fa-pen-to-square text-[14px]" aria-hidden="true"></i><span class="sr-only">Rejection Reason</span>'
+                    + '      </button>'
+                    + '      <button type="button" data-action="reject-action" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-600 text-white shadow-sm ring-1 ring-inset ring-black/5 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600/30 disabled:opacity-50 disabled:cursor-not-allowed ' + rejectActionHidden + '" onclick="rejectGatepass(this)" data-url="' + escapeHtml(u.reject || '') + '" data-gatepass-no="' + escapeHtml(gn) + '" ' + rejectDisabled + ' aria-label="Reject" title="Reject">'
+                    + '        <i class="fa-solid fa-xmark text-[16px]" aria-hidden="true"></i><span class="sr-only">Reject</span>'
+                    + '      </button>'
+                    + '    </div>'
+                    + '  </td>'
+                    + '</tr>';
+            }
+
+            function adminBuildGatepassPaginationHtml(pag) {
+                const total = Number(pag.total ?? 0);
+                const from = pag.from;
+                const to = pag.to;
+                let showing = 'Showing 0–0 of 0 results';
+                if (total > 0 && from != null && to != null) {
+                    showing = 'Showing ' + from + '–' + to + ' of ' + total + ' results';
+                }
+
+                let nav = '';
+                if (pag.prev_url) {
+                    nav += '<a href="' + escapeHtml(pag.prev_url) + '" class="px-4 py-2 rounded-xl border border-gray-300 bg-white text-[16px] font-medium">Previous</a>';
+                } else {
+                    nav += '<span class="px-4 py-2 rounded-xl border border-gray-300 text-gray-400 bg-gray-50 text-[16px] font-medium cursor-not-allowed" aria-disabled="true">Previous</span>';
+                }
+
+                (pag.pages || []).forEach(function (p) {
+                    if (p.active) {
+                        nav += '<span class="w-auto min-w-[40px] h-[40px] px-3 inline-flex items-center justify-center rounded-xl bg-[#020826] text-white text-[16px] font-semibold" aria-current="page">' + p.page + '</span>';
+                    } else {
+                        nav += '<a href="' + escapeHtml(p.url || '') + '" class="min-w-[40px] h-[40px] px-3 inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white text-[16px] font-medium">' + p.page + '</a>';
+                    }
+                });
+
+                if (pag.next_url) {
+                    nav += '<a href="' + escapeHtml(pag.next_url) + '" class="px-4 py-2 rounded-xl border border-gray-300 bg-white text-[16px] font-medium">Next</a>';
+                } else {
+                    nav += '<span class="px-4 py-2 rounded-xl border border-gray-300 text-gray-400 bg-gray-50 text-[16px] font-medium cursor-not-allowed" aria-disabled="true">Next</span>';
+                }
+
+                return '<p class="text-[16px] text-[#3e5573] whitespace-nowrap">' + showing + '</p>'
+                    + '<div class="flex flex-wrap items-center gap-2">' + nav + '</div>';
+            }
+
+            function adminApplyGatepassPollPayload(payload) {
+                const data = (payload && payload.data) ? payload.data : {};
+                const counts = data.counts || {};
+                const pendingEl = document.getElementById('cardPendingCount');
+                const approvedEl = document.getElementById('cardApprovedCount');
+                const activeEl = document.getElementById('cardActiveOutsideCount');
+                const totalEl = document.getElementById('cardTotalCount');
+
+                if (pendingEl) pendingEl.textContent = String(counts.pending ?? 0);
+                if (approvedEl) approvedEl.textContent = String(counts.approved ?? 0);
+                if (activeEl) activeEl.textContent = String(counts.active_outside ?? 0);
+                if (totalEl) totalEl.textContent = String(counts.total ?? 0);
+
+                const tbody = document.getElementById('gatepassRequestsTableBody');
+                const pagWrap = document.getElementById('gatepassRequestsPagination');
+                if (!tbody) {
+                    return;
+                }
+
+                const rows = Array.isArray(data.requests) ? data.requests : [];
+                if (!rows.length) {
+                    tbody.innerHTML = ''
+                        + '<tr class="border-b border-gray-200">'
+                        + '  <td colspan="7" class="px-6 py-14 text-center text-gray-400 text-[16px]">No gate pass requests found</td>'
+                        + '</tr>';
+                } else {
+                    tbody.innerHTML = rows.map(adminBuildGatepassRequestRowHtml).join('');
+                }
+
+                if (pagWrap && data.pagination) {
+                    pagWrap.innerHTML = adminBuildGatepassPaginationHtml(data.pagination);
+                }
+            }
+
+            async function adminPollGatepassDashboard() {
+                if (document.visibilityState === 'hidden' || adminGatepassPollInFlight) {
+                    return;
+                }
+
+                const overview = document.getElementById('adminGatepassOverviewSection');
+                if (!overview || overview.classList.contains('hidden')) {
+                    return;
+                }
+
+                adminGatepassPollInFlight = true;
+                try {
+                    const url = adminGatepassPollUrl + (window.location.search || '');
+                    const res = await fetch(url, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (!res.ok) {
+                        return;
+                    }
+
+                    const payload = await res.json().catch(function () {
+                        return {};
+                    });
+                    adminApplyGatepassPollPayload(payload);
+                } finally {
+                    adminGatepassPollInFlight = false;
+                }
+            }
+
+            function adminStartGatepassDashboardPolling() {
+                if (adminGatepassPollTimer !== null) {
+                    return;
+                }
+
+                adminGatepassPollTimer = window.setInterval(adminPollGatepassDashboard, ADMIN_GATEPASS_POLL_MS);
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                adminStartGatepassDashboardPolling();
+                document.addEventListener('visibilitychange', function () {
+                    if (document.visibilityState === 'visible') {
+                        adminPollGatepassDashboard();
+                    }
+                });
+            });
+        }());
 
         // -----------------------------
         // Reports / Analytics (Chart.js)

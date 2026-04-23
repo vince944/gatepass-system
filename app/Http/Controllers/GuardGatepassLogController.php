@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\GatepassRequest;
 use App\Models\GatepassRequestItem;
+use App\Services\GatepassStatusEmailNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -502,6 +503,14 @@ class GuardGatepassLogController extends Controller
 
         if (! $result['ok']) {
             return response()->json(['message' => $result['message']], $result['status']);
+        }
+
+        $gatepassForMail = GatepassRequest::query()
+            ->where('gatepass_no', $validated['gatepass_no'])
+            ->first();
+
+        if ($gatepassForMail !== null) {
+            app(GatepassStatusEmailNotifier::class)->notifyRequester($gatepassForMail);
         }
 
         return response()->json([

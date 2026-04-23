@@ -1,17 +1,5 @@
 {{-- Embedded employee gatepass UI for coordinator (same API routes as employee dashboard) --}}
 <div id="gatepassEmployeePanel" class="hidden">
-            <div class="mb-6 flex justify-end">
-                <button
-                    id="newRequestBtn"
-                    type="button"
-                    onclick="openRequestModal()"
-                    class="hidden inline-flex bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] font-semibold text-[14px] px-5 py-2.5 rounded-2xl items-center gap-2 transition whitespace-nowrap"
-                    aria-hidden="true"
-                >
-                    <i class="fa-solid fa-plus text-[16px]"></i>
-                    <span>New Request</span>
-                </button>
-            </div>
 <!-- DASHBOARD SECTION -->
             <div id="gatepassEmployeeDashboardSection" class="flex flex-col">
                 <div class="order-3 md:order-1 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-7">
@@ -64,13 +52,41 @@
                 </div>
 
                 <div class="order-2 md:order-3 bg-white rounded-[22px] border border-black/10 min-h-[330px] px-5 sm:px-8 py-8">
-                    <h3 class="text-[22px] font-semibold text-[#003b95] mb-2">My Requests</h3>
+                    <div class="mb-2 flex items-center justify-between gap-3">
+                        <h3 class="text-[22px] font-semibold text-[#003b95]">My Requests</h3>
+                        <button
+                            id="newRequestBtn"
+                            type="button"
+                            onclick="openRequestModal()"
+                            class="hidden flex bg-[#f6b400] hover:bg-[#e6a800] text-[#003b95] font-semibold text-[14px] sm:text-[16px] px-4 sm:px-8 py-2.5 sm:py-3 rounded-2xl items-center gap-3 transition whitespace-nowrap"
+                        >
+                            <i class="fa-solid fa-plus text-[18px]"></i>
+                            <span>New Request</span>
+                        </button>
+                    </div>
                     <p id="employeeDashboardRequestsFound" class="text-[18px] text-[#6b7280] mb-10">0 requests found</p>
 
                     <div id="employeeDashboardEmpty" class="h-[180px] flex items-center justify-center border border-dashed border-gray-300 rounded-2xl">
                         <p class="text-gray-400 text-[18px]">No requests found.</p>
                     </div>
                     <div id="employeeDashboardList" class="hidden"></div>
+                    <div id="employeeDashboardPagination" class="hidden mt-6 flex items-center justify-end gap-2">
+                        <button
+                            id="employeeDashboardPrevBtn"
+                            type="button"
+                            class="h-[38px] px-4 rounded-xl border border-gray-300 bg-white text-[14px] font-semibold text-[#425b78] hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Prev
+                        </button>
+                        <div id="employeeDashboardPageNumbers" class="flex items-center gap-2"></div>
+                        <button
+                            id="employeeDashboardNextBtn"
+                            type="button"
+                            class="h-[38px] px-4 rounded-xl border border-gray-300 bg-white text-[14px] font-semibold text-[#425b78] hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -96,6 +112,26 @@
                     <div id="emptyHistory" class="py-16 text-center text-gray-400 text-[18px]">
                         No request history yet.
                     </div>
+
+                    <div id="employeeHistoryPagination" class="hidden px-5 sm:px-8 py-5 border-t border-gray-200">
+                        <div class="flex items-center justify-end gap-2">
+                            <button
+                                id="employeeHistoryPrevBtn"
+                                type="button"
+                                class="h-[38px] px-4 rounded-xl border border-gray-300 bg-white text-[14px] font-semibold text-[#425b78] hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Prev
+                            </button>
+                            <div id="employeeHistoryPageNumbers" class="flex items-center gap-2"></div>
+                            <button
+                                id="employeeHistoryNextBtn"
+                                type="button"
+                                class="h-[38px] px-4 rounded-xl border border-gray-300 bg-white text-[14px] font-semibold text-[#425b78] hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -105,7 +141,7 @@
 <!-- Toast Notification -->
     <div
         id="employeeToast"
-        class="fixed top-6 right-4 z-[60] transform translate-y-[-20px] opacity-0 pointer-events-none transition-all duration-300"
+        class="fixed top-6 right-4 z-[110] transform translate-y-[-20px] opacity-0 pointer-events-none transition-all duration-300"
     >
         <div
             id="employeeToastInner"
@@ -119,7 +155,7 @@
     
 
 <!-- New Request Modal -->
-    <div id="requestModal" class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6">
+    <div id="requestModal" class="fixed inset-0 bg-black/45 z-[100] hidden items-center justify-center px-4 py-6">
         <div class="w-full max-w-[1280px] bg-white rounded-[18px] shadow-2xl overflow-hidden">
             
             <!-- Header -->
@@ -139,6 +175,7 @@
                     action="{{ route('employee.gatepass-requests.store') }}"
                 >
                     @csrf
+                    <input type="hidden" id="employeeResubmitGatepassNo" name="resubmit_gatepass_no" value="">
 
                     <!-- Top Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -270,14 +307,14 @@
                     </div>
 
                     <!-- Selected Equipment Box -->
-                    <div class="border border-gray-200 rounded-2xl bg-[#fbfcfe] min-h-[155px]">
-                        <table class="w-full text-left">
+                    <div class="border border-gray-200 rounded-2xl bg-[#fbfcfe] min-h-[155px] overflow-x-auto">
+                        <table class="w-full min-w-[520px] table-fixed sm:table-auto text-left">
                             <thead class="border-b border-gray-200 bg-white/60">
                                 <tr>
-                                    <th class="px-5 py-3 text-[14px] font-semibold text-[#4b6790]">#</th>
-                                    <th class="px-5 py-3 text-[14px] font-semibold text-[#4b6790]">Prop No</th>
+                                    <th class="w-[52px] px-5 py-3 text-[14px] font-semibold text-[#4b6790]">#</th>
+                                    <th class="w-[120px] px-5 py-3 text-[14px] font-semibold text-[#4b6790]">Prop No</th>
                                     <th class="px-5 py-3 text-[14px] font-semibold text-[#4b6790]">Description</th>
-                                    <th class="px-5 py-3 text-[14px] font-semibold text-[#4b6790] text-right">Action</th>
+                                    <th class="w-[90px] px-5 py-3 text-[14px] font-semibold text-[#4b6790] sm:text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="employeeSelectedEquipmentBody">
@@ -311,7 +348,7 @@
     </div>
 
     <!-- Profile Modal -->
-    <div id="profileModal" class="fixed inset-0 bg-black/45 z-50 hidden items-center justify-center px-4 py-6">
+    <div id="profileModal" class="fixed inset-0 bg-black/45 z-[100] hidden items-center justify-center px-4 py-6">
         <div class="w-full max-w-[1100px] bg-white rounded-[18px] shadow-2xl overflow-hidden">
             
             <!-- Header -->
@@ -461,7 +498,7 @@
     </div>
 
     <!-- Request Details Modal -->
-    <div id="requestDetailsModal" class="fixed inset-0 bg-black/55 z-50 hidden items-center justify-center px-4 py-6">
+    <div id="requestDetailsModal" class="fixed inset-0 bg-black/55 z-[100] hidden items-center justify-center px-4 py-6">
         <div class="w-full max-w-[920px] bg-white rounded-[18px] shadow-2xl overflow-hidden border border-gray-200">
             <div class="flex items-center justify-between px-7 py-6 border-b border-gray-200">
                 <h2 class="text-[26px] font-bold text-[#003b95]">Request Details</h2>
@@ -524,6 +561,11 @@
                                 <div id="requestDetailsRemarks" class="text-[15px] font-semibold text-[#111827] break-words">—</div>
                             </div>
                         </div>
+
+                        <div id="requestDetailsRejectionReasonWrap" class="hidden mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+                            <div class="text-[12px] font-semibold text-rose-700 uppercase tracking-wide mb-1">Rejection Reason</div>
+                            <div id="requestDetailsRejectionReason" class="text-[14px] font-semibold text-rose-900 break-words">—</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -531,7 +573,7 @@
     </div>
 
     <!-- Gate Pass QR Code Modal -->
-    <div id="gatepassQrModal" class="fixed inset-0 bg-black/55 z-50 hidden items-center justify-center p-3 sm:p-4">
+    <div id="gatepassQrModal" class="fixed inset-0 bg-black/55 z-[100] hidden items-center justify-center p-3 sm:p-4">
         <div class="w-full max-w-[520px] sm:max-w-[560px] lg:max-w-[620px] bg-white rounded-[18px] shadow-2xl overflow-hidden border border-gray-200 max-h-[calc(100svh-1.5rem)] sm:max-h-[calc(100svh-2rem)] flex flex-col">
             <div class="flex items-center justify-center px-5 sm:px-7 py-4 sm:py-6 border-b border-gray-200 shrink-0">
                 <h2 class="text-[20px] sm:text-[24px] lg:text-[26px] font-bold text-[#003b95]">Gate Pass QR Code</h2>

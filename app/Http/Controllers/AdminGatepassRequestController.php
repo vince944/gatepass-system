@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\GatepassRequest;
 use App\Models\GatepassRequestItem;
 use App\Models\Inventory;
+use App\Services\GatepassStatusEmailNotifier;
 use Carbon\Carbon;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
@@ -15,6 +16,8 @@ use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -42,42 +45,7 @@ class AdminGatepassRequestController extends Controller
 
         $totalCount = GatepassRequest::query()->count();
 
-        $gatepassListSearch = trim((string) $request->query('gp_q', ''));
-        $gatepassListStatusRaw = trim((string) $request->query('gp_status', ''));
-        $gatepassListStatus = strtolower($gatepassListStatusRaw);
-
-        $requests = GatepassRequest::query()
-            ->with([
-                'requester:employee_id,user_id,employee_name,center',
-                'requester.user:id,name',
-                'items.inventory:id,current_prop_no,description',
-            ])
-            ->orderByDesc('request_date')
-            ->orderByDesc('created_at')
-            ->get();
-
-        $allowedGatepassDashboardStatuses = ['pending', 'approved', 'rejected', 'returned'];
-
-        $requests = $requests
-            ->filter(function (GatepassRequest $req) use ($gatepassListSearch, $gatepassListStatus, $allowedGatepassDashboardStatuses): bool {
-                if ($gatepassListSearch !== '') {
-                    $needle = strtolower($gatepassListSearch);
-                    $haystack = strtolower((string) $req->gatepass_no);
-
-                    if (! str_contains($haystack, $needle)) {
-                        return false;
-                    }
-                }
-
-                if ($gatepassListStatus !== '' && in_array($gatepassListStatus, $allowedGatepassDashboardStatuses, true)) {
-                    if (strtolower(trim((string) $req->status)) !== $gatepassListStatus) {
-                        return false;
-                    }
-                }
-
-                return true;
-            })
-            ->values();
+        $requests = $this->dashboardFilteredGatepassRequests($request);
 
         $search = trim((string) $request->query('q', ''));
         $perPage = 5;
@@ -125,6 +93,10 @@ class AdminGatepassRequestController extends Controller
         $movementTracking = $this->getMovementTrackingStats();
         $gatepassTrendsByFilter = $this->getGatepassTrendsByFilter();
 
+        $gatepassListSearch = trim((string) $request->query('gp_q', ''));
+        $gatepassListStatusRaw = trim((string) $request->query('gp_status', ''));
+        $gatepassListStatus = strtolower($gatepassListStatusRaw);
+        $allowedGatepassDashboardStatuses = ['pending', 'approved', 'rejected', 'returned'];
         $gatepassListStatusForForm = in_array($gatepassListStatus, $allowedGatepassDashboardStatuses, true)
             ? $gatepassListStatus
             : '';
@@ -173,6 +145,168 @@ class AdminGatepassRequestController extends Controller
             'inventoryPortalFormAction' => route('admin.dashboard'),
             'inventorySearchInputName' => 'search',
         ]));
+    }
+
+    public function gatepassDashboardPoll(Request $request): JsonResponse
+    {
+        $requests = $this->dashboardFilteredGatepassRequests($request);
+
+        $pendingCount = GatepassRequest::query()
+            ->where('status', 'Pending')
+            ->count();
+
+        $approvedCount = GatepassRequest::query()
+            ->where('status', 'Approved')
+            ->count();
+
+        $activeOutsideCount = GatepassRequest::query()
+            ->whereIn('status', ['Active Outside', 'Released Outside'])
+            ->count();
+
+        $totalCount = GatepassRequest::query()->count();
+
+        $gatepassRequestsPerPage = 5;
+        $gatepassRequestsPageName = 'gatepass_requests_page';
+        $gatepassRequestsCurrentPage = max(1, (int) $request->query($gatepassRequestsPageName, 1));
+
+        $gatepassRequestsTotal = $requests->count();
+        $gatepassRequestsLastPage = max(1, (int) ceil($gatepassRequestsTotal / $gatepassRequestsPerPage));
+
+        if ($gatepassRequestsCurrentPage > $gatepassRequestsLastPage) {
+            $gatepassRequestsCurrentPage = $gatepassRequestsLastPage;
+        }
+
+        $gatepassRequestsItems = $requests
+            ->forPage($gatepassRequestsCurrentPage, $gatepassRequestsPerPage)
+            ->values();
+
+        $paginator = new LengthAwarePaginator(
+            $gatepassRequestsItems,
+            $gatepassRequestsTotal,
+            $gatepassRequestsPerPage,
+            $gatepassRequestsCurrentPage,
+            [
+                'path' => route('admin.dashboard'),
+                'pageName' => $gatepassRequestsPageName,
+            ]
+        );
+
+        $paginator->appends($request->except([$gatepassRequestsPageName]));
+
+        $rows = $gatepassRequestsItems->map(function (GatepassRequest $req): array {
+            $employeeName = $req->requester?->employee_name ?? $req->requester?->user?->name ?? '—';
+
+            $itemsText = $req->items
+                ?->map(function (GatepassRequestItem $it) {
+                    $inv = $it->inventory;
+                    $prop = trim((string) ($inv?->current_prop_no ?? ''));
+                    $desc = trim((string) ($inv?->description ?? ''));
+                    $label = trim(($prop !== '' ? ($prop.' - ') : '').$desc);
+
+                    return $label !== '' ? $label : null;
+                })
+                ->filter()
+                ->values()
+                ->implode(', ') ?? '';
+
+            return [
+                'gatepass_no' => $req->gatepass_no,
+                'status' => $req->status,
+                'center' => $req->center,
+                'request_date' => optional($req->request_date)->format('Y-m-d'),
+                'employee_name' => $employeeName,
+                'items_text' => $itemsText !== '' ? $itemsText : null,
+                'urls' => [
+                    'approve' => route('admin.gatepass-requests.approve', $req->gatepass_no),
+                    'reject' => route('admin.gatepass-requests.reject', $req->gatepass_no),
+                    'show' => route('admin.gatepass-requests.show', $req->gatepass_no),
+                    'resubmit' => route('admin.gatepass-requests.resubmit', $req->gatepass_no),
+                ],
+            ];
+        })->values()->all();
+
+        $gatepassLastPage = $paginator->lastPage();
+        $gatepassCurrentPage = $paginator->currentPage();
+
+        if ($gatepassLastPage <= 3) {
+            $gatepassPageWindowStart = 1;
+            $gatepassPageWindowEnd = $gatepassLastPage;
+        } else {
+            $gatepassPageWindowStart = max(1, min($gatepassCurrentPage - 1, $gatepassLastPage - 2));
+            $gatepassPageWindowEnd = min($gatepassLastPage, $gatepassPageWindowStart + 2);
+        }
+
+        $pageWindow = [];
+        for ($page = $gatepassPageWindowStart; $page <= $gatepassPageWindowEnd; $page++) {
+            $pageWindow[] = [
+                'page' => $page,
+                'url' => $paginator->url($page),
+                'active' => $page === $gatepassCurrentPage,
+            ];
+        }
+
+        return response()->json([
+            'data' => [
+                'counts' => [
+                    'pending' => $pendingCount,
+                    'approved' => $approvedCount,
+                    'active_outside' => $activeOutsideCount,
+                    'total' => $totalCount,
+                ],
+                'pagination' => [
+                    'current_page' => $gatepassCurrentPage,
+                    'last_page' => $gatepassLastPage,
+                    'total' => $gatepassRequestsTotal,
+                    'from' => $paginator->firstItem(),
+                    'to' => $paginator->lastItem(),
+                    'prev_url' => $paginator->previousPageUrl(),
+                    'next_url' => $paginator->nextPageUrl(),
+                    'pages' => $pageWindow,
+                ],
+                'requests' => $rows,
+            ],
+        ]);
+    }
+
+    /**
+     * @return Collection<int, GatepassRequest>
+     */
+    private function dashboardFilteredGatepassRequests(Request $request): Collection
+    {
+        $gatepassListSearch = trim((string) $request->query('gp_q', ''));
+        $gatepassListStatusRaw = trim((string) $request->query('gp_status', ''));
+        $gatepassListStatus = strtolower($gatepassListStatusRaw);
+
+        $allowedGatepassDashboardStatuses = ['pending', 'approved', 'rejected', 'returned'];
+
+        return GatepassRequest::query()
+            ->with([
+                'requester:employee_id,user_id,employee_name,center',
+                'requester.user:id,name',
+                'items.inventory:id,current_prop_no,description',
+            ])
+            ->orderByDesc('request_date')
+            ->orderByDesc('created_at')
+            ->get()
+            ->filter(function (GatepassRequest $req) use ($gatepassListSearch, $gatepassListStatus, $allowedGatepassDashboardStatuses): bool {
+                if ($gatepassListSearch !== '') {
+                    $needle = strtolower($gatepassListSearch);
+                    $haystack = strtolower((string) $req->gatepass_no);
+
+                    if (! str_contains($haystack, $needle)) {
+                        return false;
+                    }
+                }
+
+                if ($gatepassListStatus !== '' && in_array($gatepassListStatus, $allowedGatepassDashboardStatuses, true)) {
+                    if (strtolower(trim((string) $req->status)) !== $gatepassListStatus) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            ->values();
     }
 
     public function show(Request $request, string $gatepassNo): JsonResponse
@@ -773,6 +907,7 @@ class AdminGatepassRequestController extends Controller
                     'code' => 404,
                     'message' => 'Gate pass request not found.',
                     'status' => null,
+                    'status_changed' => false,
                 ];
             }
 
@@ -782,6 +917,7 @@ class AdminGatepassRequestController extends Controller
                     'code' => 200,
                     'message' => "Request is already {$status}.",
                     'status' => $gatepass->status,
+                    'status_changed' => false,
                 ];
             }
 
@@ -862,8 +998,21 @@ class AdminGatepassRequestController extends Controller
                 'code' => 200,
                 'message' => "Request {$status} successfully.",
                 'status' => $gatepass->status,
+                'status_changed' => true,
             ];
         });
+
+        if (
+            $result['ok']
+            && ($result['status_changed'] ?? false)
+            && in_array((string) ($result['status'] ?? ''), ['Approved', 'Rejected'], true)
+        ) {
+            $fresh = GatepassRequest::query()->where('gatepass_no', $gatepassNo)->first();
+
+            if ($fresh !== null) {
+                app(GatepassStatusEmailNotifier::class)->notifyRequester($fresh);
+            }
+        }
 
         if ($request->expectsJson()) {
             return response()->json([
